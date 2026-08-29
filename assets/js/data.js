@@ -270,3 +270,153 @@
         { id: 'stat-3', value: '3–5', label: { ar: 'أيام للتجهيز والشحن', en: 'days to craft and ship' } }
       ]
     },
+
+    /* =====================================================================
+       SKIN TONES (light -> deep). `shadow` is the darker edge of the hand.
+       ===================================================================== */
+    skinTones: [
+      { id: 'st-porcelain', name: { ar: 'فاتح جداً', en: 'Porcelain' }, hex: '#F6DFD0', shadow: '#E2C2B0' },
+      { id: 'st-fair', name: { ar: 'فاتح', en: 'Fair' }, hex: '#EFCDB6', shadow: '#D8AF95' },
+      { id: 'st-wheat', name: { ar: 'حنطي', en: 'Wheatish' }, hex: '#E3B48F', shadow: '#C7946F' },
+      { id: 'st-golden', name: { ar: 'قمحي', en: 'Golden Tan' }, hex: '#D19A6E', shadow: '#B27B51' },
+      { id: 'st-honey', name: { ar: 'عسلي', en: 'Honey' }, hex: '#B87A4E', shadow: '#985E36' },
+      { id: 'st-deep', name: { ar: 'غامق', en: 'Deep Cocoa' }, hex: '#7E4B2D', shadow: '#5F341B' }
+    ],
+
+    /* =====================================================================
+       SHAPES — ids must match SN.Nail.SHAPES exactly.
+       ===================================================================== */
+    shapes: [
+      {
+        id: 'almond', price: 0,
+        name: { ar: 'لوز', en: 'Almond' },
+        desc: { ar: 'أطراف ناعمة مدبّبة قليلاً — تطوّل الأصابع وتناسب كل المناسبات.', en: 'Softly tapered tips that lengthen the finger and suit absolutely everything.' }
+      },
+      {
+        id: 'coffin', price: 10,
+        name: { ar: 'كوفن', en: 'Coffin' },
+        desc: { ar: 'أطراف مستقيمة مع جوانب مسحوبة — الشكل الأشهر للأطقم الطويلة.', en: 'A straight tip with tapered sides — the signature look for long sets.' }
+      },
+      {
+        id: 'stiletto', price: 12,
+        name: { ar: 'ستيليتو', en: 'Stiletto' },
+        desc: { ar: 'مدبّب وجريء، يلفت النظر من أول نظرة ويحتاج طولًا كافيًا.', en: 'Sharp and daring, impossible to miss — and it needs the length to work.' }
+      },
+      {
+        id: 'square', price: 0,
+        name: { ar: 'مربّع', en: 'Square' },
+        desc: { ar: 'حواف مستقيمة وزوايا واضحة — كلاسيكي ومريح للأظافر القصيرة.', en: 'Flat edge, clean corners — a classic that sits beautifully on shorter lengths.' }
+      },
+      {
+        id: 'squoval', price: 5,
+        name: { ar: 'مربّع مدوّر', en: 'Squoval' },
+        desc: { ar: 'مربّع بزوايا مخفّفة، ثابت وعملي ويناسب اليد اليومية.', en: 'A square with the corners softened — sturdy, practical, made for everyday hands.' }
+      },
+      {
+        id: 'round', price: 0,
+        name: { ar: 'دائري', en: 'Round' },
+        desc: { ar: 'أبسط شكل وأقربه لخط الظفر الطبيعي، يعطي مظهرًا نظيفًا وهادئًا.', en: 'The simplest shape and the closest to your natural edge — quiet and clean.' }
+      },
+      {
+        id: 'oval', price: 3,
+        name: { ar: 'بيضاوي', en: 'Oval' },
+        desc: { ar: 'انسيابي وأنثوي، يوهم بأصابع أطول بدون طول زائد.', en: 'Fluid and feminine, it stretches the finger without adding real length.' }
+      },
+      {
+        id: 'lipstick', price: 15,
+        name: { ar: 'ليبستيك', en: 'Lipstick' },
+        desc: { ar: 'طرف مائل مقصوص بزاوية مثل قلم أحمر الشفاه — لمسة جريئة ومختلفة.', en: 'A slanted tip cut on an angle like a lipstick bullet — bold and different.' }
+      }
+    ],
+
+    /* =====================================================================
+       LENGTHS
+       ===================================================================== */
+    lengths: [
+      {
+        id: 'short', factor: 0.72, price: 0,
+        name: { ar: 'قصير', en: 'Short' }
+      },
+      {
+        id: 'medium', factor: 1, price: 0,
+        name: { ar: 'متوسط', en: 'Medium' }
+      },
+      {
+        id: 'long', factor: 1.28, price: 8,
+        name: { ar: 'طويل', en: 'Long' }
+      },
+      {
+        id: 'xlong', factor: 1.6, price: 15,
+        name: { ar: 'طويل جداً', en: 'Extra Long' }
+      }
+    ],
+
+    /* =====================================================================
+       FINISHES
+       ===================================================================== */
+    finishes: [
+      { id: 'gloss', kind: 'gloss', price: 0, name: { ar: 'لامع', en: 'Glossy' } },
+      { id: 'matte', kind: 'matte', price: 4, name: { ar: 'مطفي', en: 'Matte' } },
+      { id: 'jelly', kind: 'jelly', price: 6, name: { ar: 'جيلي شفاف', en: 'Jelly' } },
+      { id: 'glitter', kind: 'glitter', price: 8, name: { ar: 'غليتر', en: 'Glitter' } },
+      { id: 'velvet', kind: 'velvet', price: 10, name: { ar: 'فيلفيت', en: 'Velvet' } },
+      { id: 'chrome', kind: 'chrome', price: 12, name: { ar: 'كروم', en: 'Chrome' } }
+    ],
+
+    /* =====================================================================
+       COLORS — 45 real polish shades across 7 groups.
+       ===================================================================== */
+    colors: [
+      /* nude */
+      { id: 'c-nude-warm', hex: '#E7C3AE', group: 'nude', name: { ar: 'نيود دافئ', en: 'Warm Nude' } },
+      { id: 'c-nude-rose', hex: '#E9C2C0', group: 'nude', name: { ar: 'نيود وردي', en: 'Rosy Nude' } },
+      { id: 'c-latte', hex: '#D8B49A', group: 'nude', name: { ar: 'لاتيه', en: 'Latte' } },
+      { id: 'c-sand', hex: '#E8D2B8', group: 'nude', name: { ar: 'رملي', en: 'Desert Sand' } },
+      { id: 'c-toffee', hex: '#B98F6F', group: 'nude', name: { ar: 'توفي', en: 'Toffee' } },
+      { id: 'c-caramel', hex: '#C08A5E', group: 'nude', name: { ar: 'كراميل', en: 'Caramel' } },
+      { id: 'c-mocha', hex: '#9A6B52', group: 'nude', name: { ar: 'موكا', en: 'Mocha' } },
+      /* pink */
+      { id: 'c-ballet', hex: '#F7DDE2', group: 'pink', name: { ar: 'بالية', en: 'Ballet Slipper' } },
+      { id: 'c-blush', hex: '#F4CBD2', group: 'pink', name: { ar: 'بلاش', en: 'Blush' } },
+      { id: 'c-peony', hex: '#E88AA5', group: 'pink', name: { ar: 'فاوانيا', en: 'Peony' } },
+      { id: 'c-bubblegum', hex: '#F58FB2', group: 'pink', name: { ar: 'علكة وردية', en: 'Bubblegum' } },
+      { id: 'c-hot-pink', hex: '#EE5B94', group: 'pink', name: { ar: 'وردي صارخ', en: 'Hot Pink' } },
+      { id: 'c-fuchsia', hex: '#D6417E', group: 'pink', name: { ar: 'فوشيا', en: 'Fuchsia' } },
+      { id: 'c-dusty-rose', hex: '#C98A93', group: 'pink', name: { ar: 'وردي مغبّر', en: 'Dusty Rose' } },
+      /* red */
+      { id: 'c-coral', hex: '#F3705A', group: 'red', name: { ar: 'مرجاني', en: 'Coral' } },
+      { id: 'c-scarlet', hex: '#D8362F', group: 'red', name: { ar: 'قرمزي', en: 'Scarlet' } },
+      { id: 'c-cherry', hex: '#C2192F', group: 'red', name: { ar: 'كرزي', en: 'Cherry' } },
+      { id: 'c-brick', hex: '#A8412F', group: 'red', name: { ar: 'طوبي', en: 'Brick' } },
+      { id: 'c-ruby', hex: '#9E1B3C', group: 'red', name: { ar: 'ياقوتي', en: 'Ruby' } },
+      { id: 'c-wine', hex: '#7B1E31', group: 'red', name: { ar: 'نبيذي', en: 'Wine' } },
+      /* bold */
+      { id: 'c-tangerine', hex: '#F2782B', group: 'bold', name: { ar: 'يوسفي', en: 'Tangerine' } },
+      { id: 'c-lime', hex: '#A8CE2C', group: 'bold', name: { ar: 'ليموني', en: 'Lime' } },
+      { id: 'c-turquoise', hex: '#1FB6B0', group: 'bold', name: { ar: 'تركوازي', en: 'Turquoise' } },
+      { id: 'c-emerald', hex: '#157F5E', group: 'bold', name: { ar: 'زمردي', en: 'Emerald' } },
+      { id: 'c-electric-blue', hex: '#2F5BEA', group: 'bold', name: { ar: 'أزرق كهربائي', en: 'Electric Blue' } },
+      { id: 'c-violet', hex: '#7A3FC0', group: 'bold', name: { ar: 'بنفسجي', en: 'Violet' } },
+      /* dark */
+      { id: 'c-charcoal', hex: '#3A3A3E', group: 'dark', name: { ar: 'فحمي', en: 'Charcoal' } },
+      { id: 'c-onyx', hex: '#17131A', group: 'dark', name: { ar: 'أسود عميق', en: 'Onyx Black' } },
+      { id: 'c-espresso', hex: '#3E2A23', group: 'dark', name: { ar: 'إسبريسو', en: 'Espresso' } },
+      { id: 'c-navy', hex: '#1D2A4A', group: 'dark', name: { ar: 'كحلي', en: 'Midnight Navy' } },
+      { id: 'c-deep-plum', hex: '#4A1F3D', group: 'dark', name: { ar: 'برقوقي', en: 'Deep Plum' } },
+      { id: 'c-forest', hex: '#1F3B2C', group: 'dark', name: { ar: 'أخضر داكن', en: 'Forest' } },
+      /* pastel */
+      { id: 'c-lilac', hex: '#C9B6EA', group: 'pastel', name: { ar: 'ليلكي', en: 'Lilac' } },
+      { id: 'c-mint', hex: '#B4E4CE', group: 'pastel', name: { ar: 'نعناعي', en: 'Mint' } },
+      { id: 'c-sky', hex: '#BBD8F2', group: 'pastel', name: { ar: 'سماوي', en: 'Baby Blue' } },
+      { id: 'c-butter', hex: '#F6E6A8', group: 'pastel', name: { ar: 'زبدي', en: 'Butter' } },
+      { id: 'c-peach', hex: '#FAC7AC', group: 'pastel', name: { ar: 'خوخي', en: 'Peach' } },
+      { id: 'c-pistachio', hex: '#D3E3AE', group: 'pastel', name: { ar: 'فستقي', en: 'Pistachio' } },
+      { id: 'c-lavender-grey', hex: '#CFC7D6', group: 'pastel', name: { ar: 'رمادي ليلكي', en: 'Lavender Grey' } },
+      /* neutral */
+      { id: 'c-milk', hex: '#FAF3EE', group: 'neutral', name: { ar: 'حليبي', en: 'Milk White' } },
+      { id: 'c-porcelain', hex: '#F1E7E2', group: 'neutral', name: { ar: 'بورسلين', en: 'Porcelain' } },
+      { id: 'c-pearl', hex: '#EDE4E9', group: 'neutral', name: { ar: 'لؤلؤي', en: 'Pearl' } },
+      { id: 'c-greige', hex: '#C8BBB0', group: 'neutral', name: { ar: 'بيج رمادي', en: 'Greige' } },
+      { id: 'c-stone', hex: '#A9A29B', group: 'neutral', name: { ar: 'حجري', en: 'Stone' } },
+      { id: 'c-taupe', hex: '#8C7A70', group: 'neutral', name: { ar: 'بني رمادي', en: 'Taupe' } }
+    ],
