@@ -92,23 +92,24 @@
        length capsule length from the base to the fingertip
      Tuned by eye — this is the one table to touch when the hand looks off. */
   var HAND_GEOM = {
-    pinky:  { x: 76,  y: 236, angle: -14, width: 25, length: 88 },
-    ring:   { x: 108, y: 214, angle: -6,  width: 29, length: 120 },
-    middle: { x: 143, y: 206, angle: 0,   width: 31, length: 136 },
-    index:  { x: 178, y: 213, angle: 8,   width: 29, length: 122 },
-    thumb:  { x: 198, y: 288, angle: 36,  width: 33, length: 88 }
+    pinky:  { x: 82,  y: 248, angle: -15, width: 24, length: 104 },
+    ring:   { x: 116, y: 232, angle: -6,  width: 28, length: 134 },
+    middle: { x: 152, y: 226, angle: 1,   width: 30, length: 148 },
+    index:  { x: 188, y: 234, angle: 9,   width: 28, length: 136 },
+    thumb:  { x: 232, y: 302, angle: 40,  width: 32, length: 104 }
   };
 
   /* the palm blob (same coordinate system as HAND_GEOM) */
   var PALM_D =
-    'M58 286 C55 254 68 234 96 230 C120 226 132 224 152 226 ' +
-    'C172 228 188 232 202 242 C222 256 236 272 242 296 ' +
-    'C249 324 240 350 214 362 C186 375 128 374 100 358 ' +
-    'C74 343 60 316 58 286 Z';
+    /* knuckle line -> thumb mound -> wrist -> back up the pinky edge */
+    'M70 262 C68 240 76 228 94 224 C116 219 140 217 164 220 ' +
+    'C186 223 204 230 218 242 C236 258 250 280 252 306 ' +
+    'C254 334 244 356 222 368 C198 381 152 382 124 374 ' +
+    'C100 367 84 350 78 324 C73 304 71 282 70 262 Z';
 
   /* plate width relative to the finger width, and how far the cuticle sits
      back from the fingertip (also relative to the finger width) */
-  var PLATE_W = 0.82;
+  var PLATE_W = 0.88;
   var PLATE_BACK = 0.72;
 
   /* ====================================================================== */
@@ -437,12 +438,13 @@
 
     if (s === 'coffin') {
       /* tapered walls, flat tip at ~46% of the base width */
-      r = Math.min(w * 0.05, 2.4);
-      p.C(w * 0.005, h * 0.40, w * 0.19, h * 0.13, w * 0.27, r);
-      p.Q(w * 0.27, 0, w * 0.27 + r, 0);
-      p.L(w * 0.73 - r, 0);
-      p.Q(w * 0.73, 0, w * 0.73, r);
-      p.C(w * 0.81, h * 0.13, w * 0.995, h * 0.40, w, ay);
+      r = Math.min(w * 0.045, 2.2);
+      /* nearly straight walls so the taper reads as a coffin, not a dome */
+      p.C(w * 0.001, h * 0.44, w * 0.16, h * 0.19, w * 0.265, r);
+      p.Q(w * 0.26, 0, w * 0.265 + r, 0);
+      p.L(w * 0.735 - r, 0);
+      p.Q(w * 0.74, 0, w * 0.735, r);
+      p.C(w * 0.84, h * 0.19, w * 0.999, h * 0.44, w, ay);
       return;
     }
 

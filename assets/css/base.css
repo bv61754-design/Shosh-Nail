@@ -1240,7 +1240,7 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   scrollbar-width:none;
   -ms-overflow-style:none;
   -webkit-overflow-scrolling:touch;
-  padding-block:4px;
+  padding-block:6px;               /* room for the focus ring, not clipped */
   margin-block-end:18px;
   scroll-padding-inline:16px;
 }
