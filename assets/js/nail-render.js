@@ -212,14 +212,18 @@
       b: parseInt(h.slice(4, 6), 16)
     };
   }
-  function hex2(n) { var s = Math.round(clamp(n, 0, 255)).toString(16); return s.length < 2 ? '0' + s : s; }
+  /* uppercase everywhere, so a colour coming back out of here still matches
+     the swatch hexes in the store by plain string comparison */
+  function hex2(n) {
+    var s = Math.round(clamp(n, 0, 255)).toString(16).toUpperCase();
+    return s.length < 2 ? '0' + s : s;
+  }
   function toHex(r, g, b) { return '#' + hex2(r) + hex2(g) + hex2(b); }
-  /* any user value -> a safe hex string */
+  /* any user value -> a safe hex string. Hex only on purpose: every colour
+     that gets in here is later mixed / lightened / darkened. */
   function col(v, fallback) {
     var p = parseHex(v);
-    if (p) return toHex(p.r, p.g, p.b);
-    if (typeof v === 'string' && /^(rgb|hsl)a?\(/i.test(v.trim())) return v.trim();
-    return fallback;
+    return p ? toHex(p.r, p.g, p.b) : fallback;
   }
   function mix(a, b, t) {
     var A = parseHex(a), B = parseHex(b);
@@ -491,9 +495,9 @@
     }
 
     /* almond (and the fallback for anything unknown) */
-    p.C(w * 0.005, h * 0.34, w * 0.20, h * 0.10, w * 0.40, h * 0.025);
-    p.C(w * 0.455, 0, w * 0.545, 0, w * 0.60, h * 0.025);
-    p.C(w * 0.80, h * 0.10, w * 0.995, h * 0.34, w, ay);
+    p.C(w * 0.005, h * 0.34, w * 0.22, h * 0.085, w * 0.42, h * 0.02);
+    p.C(w * 0.468, 0, w * 0.532, 0, w * 0.58, h * 0.02);
+    p.C(w * 0.78, h * 0.085, w * 0.995, h * 0.34, w, ay);
   }
 
   function path(shape, w, h) {
@@ -758,26 +762,30 @@
   };
 
   PATTERNS.leopard = function (g, x) {
-    var n = Math.max(4, Math.round(9 / x.S)), i, sp, cx, cy, ang;
-    for (i = 0; i < n; i++) {
-      sp = x.w * 0.20 * x.S * x.rnd.r(0.78, 1.25);
-      cx = x.rnd.r(-0.05, 1.05) * x.w;
-      cy = x.rnd.r(-0.02, 1.02) * x.h;
-      ang = x.rnd.r(-70, 70);
-      add(g, E('ellipse', {
-        cx: f(cx), cy: f(cy), rx: f(sp * 0.52), ry: f(sp * 0.40),
-        fill: 'none', stroke: x.c1, 'stroke-width': f(sp * 0.21),
-        'stroke-dasharray': f(sp * 0.85) + ' ' + f(sp * 0.52),
-        'stroke-linecap': 'round',
-        transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')',
-        opacity: 0.92
-      }));
-      add(g, E('ellipse', {
-        cx: f(cx + sp * 0.03), cy: f(cy - sp * 0.02),
-        rx: f(sp * 0.25), ry: f(sp * 0.18),
-        fill: x.c2, opacity: 0.95,
-        transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')'
-      }));
+    /* a jittered grid, not pure noise — a real leopard print covers evenly */
+    var cell = x.w * 0.42 * x.S, sp, cx, cy, ang, row = 0, gx, gy;
+    for (gy = -cell * 0.2; gy < x.h + cell * 0.4; gy += cell * 0.86) {
+      for (gx = (row % 2 ? cell * 0.5 : 0) - cell * 0.15; gx < x.w + cell * 0.4; gx += cell) {
+        sp = x.w * 0.21 * x.S * x.rnd.r(0.78, 1.2);
+        cx = gx + x.rnd.r(-1, 1) * cell * 0.16;
+        cy = gy + x.rnd.r(-1, 1) * cell * 0.16;
+        ang = x.rnd.r(-70, 70);
+        add(g, E('ellipse', {
+          cx: f(cx), cy: f(cy), rx: f(sp * 0.52), ry: f(sp * 0.40),
+          fill: 'none', stroke: x.c1, 'stroke-width': f(sp * 0.21),
+          'stroke-dasharray': f(sp * 0.85) + ' ' + f(sp * 0.52),
+          'stroke-linecap': 'round',
+          transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')',
+          opacity: 0.92
+        }));
+        add(g, E('ellipse', {
+          cx: f(cx + sp * 0.03), cy: f(cy - sp * 0.02),
+          rx: f(sp * 0.25), ry: f(sp * 0.18),
+          fill: x.c2, opacity: 0.95,
+          transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')'
+        }));
+      }
+      row++;
     }
   };
 
@@ -1055,7 +1063,10 @@
   /* 8. Charms                                                               */
   /* ====================================================================== */
 
-  function charmEl(c, w, h, mirror) {
+  /* `ink` is only used by monochrome glyphs (◆ ● ✦ …): colour-emoji fonts
+     ignore fill, so this simply guarantees a plain glyph stays readable
+     whatever the nail underneath it is doing. */
+  function charmEl(c, w, h, mirror, ink) {
     var item = sFind('charms', c.id);
     var size = w * 0.26 * c.s;
     var tf = 'translate(' + f(c.x * w) + ' ' + f(c.y * h) + ')';
@@ -1077,7 +1088,8 @@
     glyph = (item && typeof item.glyph === 'string' && item.glyph) ? item.glyph : '✦';
     txt = E('text', {
       x: 0, y: 0, 'text-anchor': 'middle', 'dominant-baseline': 'central',
-      'font-size': f(size), 'font-family': EMOJI_FONT
+      'font-size': f(size), 'font-family': EMOJI_FONT,
+      fill: ink || '#3A2129'
     });
     txt.appendChild(document.createTextNode(glyph));
     add(g, txt);
@@ -1167,7 +1179,9 @@
     /* --- charms ---------------------------------------------------------- */
     if (n.charms.length) {
       pg = add(g, E('g', { 'class': 'nail-charms' }));
-      for (i = 0; i < n.charms.length; i++) add(pg, charmEl(n.charms[i], w, h, !!opts.mirror));
+      for (i = 0; i < n.charms.length; i++) {
+        add(pg, charmEl(n.charms[i], w, h, !!opts.mirror, against(n.color, 0.55)));
+      }
     }
 
     /* --- rim / free edge ------------------------------------------------- */
@@ -1340,14 +1354,24 @@
     return inner;
   }
 
-  function sizeSvg(svg, w, vw, vh) {
-    var n = num(w, 0);
+  /* w / h are CSS pixel sizes for the element itself; leave both out and the
+     svg simply fills its container (viewBox + width:100%). */
+  function sizeSvg(svg, w, vw, vh, h) {
+    var nw = num(w, 0), nh = num(h, 0);
     svg.setAttribute('viewBox', '0 0 ' + f(vw) + ' ' + f(vh));
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    if (n > 0) {
-      svg.setAttribute('width', f(n));
-      svg.setAttribute('height', f(n * vh / vw));
+    if (nw > 0 && nh > 0) {
+      svg.setAttribute('width', f(nw));
+      svg.setAttribute('height', f(nh));
+      svg.setAttribute('style', 'display:block;max-width:100%');
+    } else if (nw > 0) {
+      svg.setAttribute('width', f(nw));
+      svg.setAttribute('height', f(nw * vh / vw));
       svg.setAttribute('style', 'display:block;max-width:100%;height:auto');
+    } else if (nh > 0) {
+      svg.setAttribute('width', f(nh * vw / vh));
+      svg.setAttribute('height', f(nh));
+      svg.setAttribute('style', 'display:block;max-width:100%');
     } else {
       svg.setAttribute('style', 'display:block;width:100%;height:auto');
     }
@@ -1421,12 +1445,25 @@
     var d = normDesign(design);
     var shape = shapeId(opts.shape || d.shape);
     var bw = num(opts.boxW, NAIL_BOX.w);
-    var bh = num(opts.boxH, NAIL_BOX.h);
+    var bh = num(opts.boxH, 0);
     var key = String(opts.key !== undefined && opts.key !== null ? opts.key : 'nail');
     var vw, vh, svg, defs, g;
 
     if (!(bw > 0)) bw = NAIL_BOX.w;
-    if (!(bh > 0)) bh = NAIL_BOX.h;
+    if (!(bh > 0)) {
+      /* default box = the stable 100 x 150 editor canvas.
+         Pass opts.length (id or factor) — or opts.natural to take it from the
+         design — when you want true shape/length proportions instead, e.g. the
+         length picker. Charms are normalised to the box either way, so they
+         never drift when the box changes. */
+      if (opts.natural || opts.length !== undefined && opts.length !== null) {
+        bh = clamp(bw * ASPECT[shape] * lenFactor(
+          (opts.length === undefined || opts.length === null) ? d.length : opts.length
+        ), 90, 240);
+      } else {
+        bh = NAIL_BOX.h;
+      }
+    }
     vw = BOX_PAD.x + bw + BOX_PAD.right;
     vh = BOX_PAD.y + bh + BOX_PAD.bottom;
 
@@ -1449,7 +1486,6 @@
 
     g = nailSVG(nailState, {
       shape: shape, w: bw, h: bh, key: key,
-      length: 1,
       finishId: opts.finishId,
       interactive: !!opts.interactive,
       selected: opts.selected,
@@ -1462,7 +1498,7 @@
     svg.setAttribute('data-ny', f(BOX_PAD.y));
     svg.setAttribute('data-nw', f(bw));
     svg.setAttribute('data-nh', f(bh));
-    return sizeSvg(svg, opts.w, vw, vh);
+    return sizeSvg(svg, opts.w, vw, vh, opts.h);
   }
 
   function pointToNorm(svgEl, clientX, clientY) {
@@ -1516,9 +1552,10 @@
     var svg = newSvg({});
     var defs, shape, aspect, factor, nw, nh, i, el;
     var keys = ['rightRing', 'rightMiddle', 'rightIndex'];
-    var order = [0, 2, 1];
-    var anchors = [[38, 110], [60, 116], [82, 110]];
-    var angles = [-18, 0, 18];
+    var order = [0, 2, 1];          /* outer nails first, centre one on top */
+    var anchors = [[34, 0], [60, 0], [86, 0]];
+    var angles = [-17, 0, 17];
+    var cy;
 
     svg.setAttribute('class', 'sn-svg sn-thumb');
     defs = add(svg, E('defs'));
@@ -1530,8 +1567,13 @@
     shape = shapeId(d.shape);
     aspect = ASPECT[shape];
     factor = lenFactor(d.length);
-    nw = Math.min(40, 96 / (aspect * factor));
+    nw = Math.min(36, 84 / (aspect * factor));
     nh = nw * aspect * factor;
+    /* park the fan so it is vertically centred whatever the length */
+    cy = clamp(vh / 2 + nh / 2, nh + 6, vh - 4);
+    anchors[0][1] = cy - 5;
+    anchors[1][1] = cy;
+    anchors[2][1] = cy - 5;
 
     for (i = 0; i < order.length; i++) {
       el = nailSVG(d.nails[keys[order[i]]], {
@@ -1755,7 +1797,7 @@
       shape: firstId('shapes', 'almond', 'almond'),
       length: firstId('lengths', 'medium', 'medium'),
       hand: 'both',
-      measure: 'preset',
+      measure: firstId('measureMethods', 'preset', 'preset'),
       sizes: sizes,
       nails: nails,
       qty: 1,
