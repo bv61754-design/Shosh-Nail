@@ -719,8 +719,8 @@
     }
     if (city || address){
       info.push(el('h2', { 'class': 'ft-head ft-head-2', 'data-i18n': 'footer.location' }, t('footer.location')));
-      if (city)    info.push(contactRow('pin', '', city, t('common.city'), false, false));
-      if (address) info.push(contactRow('truck', '', address, t('common.address'), false, false));
+      if (city)    info.push(contactRow('globe', '', city, t('common.city'), false, false));
+      if (address) info.push(contactRow('pin', '', address, t('common.address'), false, false));
     }
     if (info.length) cols.push(el('div', { 'class': 'ft-col ft-infocol' }, info));
 
@@ -1241,6 +1241,9 @@
     var d = doc(), active = d ? d.activeElement : null;
     var keepId = active && active.id && /^btn-(lang|theme|menu)$/.test(active.id) ? active.id : null;
     var btn;
+    /* the owner can change the default theme in admin — respect it while the
+       visitor has not picked one for themselves */
+    if (!storedTheme()) applyTheme(resolveTheme());
     mountAnnounce();
     mountHeader(currentPage);
     mountFooter();
