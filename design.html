@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>استوديو التصميم — صمّمي طقم أظافرك | Shosh Nail Studio</title>
+<meta name="description" content="استوديو شوش نيل: اختاري لون بشرتك وشكل الظفر وطوله ومقاسك، ولوّني كل ظفر وأضيفي النقشات والزخارف — وشوفي التصميم قدّامك لحظة بلحظة قبل ما تطلبينه. Design your own press-on nail set step by step.">
+<meta name="theme-color" content="#C97B92">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M12%202.6c3.1%200%204.9%201.9%204.9%204.7%200%202.6-.6%204.9-1%207.1-.5%202.8-1%205.3-3.9%205.3s-3.4-2.5-3.9-5.3c-.4-2.2-1-4.5-1-7.1%200-2.8%201.8-4.7%204.9-4.7Z'%20fill='%23C97B92'/%3E%3Cpath%20d='M9.6%206.7c1.3-1.1%203.5-1.1%204.8%200'%20stroke='%23FCF7F5'%20stroke-width='1.2'%20stroke-linecap='round'%20fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Reem+Kufi:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/studio.css">
+
+<script defer src="assets/js/data.js"></script>
+<script defer src="assets/js/store.js"></script>
+<script defer src="assets/js/i18n.js"></script>
+<script defer src="assets/js/nail-render.js"></script>
+<script defer src="assets/js/ui.js"></script>
+<script defer src="assets/js/checkout.js"></script>
+<script defer src="assets/js/studio.js"></script>
+</head>
+<body data-page="studio">
+  <a class="skip-link" href="#main" data-i18n="a11y.skip"></a>
+  <div id="sn-announce"></div>
+  <header id="sn-header"></header>
+
+  <main id="main">
+
+    <!-- draft restore bar (filled + shown by studio.js) -->
+    <div id="studio-restore" class="studio-restore" hidden></div>
+
+    <!-- title + step progress -->
+    <div class="studio-top">
+      <div class="wrap studio-top-in">
+        <div class="studio-title">
+          <p class="eyebrow" id="studio-eyebrow"></p>
+          <h1 class="h2 display" data-i18n="studio.title"></h1>
+          <p class="muted studio-sub" data-i18n="studio.sub"></p>
+        </div>
+        <nav class="studio-steps scroll-x" id="studio-steps" data-i18n-aria="studio.stepsNav"></nav>
+      </div>
+    </div>
+
+    <!-- the two-pane studio -->
+    <div class="wrap studio-wrap">
+      <div class="studio-grid">
+
+        <aside class="studio-pane" id="studio-pane" data-i18n-aria="studio.preview">
+          <div class="studio-pane-in">
+            <div class="studio-stage" id="studio-stage"></div>
+            <div class="studio-pane-foot" id="studio-pane-foot"></div>
+          </div>
+        </aside>
+
+        <div class="studio-body">
+          <div id="studio-step" class="studio-step-host"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- sticky back / next bar -->
+    <div class="studio-bar" id="studio-bar"></div>
+
+  </main>
+
+  <footer id="sn-footer"></footer>
+
+  <noscript>
+    <div class="wrap" style="padding-block:40px">
+      <p class="lead">استوديو التصميم يحتاج تفعيل الجافاسكربت في المتصفح. — The design studio needs JavaScript enabled.</p>
+    </div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,1143 @@
+@charset "utf-8";
+/* =========================================================================
+   Shosh Nail — assets/css/studio.css
+   Owner: STUDIO.  Styles the custom design studio (design.html) only.
+
+   Rules of the house
+   ------------------
+   * Every selector is a .studio-* class (the few :root additions live under
+     .studio-* scopes), so nothing here can leak into another page.
+   * Only the tokens published in SPEC section 14 are used — no raw colours
+     except pure white/black alphas inside shadows and scrims.
+   * Logical properties everywhere (padding-inline, inset-inline-start,
+     text-align:start …) so one rule is correct in RTL (Arabic) and LTR.
+   * Touch targets are >= 44px, motion <= 240ms and removed entirely under
+     prefers-reduced-motion.
+
+   Contents
+   --------
+   01  Shell: restore bar, title, step progress
+   02  The two-pane grid + sticky preview
+   03  Panels, section heads, generic pieces
+   04  Step 1 — skin & hand
+   05  Step 2 — shape & length option cards
+   06  Step 3 — sizes, ruler, size grid
+   07  Step 4 — selection bar, tools, swatches, patterns, charms, editor
+   08  Step 5 — finishing touches, saved designs
+   09  Step 6 — review, spec list, price table
+   10  Sticky action bar
+   11  Print
+   ========================================================================= */
+
+/* a class rule has to beat the UA sheet for [hidden] to survive */
+.studio-restore[hidden],
+.studio-tool[hidden],
+[hidden].studio-hide{ display:none !important; }
+
+
+/* =========================================================================
+   01  SHELL
+   ========================================================================= */
+
+.studio-restore{
+  background:var(--gold-soft);
+  border-block-end:1px solid var(--line);
+  color:var(--ink);
+}
+.studio-restore-in{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px 14px;
+  max-inline-size:var(--wrap);
+  margin-inline:auto;
+  padding-inline:clamp(14px,3vw,24px);
+  padding-block:10px;
+}
+.studio-restore-ico{
+  display:inline-flex;
+  flex:0 0 auto;
+  color:var(--gold);
+}
+.studio-restore-txt{
+  flex:1 1 220px;
+  min-inline-size:0;
+  font-size:.9rem;
+  font-weight:700;
+  line-height:1.5;
+}
+.studio-restore-txt small{
+  display:block;
+  font-weight:500;
+  color:var(--ink-2);
+}
+.studio-restore-acts{ display:flex; gap:8px; flex:0 0 auto; }
+
+.studio-top{
+  padding-block:clamp(18px,3vw,30px) 0;
+  background:
+    radial-gradient(60% 120% at 50% -20%, var(--glow), transparent 70%),
+    var(--bg);
+}
+.studio-top-in{ display:flex; flex-direction:column; gap:16px; }
+.studio-title{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+.studio-title .eyebrow{ align-items:flex-start; margin-block-end:2px; }
+.studio-title .h2{ margin:0; }
+.studio-sub{ margin:0; font-size:.95rem; max-inline-size:62ch; }
+@media (max-width:720px){
+  .studio-sub{ display:none; }
+}
+
+/* — step progress ------------------------------------------------------- */
+.studio-steps{
+  display:flex;
+  align-items:stretch;
+  gap:8px;
+  padding-block:4px 2px;
+  scroll-snap-type:x proximity;
+}
+.studio-step-btn{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex:0 0 auto;
+  min-block-size:46px;
+  padding-block:8px;
+  padding-inline:12px 16px;
+  border:1px solid var(--line);
+  border-radius:var(--r-full);
+  background:var(--bg-2);
+  color:var(--ink-3);
+  font-family:inherit;
+  font-size:.86rem;
+  font-weight:700;
+  line-height:1.25;
+  text-align:start;
+  white-space:nowrap;
+  cursor:pointer;
+  scroll-snap-align:center;
+  -webkit-appearance:none;
+  appearance:none;
+  transition:background-color var(--dur) var(--ease),
+             border-color var(--dur) var(--ease),
+             color var(--dur) var(--ease);
+}
+.studio-step-btn:hover:not([disabled]){ border-color:var(--rose); color:var(--ink); }
+.studio-step-n{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  inline-size:26px;
+  block-size:26px;
+  border-radius:50%;
+  background:var(--bg-3);
+  color:var(--ink-2);
+  font-size:.8rem;
+  font-variant-numeric:tabular-nums;
+}
+.studio-step-btn.is-done{ color:var(--ink-2); border-color:var(--line-2); }
+.studio-step-btn.is-done .studio-step-n{
+  background:var(--ok-soft);
+  color:var(--ok-ink);
+}
+.studio-step-btn.is-on{
+  background:linear-gradient(135deg,var(--rose-2),var(--rose));
+  border-color:transparent;
+  color:var(--on-rose);
+  box-shadow:var(--sh-1);
+}
+.studio-step-btn.is-on .studio-step-n{
+  background:rgba(255,255,255,.24);
+  color:var(--on-rose);
+}
+.studio-step-btn[disabled]{ opacity:.55; cursor:not-allowed; }
+.studio-step-lbl{ display:inline-block; }
+@media (max-width:560px){
+  .studio-step-btn:not(.is-on) .studio-step-lbl{
+    position:absolute;
+    inline-size:1px; block-size:1px;
+    padding:0; margin:-1px;
+    overflow:hidden; clip-path:inset(50%); white-space:nowrap;
+  }
+  .studio-step-btn{ padding-inline:10px; }
+}
+
+/* thin progress line under the steps */
+.studio-progress{
+  inline-size:100%;
+  block-size:5px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  overflow:hidden;
+}
+.studio-progress > i{
+  display:block;
+  block-size:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,var(--rose),var(--gold));
+  transition:inline-size var(--dur) var(--ease);
+}
+
+
+/* =========================================================================
+   02  THE TWO-PANE GRID + STICKY PREVIEW
+   ========================================================================= */
+
+.studio-wrap{
+  padding-block:18px clamp(104px,14vw,124px);
+}
+.studio-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:18px;
+  align-items:start;
+}
+@media (min-width:901px){
+  .studio-grid{
+    grid-template-columns:minmax(300px,392px) minmax(0,1fr);
+    gap:30px;
+  }
+}
+
+.studio-pane{
+  position:sticky;
+  inset-block-start:calc(var(--hdr) - 1px);
+  z-index:30;
+  padding-block:8px;
+  background:var(--bg);
+}
+.studio-pane-in{
+  background:linear-gradient(170deg,var(--bg-4),var(--bg-2) 68%);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--sh-1);
+  padding:10px;
+  overflow:hidden;
+}
+.studio-stage{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-block-size:0;
+  transition:max-block-size var(--dur) var(--ease);
+}
+.studio-stage svg{ display:block; inline-size:100%; block-size:auto; max-block-size:100%; }
+
+/* mobile: a compact strip that expands on demand */
+@media (max-width:900px){
+  .studio-stage{
+    max-block-size:118px;
+    overflow:hidden;
+  }
+  .studio-pane.is-open .studio-stage{ max-block-size:min(56vh,420px); }
+  .studio-pane-in{ padding:6px; }
+}
+@media (min-width:901px){
+  .studio-pane{
+    inset-block-start:calc(var(--hdr) + 14px);
+    padding:0;
+    background:transparent;
+  }
+  .studio-pane-in{ padding:14px; }
+  .studio-stage{ min-block-size:300px; }
+}
+
+.studio-pane-foot{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin-block-start:8px;
+}
+.studio-pane-note{
+  flex:1 1 auto;
+  min-inline-size:0;
+  font-size:.78rem;
+  font-weight:700;
+  color:var(--ink-2);
+  line-height:1.4;
+}
+.studio-pane-note b{ color:var(--rose-3); }
+@media (min-width:901px){
+  .studio-pane-note{ font-size:.82rem; }
+}
+
+.studio-body{ min-inline-size:0; }
+.studio-step-host{ display:flex; flex-direction:column; gap:16px; }
+
+
+/* =========================================================================
+   03  PANELS & SHARED PIECES
+   ========================================================================= */
+
+.studio-sec{
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--sh-1);
+  padding:clamp(14px,2.4vw,22px);
+}
+.studio-sec-soft{ background:var(--bg-4); box-shadow:none; }
+.studio-sec > * + *{ margin-block-start:14px; }
+
+.studio-sec-head{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:6px 12px;
+}
+.studio-sec-head h2,
+.studio-sec-head h3{
+  margin:0;
+  font-size:1.02rem;
+  font-weight:800;
+  line-height:1.35;
+}
+.studio-sec-head p{
+  flex:1 1 100%;
+  margin:0;
+  font-size:.86rem;
+  color:var(--ink-2);
+  line-height:1.6;
+}
+.studio-sec-head .studio-head-act{ margin-inline-start:auto; }
+
+.studio-hint{
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+  font-size:.82rem;
+  line-height:1.6;
+  color:var(--ink-2);
+}
+.studio-hint .ico{ flex:0 0 auto; color:var(--rose); margin-block-start:2px; }
+
+.studio-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+.studio-row-end{ margin-inline-start:auto; }
+
+.studio-delta{
+  font-size:.76rem;
+  font-weight:800;
+  color:var(--rose-3);
+  font-variant-numeric:tabular-nums;
+}
+.studio-delta.is-free{ color:var(--ink-3); font-weight:700; }
+
+
+/* =========================================================================
+   04  STEP 1 — SKIN & HAND
+   ========================================================================= */
+
+.studio-skins{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 14px;
+}
+.studio-skin{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  inline-size:74px;
+  padding:0;
+  border:0;
+  background:none;
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:.74rem;
+  font-weight:700;
+  line-height:1.35;
+  text-align:center;
+  cursor:pointer;
+}
+.studio-skin-dot{
+  inline-size:56px;
+  block-size:56px;
+  border-radius:50%;
+  box-shadow:inset 0 -6px 12px rgba(0,0,0,.10),
+             inset 0 0 0 2px rgba(255,255,255,.45),
+             0 2px 6px rgba(74,43,57,.16);
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.studio-skin:hover .studio-skin-dot{ transform:scale(1.06); }
+.studio-skin[aria-pressed="true"]{ color:var(--rose-3); }
+.studio-skin[aria-pressed="true"] .studio-skin-dot{
+  box-shadow:inset 0 -6px 12px rgba(0,0,0,.10),
+             0 0 0 3px var(--bg-2),
+             0 0 0 6px var(--rose);
+}
+
+.studio-hands{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.studio-hand-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-block-size:96px;
+  padding-block:12px;
+  padding-inline:8px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:.84rem;
+  font-weight:700;
+  line-height:1.3;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color var(--dur) var(--ease),
+             background-color var(--dur) var(--ease),
+             color var(--dur) var(--ease);
+}
+.studio-hand-card:hover{ border-color:var(--rose); color:var(--ink); }
+.studio-hand-ico{ display:inline-flex; gap:2px; color:var(--rose); }
+.studio-hand-ico .studio-flip{ transform:scaleX(-1); }
+.studio-hand-card[aria-pressed="true"]{
+  border-color:var(--rose);
+  background:var(--rose-soft);
+  color:var(--rose-3);
+}
+
+
+/* =========================================================================
+   05  STEP 2 — OPTION CARDS WITH A REAL NAIL DRAWN INSIDE
+   ========================================================================= */
+
+.studio-opts{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(128px,1fr));
+  gap:10px;
+}
+.studio-opts-len{ grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); }
+
+.studio-opt{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  padding-block:12px 10px;
+  padding-inline:10px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  color:var(--ink);
+  font-family:inherit;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color var(--dur) var(--ease),
+             background-color var(--dur) var(--ease),
+             transform var(--dur) var(--ease);
+}
+.studio-opt:hover{ border-color:var(--rose); }
+.studio-opt:active{ transform:translateY(1px); }
+.studio-opt[aria-pressed="true"]{
+  border-color:var(--rose);
+  background:var(--rose-soft);
+  box-shadow:inset 0 0 0 1px var(--rose);
+}
+.studio-opt-media{
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  inline-size:100%;
+  block-size:126px;          /* JS sizes each nail inside this box to scale */
+}
+.studio-opts-len .studio-opt-media{ block-size:172px; }
+.studio-opt-media svg{ display:block; max-inline-size:100%; max-block-size:100%; }
+.studio-opt-name{
+  font-size:.88rem;
+  font-weight:800;
+  line-height:1.3;
+}
+.studio-opt-desc{
+  font-size:.74rem;
+  color:var(--ink-2);
+  line-height:1.5;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.studio-opt[aria-pressed="true"] .studio-opt-desc{ color:var(--rose-3); }
+
+
+/* =========================================================================
+   06  STEP 3 — SIZES
+   ========================================================================= */
+
+.studio-presets{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;
+}
+.studio-preset{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  padding:14px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  color:var(--ink);
+  font-family:inherit;
+  text-align:start;
+  cursor:pointer;
+  transition:border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.studio-preset:hover{ border-color:var(--rose); }
+.studio-preset[aria-pressed="true"]{ border-color:var(--rose); background:var(--rose-soft); }
+.studio-preset-name{ font-size:1rem; font-weight:800; }
+.studio-preset-nums{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+.studio-preset-num{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  gap:1px;
+  min-inline-size:38px;
+  padding-block:4px;
+  border-radius:var(--r-xs);
+  background:var(--bg-3);
+  font-size:.68rem;
+  font-weight:700;
+  color:var(--ink-2);
+}
+.studio-preset-num b{
+  font-size:.9rem;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+
+/* per finger millimetre sliders */
+.studio-mmrows{ display:flex; flex-direction:column; gap:4px; }
+.studio-mmhand{
+  margin-block-start:10px;
+  font-size:.82rem;
+  font-weight:800;
+  color:var(--rose-3);
+}
+.studio-mmrow{
+  display:grid;
+  grid-template-columns:minmax(64px,88px) minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding-block:6px;
+  border-block-end:1px dashed var(--line);
+}
+.studio-mmrow:last-child{ border-block-end:0; }
+.studio-mmname{
+  font-size:.84rem;
+  font-weight:700;
+  color:var(--ink-2);
+}
+.studio-mmval{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  min-inline-size:96px;
+  justify-content:flex-end;
+  font-variant-numeric:tabular-nums;
+}
+.studio-mmnum{
+  font-size:.8rem;
+  color:var(--ink-2);
+  white-space:nowrap;
+}
+.studio-mmsize{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-inline-size:30px;
+  block-size:26px;
+  padding-inline:6px;
+  border-radius:var(--r-xs);
+  background:var(--rose-soft);
+  color:var(--rose-3);
+  font-size:.86rem;
+  font-weight:800;
+}
+@media (max-width:520px){
+  .studio-mmrow{ grid-template-columns:minmax(0,1fr) auto; }
+  .studio-mmrow .range{ grid-column:1 / -1; }
+}
+
+/* the drawn-to-scale ruler */
+.studio-ruler{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-block:10px;
+  padding-inline:2px;
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+  border:1px solid var(--line);
+}
+.studio-ruler svg{ display:block; }
+
+.studio-steps-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  counter-reset:studio-how;
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.studio-how{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  font-size:.86rem;
+  line-height:1.65;
+  color:var(--ink-2);
+}
+.studio-how::before{
+  counter-increment:studio-how;
+  content:counter(studio-how);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  inline-size:26px;
+  block-size:26px;
+  border-radius:50%;
+  background:var(--rose-soft);
+  color:var(--rose-3);
+  font-size:.78rem;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+/* the per-nail size summary */
+.studio-sizegrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(58px,1fr));
+  gap:6px;
+}
+.studio-sizecell{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  padding-block:8px;
+  padding-inline:4px;
+  border:1px solid var(--line);
+  border-radius:var(--r-xs);
+  background:var(--bg-4);
+  text-align:center;
+}
+.studio-sizecell b{
+  font-size:1.02rem;
+  font-weight:800;
+  color:var(--rose-3);
+  font-variant-numeric:tabular-nums;
+}
+.studio-sizecell span{ font-size:.68rem; color:var(--ink-2); line-height:1.3; }
+.studio-sizehand{
+  grid-column:1 / -1;
+  font-size:.78rem;
+  font-weight:800;
+  color:var(--ink-3);
+  margin-block-start:4px;
+}
+
+
+/* =========================================================================
+   07  STEP 4 — COLOURS & DECORATION
+   ========================================================================= */
+
+.studio-selbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+.studio-selcount{
+  font-size:.8rem;
+  font-weight:800;
+  color:var(--rose-3);
+  margin-inline-start:auto;
+  white-space:nowrap;
+}
+
+.studio-tools{
+  display:flex;
+  gap:6px;
+  padding:5px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.studio-tools::-webkit-scrollbar{ display:none; }
+.studio-toolbtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  flex:1 1 auto;
+  min-block-size:40px;
+  padding-inline:12px;
+  border:0;
+  border-radius:var(--r-full);
+  background:transparent;
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:.86rem;
+  font-weight:800;
+  white-space:nowrap;
+  cursor:pointer;
+  transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.studio-toolbtn:hover{ color:var(--ink); }
+.studio-toolbtn[aria-selected="true"]{
+  background:var(--bg-2);
+  color:var(--rose-3);
+  box-shadow:var(--sh-1);
+}
+
+.studio-group{ display:flex; flex-direction:column; gap:8px; }
+.studio-group-t{
+  font-size:.78rem;
+  font-weight:800;
+  color:var(--ink-3);
+  text-transform:none;
+}
+.studio-swatches{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+}
+
+.studio-custom{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+}
+.studio-colorin{
+  inline-size:52px;
+  block-size:44px;
+  padding:3px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-xs);
+  background:var(--bg-2);
+  cursor:pointer;
+}
+.studio-colorin::-webkit-color-swatch-wrapper{ padding:0; }
+.studio-colorin::-webkit-color-swatch{ border:0; border-radius:6px; }
+.studio-colorin::-moz-color-swatch{ border:0; border-radius:6px; }
+.studio-hex{
+  font-size:.8rem;
+  font-weight:700;
+  color:var(--ink-2);
+  letter-spacing:.04em;
+  direction:ltr;
+  unicode-bidi:isolate;
+}
+
+/* finish / pattern cards carrying a rendered mini nail */
+.studio-minis{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(92px,1fr));
+  gap:8px;
+}
+.studio-mini{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  padding-block:9px 8px;
+  padding-inline:6px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  color:var(--ink);
+  font-family:inherit;
+  font-size:.76rem;
+  font-weight:700;
+  line-height:1.35;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.studio-mini:hover{ border-color:var(--rose); }
+.studio-mini[aria-pressed="true"]{
+  border-color:var(--rose);
+  background:var(--rose-soft);
+  box-shadow:inset 0 0 0 1px var(--rose);
+}
+.studio-mini-media{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  block-size:68px;
+}
+.studio-mini-media svg{ display:block; max-block-size:100%; max-inline-size:100%; }
+.studio-mini-name{
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* charms */
+.studio-charms{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(64px,1fr));
+  gap:7px;
+}
+.studio-charm{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  min-block-size:74px;
+  padding-block:8px;
+  padding-inline:4px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:.66rem;
+  font-weight:700;
+  line-height:1.3;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.studio-charm:hover{ border-color:var(--rose); transform:translateY(-1px); }
+.studio-charm-g{ font-size:1.5rem; line-height:1.1; }
+.studio-charm-n{
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  max-inline-size:70px;
+}
+
+.studio-clist{ display:flex; flex-direction:column; gap:8px; }
+.studio-crow{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  padding-block:8px;
+  padding-inline:10px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+}
+.studio-crow.is-on{ border-color:var(--rose); background:var(--rose-soft); }
+.studio-crow-g{ font-size:1.25rem; line-height:1; }
+.studio-crow-n{
+  flex:1 1 90px;
+  min-inline-size:0;
+  font-size:.8rem;
+  font-weight:700;
+  color:var(--ink-2);
+}
+.studio-crow-acts{ display:flex; flex-wrap:wrap; gap:4px; }
+.studio-pad{
+  display:grid;
+  direction:ltr;                 /* the arrows must mean the same in RTL */
+  grid-template-columns:repeat(3,32px);
+  grid-template-rows:repeat(2,32px);
+  gap:2px;
+}
+.studio-pad .icon-btn{ border-color:var(--line); background:var(--bg-2); }
+.studio-pad .icon-btn:hover{ border-color:var(--rose); }
+
+/* the big single-nail editor */
+.studio-editor{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+.studio-canvas{
+  position:relative;
+  inline-size:min(240px,72vw);
+  touch-action:none;
+  -webkit-user-select:none;
+  user-select:none;
+  cursor:grab;
+}
+.studio-canvas.is-drag{ cursor:grabbing; }
+.studio-canvas svg{ display:block; inline-size:100%; block-size:auto; }
+.studio-canvas-hint{
+  font-size:.76rem;
+  color:var(--ink-3);
+  text-align:center;
+  line-height:1.5;
+}
+
+/* action row */
+.studio-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.studio-actions .btn{ flex:0 0 auto; }
+
+
+/* =========================================================================
+   08  STEP 5 — FINISHING TOUCHES
+   ========================================================================= */
+
+.studio-qty{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-full);
+  background:var(--bg-2);
+}
+.studio-qty-n{
+  min-inline-size:44px;
+  text-align:center;
+  font-size:1.05rem;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+
+.studio-toggles{ display:flex; flex-direction:column; gap:10px; }
+.studio-toggle{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding-block:12px;
+  padding-inline:14px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  transition:border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.studio-toggle.is-on{ border-color:var(--rose); background:var(--rose-soft); }
+.studio-toggle-txt{ flex:1 1 auto; min-inline-size:0; }
+.studio-toggle-txt b{ display:block; font-size:.94rem; }
+.studio-toggle-txt small{ display:block; font-size:.78rem; color:var(--ink-2); line-height:1.5; }
+.studio-toggle-price{
+  font-size:.82rem;
+  font-weight:800;
+  color:var(--rose-3);
+  white-space:nowrap;
+}
+
+.studio-saved{ display:flex; flex-direction:column; gap:8px; }
+.studio-savedrow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding-block:8px;
+  padding-inline:10px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+}
+.studio-savedthumb{
+  flex:0 0 auto;
+  inline-size:46px;
+  block-size:46px;
+  border-radius:var(--r-xs);
+  background:var(--bg-4);
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.studio-savedthumb svg{ inline-size:100%; block-size:auto; }
+.studio-savedmeta{ flex:1 1 auto; min-inline-size:0; }
+.studio-savedmeta b{
+  display:block;
+  font-size:.88rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.studio-savedmeta small{ font-size:.74rem; color:var(--ink-3); }
+.studio-savedacts{ display:flex; gap:6px; flex:0 0 auto; }
+
+.studio-share{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+.studio-sharelink{
+  flex:1 1 220px;
+  min-inline-size:0;
+  font-size:.76rem;
+  direction:ltr;
+  unicode-bidi:isolate;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--ink-3);
+}
+
+
+/* =========================================================================
+   09  STEP 6 — REVIEW
+   ========================================================================= */
+
+.studio-review-art{
+  display:flex;
+  justify-content:center;
+  padding:clamp(10px,2.4vw,20px);
+  border-radius:var(--r);
+  background:linear-gradient(170deg,var(--bg-4),var(--bg-2) 70%);
+  border:1px solid var(--line);
+}
+.studio-review-art svg{ inline-size:100%; block-size:auto; max-inline-size:640px; }
+
+.studio-spec{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:8px;
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.studio-specrow{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  padding-block:9px;
+  padding-inline:12px;
+  border-radius:var(--r-xs);
+  background:var(--bg-4);
+}
+.studio-specrow dt{ font-size:.74rem; color:var(--ink-3); font-weight:700; }
+.studio-specrow dd{ margin:0; font-size:.9rem; font-weight:800; }
+
+.studio-nailsum{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(128px,1fr));
+  gap:6px;
+}
+.studio-nailrow{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-block:7px;
+  padding-inline:9px;
+  border:1px solid var(--line);
+  border-radius:var(--r-xs);
+  background:var(--bg-2);
+  font-size:.76rem;
+  line-height:1.4;
+}
+.studio-nailrow i{
+  flex:0 0 auto;
+  inline-size:18px;
+  block-size:18px;
+  border-radius:50%;
+  box-shadow:inset 0 0 0 1px rgba(74,43,57,.18);
+}
+.studio-nailrow span{ min-inline-size:0; overflow:hidden; text-overflow:ellipsis; }
+.studio-nailrow b{ margin-inline-start:auto; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+
+.studio-total{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  padding-block:14px;
+  padding-inline:16px;
+  border-radius:var(--r-sm);
+  background:linear-gradient(135deg,var(--rose-soft),var(--gold-soft));
+  border:1px solid var(--line-2);
+}
+.studio-total b{ font-size:1.35rem; font-weight:800; color:var(--rose-3); }
+
+
+/* =========================================================================
+   10  STICKY ACTION BAR
+   ========================================================================= */
+
+.studio-bar{
+  position:fixed;
+  inset-inline:0;
+  inset-block-end:0;
+  z-index:60;
+  background:var(--hdr-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  backdrop-filter:saturate(180%) blur(14px);
+  border-block-start:1px solid var(--line);
+  box-shadow:0 -6px 24px rgba(74,43,57,.10);
+  padding-block-end:env(safe-area-inset-bottom,0px);
+}
+.studio-bar-in{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  max-inline-size:var(--wrap);
+  margin-inline:auto;
+  padding-inline:clamp(14px,3vw,24px);
+  padding-block:10px;
+}
+.studio-bar-mid{
+  flex:1 1 auto;
+  min-inline-size:0;
+  text-align:center;
+  font-size:.78rem;
+  font-weight:700;
+  color:var(--ink-2);
+  line-height:1.35;
+}
+.studio-bar-mid b{ display:block; color:var(--ink); font-size:.86rem; }
+.studio-bar .btn{ flex:0 0 auto; min-inline-size:104px; }
+@media (max-width:420px){
+  .studio-bar .btn{ min-inline-size:88px; padding-inline:14px; }
+  .studio-bar-mid{ font-size:.72rem; }
+}
+
+
+/* =========================================================================
+   11  MOTION & PRINT
+   ========================================================================= */
+
+@media (prefers-reduced-motion:reduce){
+  .studio-stage,
+  .studio-skin-dot,
+  .studio-opt,
+  .studio-charm,
+  .studio-progress > i{
+    transition:none !important;
+  }
+  .studio-charm:hover,
+  .studio-opt:active,
+  .studio-skin:hover .studio-skin-dot{ transform:none !important; }
+}
+
+@media print{
+  .studio-top,
+  .studio-bar,
+  .studio-restore,
+  .studio-pane,
+  .studio-actions,
+  .studio-tools{ display:none !important; }
+  .studio-wrap{ padding-block:0; }
+  .studio-sec{ box-shadow:none; border-color:#DDD; break-inside:avoid; }
+  .studio-review-art{ background:none; }
+}
