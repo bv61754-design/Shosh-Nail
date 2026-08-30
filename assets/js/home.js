@@ -41,9 +41,6 @@
           sunset: 'صيفي مرجاني'
         },
 
-        /* the quiz card */
-        quizNote: 'أقل من دقيقة',
-
         /* stats */
         statsTitle: 'أرقام شوش نيل',
 
@@ -122,8 +119,6 @@
           chrome: 'Chrome with gold',
           sunset: 'Coral summer'
         },
-
-        quizNote: 'Under a minute',
 
         statsTitle: 'Shosh Nail in numbers',
 
@@ -667,30 +662,61 @@
 
   /* ── 4.1b the style quiz card ─────────────────────────────────────── */
 
+  /* She comes in from an Instagram link with one thumb and no patience, so
+     the quiz does not get a link in a list — its first question is printed
+     right on the home page, in real rendered nails. Tapping a tile answers
+     that question and opens the quiz already on question two, which turns
+     "start a quiz" into "you have already started". */
   function renderQuiz() {
     var card = q('home-quiz');
     var note = q('home-quiz-note');
+    var proof = q('home-quiz-proof');
     var cta = q('home-quiz-cta');
-    var art = q('home-quiz-art');
-    var svg = null, design;
+    var tiles = q('home-quiz-tiles');
+    var tease = q('home-quiz-tease');
+    var ready = !!(SN.Quiz && typeof SN.Quiz.teaser === 'function');
+    var teaser = null, kids = [], i;
 
     if (note) {
       fill(note, [
         el('span', { 'class': 'ico', html: icon('clock', 16), 'aria-hidden': 'true' }),
-        el('span', { text: t('home.quizNote') })
+        el('span', { text: t('quiz.cardNote') })
+      ]);
+    }
+    if (proof) {
+      fill(proof, [
+        el('span', { 'class': 'ico', html: icon('sparkle', 16), 'aria-hidden': 'true' }),
+        el('span', { text: t('quiz.cardProof') })
       ]);
     }
 
-    /* a small fan of the set the quiz would build for its own first answer —
-       real output, not an illustration of one */
-    if (art) {
-      if (SN.Quiz && typeof SN.Quiz.build === 'function' && SN.Nail && typeof SN.Nail.thumb === 'function') {
-        try {
-          design = SN.Quiz.build({ vibe: 'romantic', tone: 'sweet', occasion: 'party', decor: 'some' });
-          if (design) svg = SN.Nail.thumb(design, 0);
-        } catch (e) { svg = null; }
+    if (tiles && ready) {
+      try { teaser = SN.Quiz.teaser(); }
+      catch (e) { teaser = null; }
+    }
+    if (tiles && teaser && teaser.options && teaser.options.length) {
+      if (tease) setText(tease, t('quiz.cardTease'));
+      for (i = 0; i < teaser.options.length; i++) {
+        kids.push((function (opt) {
+          return el('button', {
+            type: 'button',
+            'class': 'home-qtile sn-pickable',
+            on: {
+              click: function () {
+                var seed = {};
+                seed[teaser.key] = opt.id;
+                if (SN.Quiz && typeof SN.Quiz.open === 'function') SN.Quiz.open({ seed: seed });
+              }
+            }
+          }, [
+            el('span', { 'class': 'home-qtile-art', 'aria-hidden': 'true' }, opt.art ? [opt.art] : []),
+            el('span', { 'class': 'home-qtile-t', text: opt.label })
+          ]);
+        })(teaser.options[i]));
       }
-      fill(art, svg ? [svg] : []);
+      fill(tiles, kids);
+    } else if (tiles) {
+      fill(tiles, []);
     }
 
     if (cta && !cta.getAttribute('data-wired')) {
@@ -714,9 +740,9 @@
 
     /* A deferred script runs while readyState is already "interactive", so
        this file's first paint happens BEFORE quiz.js has been evaluated and
-       SN.Quiz does not exist yet. Come back for the artwork once the whole
+       SN.Quiz does not exist yet. Come back for the tiles once the whole
        set of page scripts has run. */
-    if (!svg && !quizArtPending && (!SN.Quiz || typeof SN.Quiz.build !== 'function')) {
+    if (!ready && !quizArtPending) {
       quizArtPending = true;
       document.addEventListener('DOMContentLoaded', function () { renderQuiz(); }, false);
     }

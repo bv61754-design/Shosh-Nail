@@ -393,12 +393,15 @@
 }
 .home-band .btn-ghost:hover{ background:rgba(255,255,255,.14); color:var(--on-rose); }
 
-/* ── the style quiz: the second front door ───────────────────────────── */
+/* ── the style quiz: the second front door ───────────────────────────────
+   She arrives from an Instagram link, so this is not a link in a list: the
+   first question is already on the page, in real nails, and tapping one both
+   answers it and opens the quiz on question two. */
 .home-quizsec{ padding-block:clamp(6px,1.6vw,18px); }
 .home-quiz{
   display:grid;
   grid-template-columns:minmax(0,1fr);
-  gap:clamp(16px,3vw,34px);
+  gap:clamp(18px,3vw,34px);
   align-items:center;
   padding:clamp(20px,3.4vw,34px);
   border:1px solid var(--line-2);
@@ -406,41 +409,93 @@
   background:linear-gradient(150deg,var(--rose-soft),var(--gold-soft) 96%);
   box-shadow:var(--sh-1);
 }
-/* desktop: the copy leads, the fan closes the band at the far end, so the
-   card fills its width instead of trailing off into empty ground */
-@media (min-width:760px){
-  .home-quiz{ grid-template-columns:minmax(0,1fr) minmax(0,210px); }
-  .home-quiz-copy{ order:1; }
-  .home-quiz-art{ order:2; }
+@media (min-width:860px){
+  /* the pair is centred as a pair: a 1fr copy column would leave a canyon of
+     empty ground between the paragraph and the panel */
+  .home-quiz{
+    grid-template-columns:minmax(0,540px) minmax(0,440px);
+    justify-content:center;
+    column-gap:clamp(26px,4vw,56px);
+    align-items:center;
+  }
 }
 .home-quiz-copy > * + *{ margin-block-start:12px; }
 .home-quiz-copy .eyebrow{ align-items:start; margin-block-end:0; }
 .home-quiz-copy .h2{ font-size:clamp(1.35rem,3.4vw,2.05rem); }
-.home-quiz-copy .lead{ font-size:.96rem; max-inline-size:56ch; }
-.home-quiz-btns{ margin-block-start:20px; align-items:center; gap:12px 16px; }
-.home-quiz-note{
+.home-quiz-copy .lead{ font-size:.96rem; max-inline-size:52ch; }
+.home-quiz-proof{
   display:inline-flex;
   align-items:center;
   gap:7px;
   font-size:.84rem;
   font-weight:700;
+  color:var(--rose-3);
+}
+.home-quiz-proof .ico{ color:var(--gold); }
+
+/* the first question, live on the page */
+.home-quiz-start{
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+  min-inline-size:0;
+  padding:clamp(13px,2.6vw,18px);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  background:var(--bg-2);
+  box-shadow:var(--sh-1);
+}
+.home-quiz-tease{ font-size:.9rem; font-weight:700; line-height:1.5; color:var(--ink); }
+.home-quiz-tiles{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.home-qtile{
+  --sn-ring-r:var(--r-sm);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:6px;
+  min-inline-size:0;
+  padding:9px 6px 10px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+  color:var(--ink);
+  font:inherit;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color var(--dur-2) var(--ease), background-color var(--dur-2) var(--ease);
+}
+.home-qtile:hover{ border-color:var(--rose); background:var(--bg-2); }
+.home-qtile-art{
+  display:grid;
+  place-items:center;
+  inline-size:100%;
+  block-size:clamp(58px,15vw,74px);
+}
+@media (min-width:860px){ .home-qtile-art{ block-size:96px; } }
+/* SN.Nail sizes its own <svg> with a style attribute, so the box it has to
+   live inside has to say so louder */
+.home-qtile-art > svg,
+.quiz-art > svg,
+.quiz-recipe-art > svg{
+  inline-size:auto !important;
+  max-inline-size:100% !important;
+  block-size:100% !important;
+}
+.home-qtile-t{ font-size:.78rem; font-weight:700; line-height:1.4; }
+.home-quiz-btns{ margin-block-start:2px; align-items:center; gap:9px 14px; }
+.home-quiz-btns > .btn{ flex:1 1 auto; justify-content:center; }
+.home-quiz-note{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  inline-size:100%;
+  justify-content:center;
+  font-size:.8rem;
+  font-weight:600;
   color:var(--ink-2);
 }
 .home-quiz-note .ico{ color:var(--rose-2); }
-/* the little fan of nails that says "this is about your nails, not a form" */
-.home-quiz-art{
-  display:grid;
-  place-items:center;
-  inline-size:min(168px,58%);
-  margin-inline:auto;
-  aspect-ratio:1/1;
-  border-radius:50%;
-  background:radial-gradient(closest-side,var(--bg-2),transparent 78%);
-}
-.home-quiz-art > svg{ inline-size:100%; block-size:100%; }
-@media (min-width:760px){
-  .home-quiz-art{ inline-size:100%; }
-}
 
 /* ── most ordered: a shop window on a phone, a grid on a desktop ─────── */
 .home-proof{
@@ -489,7 +544,7 @@
   gap:clamp(12px,2.4vw,18px);
   /* one steady frame: short questions do not make the dialog shrink and
      jump under her thumb between taps */
-  min-block-size:min(58vh,430px);
+  min-block-size:min(54vh,400px);
 }
 
 /* the progress row: back · dots · a pad that matches the back button, so the
@@ -563,8 +618,7 @@
   block-size:clamp(76px,22vw,100px);
 }
 @media (min-width:720px){ .quiz-art{ block-size:116px; } }
-.quiz-art > svg{ inline-size:auto; max-inline-size:100%; block-size:100%; }
-/* one unbroken row: four circles that wrap 3 + 1 stop reading as a palette */
+/* one unbroken row: circles that wrap stop reading as a palette */
 .quiz-art-strip{
   display:flex;
   flex-wrap:nowrap;
@@ -580,7 +634,6 @@
   border-radius:50%;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.5), var(--sh-1);
 }
-.quiz-art-skin{ block-size:clamp(70px,20vw,88px); }
 .quiz-skin{
   inline-size:clamp(52px,15vw,64px);
   block-size:clamp(52px,15vw,64px);
@@ -626,6 +679,9 @@
   margin-inline:auto;
   margin-block:2px 4px;
 }
+/* on a laptop the two hands would otherwise eat the whole viewport and push
+   the price and the buttons under the fold */
+@media (min-width:700px){ .quiz-hero{ max-inline-size:min(430px,100%); } }
 .quiz-hero > svg{
   inline-size:100%;
   block-size:auto;
@@ -637,7 +693,140 @@
 .quiz-actions{ justify-content:center; inline-size:100%; margin-block-start:8px; }
 .quiz-actions > *{ flex:1 1 210px; justify-content:center; }
 .quiz-note{ max-inline-size:48ch; }
-.quiz-again{ margin-block-start:2px; }
+
+/* the three versions of her set — one row of taps above the card */
+.quiz-vars{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(0,1fr));
+  gap:6px;
+  inline-size:100%;
+  padding:5px;
+  border:1px solid var(--line);
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+}
+.quiz-var{
+  --sn-ring-r:var(--r-full);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:1px;
+  min-inline-size:0;
+  padding:8px 6px;
+  border:0;
+  border-radius:var(--r-full);
+  background:transparent;
+  color:var(--ink-2);
+  font:inherit;
+  cursor:pointer;
+  transition:background-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease);
+}
+.quiz-var.is-on{ background:var(--bg-2); color:var(--ink); box-shadow:var(--sh-1); }
+.quiz-var-t{ font-size:.76rem; font-weight:700; line-height:1.3; }
+.quiz-var-n{
+  font-size:.7rem;
+  line-height:1.3;
+  color:var(--ink-3);
+  max-inline-size:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.quiz-var.is-on .quiz-var-n{ color:var(--rose-2); }
+
+/* the screenshot: everything worth posting sits inside this one frame */
+.quiz-card{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:7px;
+  inline-size:100%;
+  padding:clamp(14px,3.4vw,22px) clamp(12px,3vw,20px) clamp(12px,2.6vw,18px);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  background:linear-gradient(168deg,var(--bg-2),var(--bg-4));
+  box-shadow:var(--sh-1);
+}
+.quiz-sub{
+  font-size:.8rem;
+  font-weight:600;
+  letter-spacing:.02em;
+  color:var(--ink-3);
+}
+.quiz-brand{
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:4px 10px;
+  inline-size:100%;
+  margin-block-start:8px;
+  padding-block-start:11px;
+  border-block-start:1px solid var(--line);
+}
+.quiz-brand-n{ font-size:.98rem; font-weight:700; color:var(--rose-3); }
+.quiz-brand-h{ font-size:.82rem; font-weight:600; color:var(--gold); }
+
+/* her skin, on her set */
+.quiz-skinbox{ display:flex; flex-direction:column; align-items:center; gap:7px; margin-block-start:4px; }
+.quiz-skin-t{ margin:0; }
+.quiz-skins{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+.quiz-skin-b{
+  --sn-ring-r:50%;
+  inline-size:30px;
+  block-size:30px;
+  padding:0;
+  border:1px solid var(--line-2);
+  border-radius:50%;
+  cursor:pointer;
+  box-shadow:inset 0 -5px 11px rgba(74,43,57,.16);
+}
+.quiz-skin-b[aria-pressed="true"]{ border-color:var(--rose-2); }
+
+/* the set read out nail by nail — the part that makes it orderable */
+.quiz-recipe{
+  inline-size:100%;
+  margin-block-start:6px;
+  padding:clamp(12px,2.6vw,16px);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  background:var(--bg-2);
+  text-align:start;
+}
+.quiz-recipe-t{
+  font-size:.92rem;
+  font-weight:700;
+  color:var(--ink);
+  margin-block-end:8px;
+}
+.quiz-recipe-list{ display:grid; gap:6px; list-style:none; }
+@media (min-width:620px){ .quiz-recipe-list{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 16px; } }
+.quiz-recipe-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-inline-size:0;
+  padding-block:4px;
+}
+.quiz-recipe-art{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  inline-size:32px;
+  block-size:46px;
+}
+.quiz-recipe-txt{ display:flex; flex-direction:column; min-inline-size:0; }
+.quiz-recipe-n{ font-size:.82rem; font-weight:700; color:var(--ink); line-height:1.4; }
+.quiz-recipe-x{ font-size:.76rem; color:var(--ink-2); line-height:1.5; }
+
+/* share · save · retake */
+.quiz-more{
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:6px 10px;
+  inline-size:100%;
+  margin-block-start:6px;
+}
 </style>
 
 <script defer src="assets/js/data.js"></script>
@@ -682,18 +871,24 @@
     <section class="sec-sm home-quizsec" aria-labelledby="home-quiz-t">
       <div class="wrap">
         <div class="home-quiz" id="home-quiz">
-          <div class="home-quiz-art" id="home-quiz-art" aria-hidden="true"></div>
           <div class="home-quiz-copy">
             <p class="eyebrow" data-i18n="quiz.cardEyebrow"></p>
             <h2 class="h2 display" id="home-quiz-t" data-i18n="quiz.cardTitle"></h2>
             <p class="lead" data-i18n="quiz.cardText"></p>
+            <p class="home-quiz-proof" id="home-quiz-proof"></p>
+          </div>
+          <!-- question one lives on the page: tapping a tile answers it and
+               opens the quiz already on question two -->
+          <div class="home-quiz-start">
+            <p class="home-quiz-tease" id="home-quiz-tease" data-i18n="quiz.cardTease"></p>
+            <div class="home-quiz-tiles" id="home-quiz-tiles"></div>
             <div class="btns home-quiz-btns">
               <!-- a real href, so the quiz is shareable straight from a bio
                    link; home.js intercepts the click to open it in place -->
               <a class="btn btn-pri btn-lg" href="#quiz" id="home-quiz-cta"
                  data-i18n="quiz.cardCta"></a>
-              <span class="home-quiz-note" id="home-quiz-note"></span>
             </div>
+            <span class="home-quiz-note" id="home-quiz-note"></span>
           </div>
         </div>
       </div>
