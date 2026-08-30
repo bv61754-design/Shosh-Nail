@@ -138,6 +138,12 @@
        ===================================================================== */
     pricing: {
       base: 120,
+      /* A single-hand set is 5 nails, but it is not half the work: the design,
+         the sizing and the box are the same. This is the share of `base` such
+         an order pays — 1 charges the full set price, 0.5 charges exactly half.
+         Only the base line is scaled; every per-nail rate already halves on its
+         own because there are half as many nails. */
+      singleHandFactor: 0.6,
       perExtraColor: 3,
       perPatternNail: 8,
       perCharm: 4,
@@ -238,7 +244,7 @@
       testimonials: [
         {
           id: 'ts-1',
-          name: 'رهف',
+          name: { ar: 'رهف', en: 'Rahaf' },
           text: {
             ar: 'أول مرة أطلب أظافر مركّبة وتطلع بمقاسي بالضبط. لبستها في عرس أختي وصمدت أسبوعين كاملين بدون ما يطيح ولا واحد.',
             en: 'First time press-ons have actually fit me properly. I wore them at my sister’s wedding and not one nail lifted in two whole weeks.'
@@ -247,7 +253,7 @@
         },
         {
           id: 'ts-2',
-          name: 'جواهر',
+          name: { ar: 'جواهر', en: 'Jawaher' },
           text: {
             ar: 'الشي اللي عجبني إني شفت التصميم قدامي قبل ما أطلب. غيّرت اللون والنقشة كم مرة لين طلع زي ما في بالي.',
             en: 'What sold me was seeing the design live before ordering. I changed the colour and pattern a few times until it matched exactly what was in my head.'
@@ -256,7 +262,7 @@
         },
         {
           id: 'ts-3',
-          name: 'لمى',
+          name: { ar: 'لمى', en: 'Lama' },
           text: {
             ar: 'التغليف ذوق والتفاصيل نظيفة، والأهم إنها خفيفة على الظفر ما تعوّقني بالشغل. صرت أطلب كل شهر.',
             en: 'Beautiful packaging, clean detailing, and best of all they are light enough that they never get in the way at work. I order every month now.'

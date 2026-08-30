@@ -149,6 +149,7 @@
           mm: 'عرض الظفر بالمليمتر لهذا الرقم. الأرقام الصغيرة = مقاس أوسع.',
           sizes: 'الأرقام هي ترتيب المقاس في جدول المقاسات (0 = الأوسع).',
           steps: 'خطوات مرقّمة تظهر للعميلة في صفحة المقاسات.',
+          person: 'اكتبي الاسم بالعربي وبالحروف اللاتينية، عشان يقرأه الزائر باللغتين.',
           stars: 'من 1 إلى 5 — تظهر كنجوم في الصفحة الرئيسية.',
           statValue: 'مثال: +1200 أو 4.9 أو 3–5.'
         },
@@ -226,6 +227,8 @@
           intro: 'كل الأسعار بالعملة اللي حددتيها في الإعدادات. أي تعديل يظهر مباشرة في الاستوديو وصفحة الطلب.',
           base: 'سعر الطقم الأساسي',
           baseX: 'سعر طقم كامل من 10 أظافر قبل أي إضافات.',
+          singleHandFactor: 'نسبة طقم اليد الواحدة',
+          singleHandFactorX: 'من 0 إلى 1 — كم يدفع طلب اليد الواحدة (5 أظافر) من سعر الطقم. 0.6 = 60٪، و1 = السعر كامل. باقي الرسوم تنقص وحدها.',
           perExtraColor: 'كل لون إضافي',
           perExtraColorX: 'يُحتسب على كل لون بعد اللون الأول في الطقم.',
           perPatternNail: 'كل ظفر فيه نقشة',
@@ -475,6 +478,7 @@
           mm: 'Nail width in millimetres for this size number. Lower numbers are wider.',
           sizes: 'Values are positions in the size chart (0 is the widest).',
           steps: 'Numbered steps shown to the customer on the sizing step.',
+          person: 'Write the name in Arabic and in Latin letters, so it reads naturally in both languages.',
           stars: '1 to 5 — displayed as stars on the home page.',
           statValue: 'For example +1200, 4.9 or 3–5.'
         },
@@ -549,6 +553,8 @@
           intro: 'All rates use the currency you set in the general settings. Changes appear instantly in the studio and at checkout.',
           base: 'Base set price',
           baseX: 'A complete set of 10 nails before any extras.',
+          singleHandFactor: 'Single-hand share',
+          singleHandFactorX: 'Between 0 and 1 — the share of the base price a one-hand order (5 nails) pays. 0.6 charges 60%, 1 charges the full set. The other rates shrink on their own.',
           perExtraColor: 'Per extra colour',
           perExtraColorX: 'Charged for every distinct colour after the first one in the set.',
           perPatternNail: 'Per patterned nail',
@@ -1638,12 +1644,17 @@
       case 'testimonials': return {
         key: 'home.testimonials',
         fields: [
-          F('name', 'text', 'admin.f.person'),
+          /* the name is a T-object like every other visible string, so an
+             Arabic reviewer keeps her Arabic name on the English page and
+             gets a readable Latin spelling instead of a stray RTL word */
+          F('name', 't', 'admin.f.person', { hint: 'admin.h.person' }),
           F('stars', 'num', 'admin.f.stars', { min: 1, max: 5, step: 1, int: true, def: 5, hint: 'admin.h.stars' }),
           F('text', 'tarea', 'admin.f.text', { wide: true, rows: 4 })
         ],
-        blank: function () { return { id: '', name: '', stars: 5, text: { ar: '', en: '' } }; },
-        label: function (it) { return str(it.name); },
+        blank: function () { return { id: '', name: { ar: '', en: '' }, stars: 5, text: { ar: '', en: '' } }; },
+        /* pick() also accepts a plain string, so a testimonial saved by an
+           older build still shows its name in the list */
+        label: function (it) { return pick(it.name); },
         preview: function (it) { return el('span', { 'class': 'adm-num-pv', text: String(numOf(it.stars, 5)) + '★' }); }
       };
 
@@ -1969,6 +1980,19 @@
   /* 10. Tab: home                                                           */
   /* ====================================================================== */
 
+  /* A testimonial name used to be a plain string. The field is a T-object now,
+     so a name saved by an older build would show two empty boxes and vanish on
+     the first keystroke. Lift it into the Arabic side once, before the editor
+     is built — idempotent, and it touches nothing that is already a T-object. */
+  function upgradeTestimonialNames() {
+    var list = sList('home.testimonials'), i, it;
+    for (i = 0; i < list.length; i++) {
+      it = list[i];
+      if (!isObj(it) || typeof it.name !== 'string') continue;
+      SN.Store.update('home.testimonials', it.id, { name: { ar: it.name, en: '' } });
+    }
+  }
+
   function renderHome() {
     var box = el('div', { 'class': 'adm-tabbody' });
     var ctx = {
@@ -1988,6 +2012,7 @@
 
     box.appendChild(card([crud(schema('features'), { title: t('admin.hm.features'), help: t('admin.hm.featuresX') })]));
     box.appendChild(card([crud(schema('steps'), { title: t('admin.hm.steps'), help: t('admin.hm.stepsX') })]));
+    upgradeTestimonialNames();
     box.appendChild(card([crud(schema('testimonials'), { title: t('admin.hm.testimonials') })]));
     box.appendChild(card([crud(schema('stats'), { title: t('admin.hm.stats') })]));
 
@@ -2000,6 +2025,8 @@
 
   var PRICE_FIELDS = [
     { k: 'base', step: 5, min: 0 },
+    /* sits right under `base` because it is a share of it, not a rate of its own */
+    { k: 'singleHandFactor', step: 0.05, min: 0, max: 1, def: 0.6 },
     { k: 'perExtraColor', step: 1, min: 0 },
     { k: 'perPatternNail', step: 1, min: 0 },
     { k: 'perCharm', step: 1, min: 0 },
@@ -2109,7 +2136,7 @@
         step: PRICE_FIELDS[i].step,
         min: PRICE_FIELDS[i].min,
         max: PRICE_FIELDS[i].max,
-        def: 0,
+        def: PRICE_FIELDS[i].def !== undefined ? PRICE_FIELDS[i].def : 0,
         hint: 'admin.p.' + PRICE_FIELDS[i].k + 'X'
       }));
     }

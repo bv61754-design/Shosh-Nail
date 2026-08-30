@@ -37,8 +37,8 @@
   ];
 
   var RATE_DEFAULTS = {
-    base: 120, perExtraColor: 3, perPatternNail: 8, perCharm: 4,
-    express: 40, giftWrap: 15, shipping: 20, freeShippingOver: 300,
+    base: 120, singleHandFactor: 0.6, perExtraColor: 3, perPatternNail: 8,
+    perCharm: 4, express: 40, giftWrap: 15, shipping: 20, freeShippingOver: 300,
     vat: 0, depositPct: 0
   };
 
@@ -62,6 +62,7 @@
           readySub: 'تصميم جاهز من المتجر.',
           options: 'خيارات الطلب',
           qtyHint: 'كل طقم يحتوي على 10 أظافر مع اللاصقات وعدّة التركيب.',
+          qtyHintOne: 'طقم اليد الواحدة فيه 5 أظافر مع اللاصقات وعدّة التركيب.',
           review: 'مراجعة الطلب',
           breakdown: 'تفاصيل السعر',
           itemCol: 'البند',
@@ -81,6 +82,7 @@
           mm: 'مم',
           line: {
             base: 'الطقم الأساسي',
+            baseOne: 'الطقم الأساسي (يد واحدة)',
             shape: 'الشكل',
             length: 'الطول',
             finish: 'اللمسة',
@@ -131,6 +133,7 @@
           readySub: 'A ready design from the shop.',
           options: 'Order options',
           qtyHint: 'Every set holds 10 nails, with adhesives and a prep kit.',
+          qtyHintOne: 'A single-hand set holds 5 nails, with adhesives and a prep kit.',
           review: 'Review your order',
           breakdown: 'Price breakdown',
           itemCol: 'Item',
@@ -150,6 +153,7 @@
           mm: 'mm',
           line: {
             base: 'Base set',
+            baseOne: 'Base set (one hand)',
             shape: 'Shape',
             length: 'Length',
             finish: 'Finish',
@@ -361,6 +365,15 @@
     return (h === 'right' || h === 'left') ? h : 'both';
   }
 
+  /* Share of `pricing.base` a single-hand set pays. Clamped to 0..1 (the admin
+     field uses the same range) so a hand-edited backup can never make half a
+     set cost more than a whole one; 1 restores the full base price exactly. */
+  function handFactor(P) {
+    var f = numOf(P && P.singleHandFactor, RATE_DEFAULTS.singleHandFactor);
+    if (!(f > 0)) return 0;
+    return f > 1 ? 1 : f;
+  }
+
   /* Only the nails the customer actually receives are priced and listed. */
   function activeKeys(design) {
     var all = nailKeys(), h = handOf(design), out = [], i;
@@ -464,15 +477,22 @@
     var finishCount = {}, patternCount = {}, charmCount = {};
     var patternNails = 0, charmTotal = 0;
     var i, j, key, nail, hex, fid, pat, kind, charms, ch, cid;
-    var list, it, perSet, qty;
+    var list, it, perSet, qty, oneHand;
 
     /* 1 — base. One set, charged once: `qty` on a line is the multiplier that
        produced `amount` (5 matte nails × 4 = 20), so the base line must carry
-       qty 1 or the breakdown reads as ten sets at 120 and stops adding up. */
+       qty 1 or the breakdown reads as ten sets at 120 and stops adding up.
+       A one-hand order receives 5 nails, so it pays `singleHandFactor` of the
+       base — the owner's own number, because a half set is not half the work.
+       Only this line is scaled: the per-nail charges below already halve by
+       themselves, since `keys` holds five nails instead of ten. The line is
+       keyed 'base:one' so `relabel` can name it correctly in either language
+       long after the order was placed. */
+    oneHand = handOf(d) !== 'both';
     lines.push({
-      key: 'base',
-      label: tl('co.line.base', L),
-      amount: r2(P.base),
+      key: oneHand ? 'base:one' : 'base',
+      label: tl(oneHand ? 'co.line.baseOne' : 'co.line.base', L),
+      amount: r2(oneHand ? P.base * handFactor(P) : P.base),
       qty: 1
     });
 
@@ -619,7 +639,7 @@
     var it;
 
     switch (base) {
-      case 'base': return tl('co.line.base', L);
+      case 'base': return tl(id === 'one' ? 'co.line.baseOne' : 'co.line.base', L);
       case 'shape': return itemLabel('co.line.shape', 'shapes', id, L, fb);
       case 'length': return itemLabel('co.line.length', 'lengths', id, L, fb);
       case 'finish': return itemLabel('co.line.finish', 'finishes', id, L, fb);
@@ -1344,7 +1364,12 @@
             on: { click: function () { bump(1); } }
           })
         ]),
-        U.el('span', { 'class': 'hint', text: T('co.qtyHint') })
+        U.el('span', {
+          'class': 'hint',
+          /* a one-hand custom set is 5 nails, not 10 */
+          text: T(st.kind === 'custom' && handOf(st.design) !== 'both'
+            ? 'co.qtyHintOne' : 'co.qtyHint')
+        })
       ]);
     }
 

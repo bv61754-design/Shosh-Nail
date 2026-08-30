@@ -733,8 +733,12 @@ body.is-scrolled #sn-header{ box-shadow:var(--sh-1); }
   .btns-stack > .btn{ inline-size:100%; }
 }
 
-/* arrows follow the writing direction; the back-to-top arrow always points up */
-[dir="rtl"] .ico-arrow,[dir="rtl"] .ico-chevron{ transform:scaleX(-1); }
+/* arrows follow the writing direction; the back-to-top arrow always points up.
+   undo/redo mirror too: "back" is the start side of the line, whichever side that is.
+   Exception — studio.css opts the charm rotate buttons (.studio-crow-acts) back out,
+   because a rotation direction is absolute and must read the same in both scripts. */
+[dir="rtl"] .ico-arrow,[dir="rtl"] .ico-chevron,
+[dir="rtl"] .ico-undo,[dir="rtl"] .ico-redo{ transform:scaleX(-1); }
 .ft-top .ico-arrow,[dir="rtl"] .ft-top .ico-arrow{ transform:rotate(-90deg); }
 
 
@@ -1273,6 +1277,8 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   -webkit-overflow-scrolling:touch;
   scroll-snap-type:inline proximity;
   padding-block:6px;               /* room for the focus ring, not clipped */
+  padding-inline:4px;              /* same on the inline axis for the first/last tab */
+  margin-inline:-4px;              /* …pulled back out, so nothing moves */
   margin-block-end:18px;
   scroll-padding-inline:16px;
 }
@@ -1395,6 +1401,9 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .acc-head:hover{ background:var(--bg-4); }
+/* the head fills .acc-item edge to edge and the item clips (overflow:hidden for
+   its rounded corners), so an outside ring is swallowed — draw this one inside. */
+.acc-head:focus-visible{ outline-offset:-2px; }
 .acc-head > span:first-child{ flex:1 1 auto; min-inline-size:0; }
 .acc-head .ico{
   flex:0 0 auto;
@@ -1891,7 +1900,12 @@ a.ft-row:hover{ color:var(--rose-2); }
 .nail[role="button"],.nail[tabindex]{ cursor:pointer; }
 .nail[role="button"]:hover{ opacity:.88; }
 .nail:focus:not(:focus-visible){ outline:none; }
-.nail:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+/* SN.Nail ships every nail <g> with an inline style="cursor:pointer;outline:none"
+   so the exported SVG carries no ring. An inline declaration outranks any rule
+   here, which left the ten nail buttons with no keyboard indicator at all — the
+   one place !important is the correct tool. The export is untouched: this rule
+   lives in the stylesheet, never in the serialised markup. */
+.nail:focus-visible{ outline:2px solid var(--focus) !important; outline-offset:2px; }
 .hand-svg,.nail-svg{ inline-size:100%; block-size:auto; overflow:visible; }
 .nail-charm{ pointer-events:none; }
 

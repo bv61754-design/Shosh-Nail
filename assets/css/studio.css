@@ -93,7 +93,13 @@
   display:flex;
   align-items:stretch;
   gap:8px;
-  padding-block:4px 2px;
+  /* overflow-x:auto (.scroll-x) makes overflow-y auto too, so the strip clips its
+     own children. Pad by the focus ring (2px offset + 2px) and pull the padding
+     back out again, so the first and last chip keep their whole ring and nothing
+     moves a pixel. */
+  padding-block:4px;
+  padding-inline:4px;
+  margin-inline:-4px;
   scroll-snap-type:x proximity;
 }
 .studio-step-btn{
@@ -178,6 +184,11 @@
   border-radius:inherit;
   background:linear-gradient(90deg,var(--rose),var(--gold));
   transition:inline-size var(--dur) var(--ease);
+}
+/* a gradient angle is physical: flip it so rose always sits at the start of the
+   journey and gold at the leading edge, whichever side the bar grows from. */
+[dir="rtl"] .studio-progress > i{
+  background:linear-gradient(270deg,var(--rose),var(--gold));
 }
 
 
@@ -594,6 +605,10 @@
   border:1px solid var(--line);
 }
 .studio-ruler svg{ display:block; }
+/* the mm ruler wrapper carries .ltr so the scale reads 0 -> 60, which also makes
+   every logical keyword inside it resolve physically. Push the drawing back to
+   the page's inline-start in RTL so it lines up with the rest of the card. */
+[dir="rtl"] .studio-ruler.ltr > svg{ margin-inline-start:auto; }
 
 .studio-steps-list{
   display:flex;
@@ -861,6 +876,10 @@
   color:var(--ink-2);
 }
 .studio-crow-acts{ display:flex; flex-wrap:wrap; gap:4px; }
+/* rotate-left / rotate-right reuse the undo/redo glyphs, which base.css mirrors
+   in RTL for real undo/redo. A rotation direction is absolute, so opt out here. */
+[dir="rtl"] .studio-crow-acts .ico-undo,
+[dir="rtl"] .studio-crow-acts .ico-redo{ transform:none; }
 .studio-pad{
   display:grid;
   direction:ltr;                 /* the arrows must mean the same in RTL */
