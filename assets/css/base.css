@@ -573,10 +573,10 @@ body.is-scrolled #sn-header{ box-shadow:var(--sh-1); }
     opacity:0;
     overflow:hidden;
     visibility:hidden;
-    transition:max-block-size .24s var(--ease),
-               opacity .18s var(--ease),
-               padding-block .24s var(--ease),
-               visibility 0s linear .24s;
+    transition:max-block-size var(--dur-2) var(--ease-out),
+               opacity var(--dur-2) var(--ease),
+               padding-block var(--dur-2) var(--ease-out),
+               visibility 0s linear var(--dur-2);
   }
   #sn-header.nav-open .nav{
     max-block-size:min(70vh,460px);
@@ -584,9 +584,9 @@ body.is-scrolled #sn-header{ box-shadow:var(--sh-1); }
     visibility:visible;
     overflow-y:auto;
     padding-block:10px 14px;
-    transition:max-block-size .24s var(--ease),
-               opacity .18s var(--ease) .04s,
-               padding-block .24s var(--ease),
+    transition:max-block-size var(--dur-2) var(--ease-out),
+               opacity var(--dur-2) var(--ease),
+               padding-block var(--dur-2) var(--ease-out),
                visibility 0s linear 0s;
   }
   .nav-a{
@@ -658,7 +658,7 @@ body.is-scrolled #sn-header{ box-shadow:var(--sh-1); }
   color:var(--on-rose);
   border-color:transparent;
   box-shadow:0 6px 18px rgba(168,90,115,.28);
-  transition:background-position .3s var(--ease),
+  transition:background-position calc(var(--dur-2) * 1.4) var(--ease),
              box-shadow var(--dur) var(--ease),
              transform var(--dur) var(--ease),
              opacity var(--dur) var(--ease);
@@ -1557,7 +1557,7 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   border:2px solid var(--line-2);
   border-block-start-color:var(--rose-2);
   border-radius:50%;
-  animation:sn-spin .72s linear infinite;
+  animation:sn-spin calc(var(--dur-3) * 1.7) linear infinite;
   vertical-align:middle;
 }
 .spinner-lg{ inline-size:38px; block-size:38px; border-width:3px; }
@@ -1577,7 +1577,7 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   inline-size:0%;
   border-radius:var(--r-full);
   background:linear-gradient(90deg,var(--rose),var(--gold));
-  transition:inline-size .3s var(--ease);
+  transition:inline-size var(--dur-3) var(--ease-out);
 }
 
 .note{
@@ -2042,6 +2042,8 @@ a.ft-row:hover{ color:var(--rose-2); }
                            Gets press feedback, a phone-sized tap target and
                            the pick flourish when it also carries .is-on /
                            aria-pressed / aria-selected / aria-checked / .sn-picked.
+                           Tune the ring's corner with --sn-ring-r, and how
+                           far it springs with --sn-from / --sn-over.
      .sn-pick-keep         variant: the drawn ring stays after the flourish
                            (that is what .swatch does — a colour circle needs a
                            permanent ring). Default is a ring that draws, blooms
@@ -2080,10 +2082,14 @@ a.ft-row:hover{ color:var(--rose-2); }
    20.1  KEYFRAMES
    ------------------------------------------------------------------------- */
 
-/* the picked element itself: pressed down, then springs back past its size */
+/* the picked element itself: pressed down, then springs back PAST its size
+   and settles. The overshoot is an explicit keyframe rather than a spring
+   easing, because a spring's overshoot is a fraction of the distance
+   travelled — over the few percent a picker moves it would be invisible. */
 @keyframes sn-settle{
-  from{ transform:scale(var(--sn-from,.86)); }
-  to{ transform:scale(1); }
+  0%{ transform:scale(var(--sn-from,.86)); }
+  52%{ transform:scale(var(--sn-over,1.07)); }
+  100%{ transform:scale(1); }
 }
 /* the ring: wipes into being from the top, then blooms a halo and clears.
    Negative clip insets keep the halo outside the clip while the ring draws. */
@@ -2243,6 +2249,17 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
   .check-card::before,.btn-sm::before,.sn-pickable::before{ inset:-5px; }
   .toast-x::before,.announce-x::before{ inset:-6px; }
 }
+/* A picker is sometimes a container with its own control inside it — a tag
+   chip with a delete button, for one. The hit-area pseudo is positioned and
+   would otherwise paint over that control and swallow its taps, so anything
+   clickable inside is lifted back above it. */
+.chip button,.chip a,.chip input,.chip label,
+.tab button,.tab a,.tab input,
+.sn-pickable button,.sn-pickable a,.sn-pickable input,
+.check-card input,.check-card a{
+  position:relative;
+  z-index:1;
+}
 
 
 /* -------------------------------------------------------------------------
@@ -2259,7 +2276,7 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
 .sn-pickable[aria-selected="true"],.sn-pickable[aria-checked="true"],
 .check-card:has(> input:checked),
 .sn-picked{
-  animation:sn-settle var(--dur-2) var(--ease-pop);
+  animation:sn-settle var(--dur-2) var(--ease-out);
 }
 .swatch-on::before,.swatch.is-on::before,
 .swatch[aria-pressed="true"]::before,.swatch[aria-checked="true"]::before,
@@ -2275,11 +2292,11 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
 
 /* cards are big: they settle from much closer to their own size, or the
    whole grid appears to lurch */
-.sn-pickable,.check-card{ --sn-from:.972; }
+.sn-pickable,.check-card{ --sn-from:.972; --sn-over:1.014; }
 .check-card:has(> input:checked)::before{
   animation:sn-ring var(--dur-3) var(--ease-out) backwards;
 }
-.chip,.tab{ --sn-from:.9; }
+.chip,.tab{ --sn-from:.9; --sn-over:1.045; }
 
 /* a colour circle keeps its ring — it is the only thing saying "this one" */
 .swatch-on::before,.swatch.is-on::before,
@@ -2365,7 +2382,8 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
    — a charm placed, a design saved — gets .sn-pulse instead.
    ------------------------------------------------------------------------- */
 .sn-pulse{ animation:sn-pulse var(--dur-3) var(--ease-pop); }
-.sn-glow{ animation:sn-glow var(--dur-3) var(--ease-out); border-radius:var(--r-full); }
+/* the bloom follows whatever radius the element already has */
+.sn-glow{ animation:sn-glow var(--dur-3) var(--ease-out); }
 
 .sn-burst{
   position:absolute;
@@ -2373,7 +2391,10 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
   z-index:5;
   overflow:visible;
   pointer-events:none;
-  animation:sn-burst-life 1s linear forwards;
+  /* the whole celebration is one length, derived from the tokens like
+     everything else, and every part of it is a fraction of that length */
+  --cel:calc(var(--dur-3) * 2.4);        /* ~1s — the hard ceiling */
+  animation:sn-burst-life var(--cel) linear forwards;
 }
 /* the soft rose bloom under everything */
 .sn-burst::before,
@@ -2394,7 +2415,7 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
 }
 .sn-burst::before{
   background:radial-gradient(closest-side,var(--halo),var(--halo-2) 55%,transparent 72%);
-  animation:sn-burst-bloom .62s var(--ease-out) both;
+  animation:sn-burst-bloom calc(var(--cel) * .62) var(--ease-out) both;
 }
 /* and one thin gold ring opening out of it */
 .sn-burst::after{
@@ -2404,7 +2425,7 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
   margin-inline-start:-48px;
   border:2px solid var(--gold);
   background:none;
-  animation:sn-burst-ring .7s var(--ease-out) .04s both;
+  animation:sn-burst-ring calc(var(--cel) * .7) var(--ease-out) calc(var(--cel) * .04) both;
 }
 .sn-burst > i{
   position:absolute;
@@ -2417,20 +2438,20 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
   background:var(--gold);
   /* a four-point sparkle, not a dot of confetti */
   clip-path:polygon(50% 0%,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0% 50%,39% 39%);
-  animation:sn-spark .78s var(--ease-out) both;
+  animation:sn-spark calc(var(--cel) * .78) var(--ease-out) both;
 }
-.sn-burst > i:nth-child(1){ --a:6deg;   --d:104px; --sz:18px; animation-delay:.02s; }
-.sn-burst > i:nth-child(2){ --a:38deg;  --d:72px;  --sz:13px; animation-delay:.10s; background:var(--rose); }
-.sn-burst > i:nth-child(3){ --a:71deg;  --d:122px; --sz:16px; animation-delay:.00s; }
-.sn-burst > i:nth-child(4){ --a:104deg; --d:84px;  --sz:12px; animation-delay:.13s; background:var(--rose-2); }
-.sn-burst > i:nth-child(5){ --a:139deg; --d:112px; --sz:17px; animation-delay:.05s; }
-.sn-burst > i:nth-child(6){ --a:168deg; --d:78px;  --sz:13px; animation-delay:.16s; background:var(--rose); }
-.sn-burst > i:nth-child(7){ --a:196deg; --d:118px; --sz:16px; animation-delay:.01s; }
-.sn-burst > i:nth-child(8){ --a:226deg; --d:80px;  --sz:12px; animation-delay:.12s; background:var(--rose-2); }
-.sn-burst > i:nth-child(9){ --a:257deg; --d:110px; --sz:18px; animation-delay:.06s; }
-.sn-burst > i:nth-child(10){ --a:288deg; --d:74px;  --sz:13px; animation-delay:.15s; background:var(--rose); }
-.sn-burst > i:nth-child(11){ --a:318deg; --d:120px; --sz:16px; animation-delay:.03s; }
-.sn-burst > i:nth-child(12){ --a:344deg; --d:86px;  --sz:12px; animation-delay:.11s; background:var(--gold); }
+.sn-burst > i:nth-child(1){ --a:6deg;   --d:104px; --sz:18px; animation-delay:calc(var(--cel) * .02); }
+.sn-burst > i:nth-child(2){ --a:38deg;  --d:72px;  --sz:13px; animation-delay:calc(var(--cel) * .10); background:var(--rose); }
+.sn-burst > i:nth-child(3){ --a:71deg;  --d:122px; --sz:16px; animation-delay:calc(var(--cel) * 0); }
+.sn-burst > i:nth-child(4){ --a:104deg; --d:84px;  --sz:12px; animation-delay:calc(var(--cel) * .13); background:var(--rose-2); }
+.sn-burst > i:nth-child(5){ --a:139deg; --d:112px; --sz:17px; animation-delay:calc(var(--cel) * .05); }
+.sn-burst > i:nth-child(6){ --a:168deg; --d:78px;  --sz:13px; animation-delay:calc(var(--cel) * .16); background:var(--rose); }
+.sn-burst > i:nth-child(7){ --a:196deg; --d:118px; --sz:16px; animation-delay:calc(var(--cel) * .01); }
+.sn-burst > i:nth-child(8){ --a:226deg; --d:80px;  --sz:12px; animation-delay:calc(var(--cel) * .12); background:var(--rose-2); }
+.sn-burst > i:nth-child(9){ --a:257deg; --d:110px; --sz:18px; animation-delay:calc(var(--cel) * .06); }
+.sn-burst > i:nth-child(10){ --a:288deg; --d:74px;  --sz:13px; animation-delay:calc(var(--cel) * .15); background:var(--rose); }
+.sn-burst > i:nth-child(11){ --a:318deg; --d:120px; --sz:16px; animation-delay:calc(var(--cel) * .03); }
+.sn-burst > i:nth-child(12){ --a:344deg; --d:86px;  --sz:12px; animation-delay:calc(var(--cel) * .11); background:var(--gold); }
 
 /* one slow sweep of light across a panel — the luxury note, used once */
 .sn-shine{ position:relative; overflow:hidden; }
@@ -2443,7 +2464,7 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
   background:linear-gradient(90deg,transparent,var(--shine) 42%,var(--shine) 58%,transparent);
   transform:translateX(-130%) skewX(-14deg);
   pointer-events:none;
-  animation:sn-shine .95s var(--ease-out) .16s both;
+  animation:sn-shine calc(var(--dur-3) * 2.2) var(--ease-out) calc(var(--dur-3) * .4) both;
 }
 [dir="rtl"] .sn-shine::after{ animation-name:sn-shine-rtl; transform:translateX(130%) skewX(14deg); }
 
@@ -2469,7 +2490,7 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
   inline-size:45%;
   background:linear-gradient(90deg,transparent,var(--sheen),transparent);
   transform:translateX(-100%);
-  animation:sn-sheen 1.35s linear infinite;
+  animation:sn-sheen calc(var(--dur-3) * 3.2) linear infinite;
 }
 .sk-line{ block-size:12px; margin-block:7px; }
 .sk-line-sm{ block-size:9px; }
@@ -2552,8 +2573,6 @@ a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.
 .empty{ animation:sn-rise var(--dur-3) var(--ease-out) both; }
 .spinner-c{ animation:sn-pop-in var(--dur-2) var(--ease-out) both; }
 
-/* progress fills with the same easing as everything else */
-.progress > span,.progress-bar{ transition:inline-size var(--dur-3) var(--ease-out); }
 
 
 /* =========================================================================

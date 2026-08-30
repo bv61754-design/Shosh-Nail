@@ -1166,9 +1166,10 @@ body[data-page="studio"] #sn-footer{
 
 /* ---- every studio picker is a pick: press it, and it answers ------------ */
 .studio-opt,.studio-mini,.studio-preset,.studio-hand-card,
-.studio-toggle,.studio-charm,.studio-toolbtn,.studio-step-btn,.studio-savedrow{
+.studio-toggle,.studio-charm,.studio-toolbtn,.studio-step-btn{
   position:relative;
   --sn-from:.968;
+  --sn-over:1.018;
 }
 /* the pseudo is both the drawn ring and, on a phone, the real tap target */
 .studio-opt::before,.studio-mini::before,.studio-preset::before,
@@ -1214,7 +1215,7 @@ body[data-page="studio"] #sn-footer{
 .studio-preset[aria-pressed="true"],.studio-hand-card[aria-pressed="true"],
 .studio-toolbtn[aria-selected="true"],.studio-toggle.is-on,
 .studio-step-btn.is-on{
-  animation:sn-settle var(--dur-2) var(--ease-pop);
+  animation:sn-settle var(--dur-2) var(--ease-out);
 }
 .studio-opt[aria-pressed="true"]::before,.studio-mini[aria-pressed="true"]::before,
 .studio-preset[aria-pressed="true"]::before,.studio-hand-card[aria-pressed="true"]::before,
@@ -1226,7 +1227,8 @@ body[data-page="studio"] #sn-footer{
 /* a skin tone is a colour circle, so — exactly like .swatch — its ring is
    drawn once and then stays: it is the only thing marking the choice */
 .studio-skin[aria-pressed="true"] .studio-skin-dot{
-  animation:sn-settle var(--dur-2) var(--ease-pop);
+  --sn-from:.88; --sn-over:1.06;
+  animation:sn-settle var(--dur-2) var(--ease-out);
   box-shadow:inset 0 -6px 12px rgba(0,0,0,.10),
              inset 0 0 0 2px rgba(255,255,255,.45),
              0 0 0 3px var(--bg-2);

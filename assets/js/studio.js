@@ -204,7 +204,6 @@
         progLeft2: 'باقي خطوتين وتخلصين.',
         progLeft1: 'باقي خطوة وحدة — قرّبتي!',
         progAll: 'كل الخطوات تمّت — طقمك جاهز للطلب.',
-        progOf: 'خلّصتي {n} من {total}',
 
         /* gentle invitations when a step is still on its defaults */
         nudge1: 'اخترنا لك بشرة ويدين مبدئيًا — عدّليها عشان الطقم يطلع على لون يدك بالضبط.',
@@ -404,7 +403,6 @@
         progLeft2: 'Two steps to go.',
         progLeft1: 'One step to go — almost there!',
         progAll: 'Every step done — your set is ready to order.',
-        progOf: '{n} of {total} done',
 
         nudge1: 'We started you on a default tone and both hands — set yours so the preview matches your real hand.',
         nudge2: 'Shape and length are still the defaults — try another shape and see it on your hand above.',
@@ -556,16 +554,18 @@
   /* ====================================================================== */
   /* 1b. Motion — every effect in this file goes through here                */
   /* ====================================================================== */
-  /* The studio owns no stylesheet, so its motion is scripted with the Web
-     Animations API instead of invented class names. That buys one thing that
-     matters more than tidiness: a SINGLE gate. `reduced()` is read live on
-     every call, so switching the OS setting takes effect without a reload, and
-     nothing below can animate behind its back. Only `transform` and `opacity`
-     are ever animated, and nothing loops. */
+  /* The studio owns no stylesheet, so the vocabulary here is base.css's
+     motion system (section 20): `.sn-pulse` for a small win, `.sn-glow` for a
+     value that just changed, `.sn-burst` for a payoff, `.sn-in` for something
+     arriving. Only the two things that system has no word for — a charm
+     dropping onto a nail, and one lifting under a finger — are scripted, and
+     they read their timing out of the same tokens.
+
+     Everything passes one gate, `reduced()`, read live so switching the OS
+     setting takes effect without a reload. Only transform and opacity are
+     animated, and nothing loops. */
 
   var SVGNS = 'http://www.w3.org/2000/svg';
-  var EASE_OUT = 'cubic-bezier(.22,1,.36,1)';
-  var EASE_POP = 'cubic-bezier(.34,1.4,.64,1)';
 
   var motionMQ = null;
   try {
@@ -573,6 +573,28 @@
   } catch (e) { motionMQ = null; }
 
   function reduced() { return !!(motionMQ && motionMQ.matches); }
+
+  /* read a design token so scripted motion cannot drift from the stylesheet */
+  var tokens = {};
+  function token(name, fallback) {
+    var v;
+    if (has(tokens, name)) return tokens[name];
+    try { v = window.getComputedStyle(D.documentElement).getPropertyValue(name); }
+    catch (e) { v = ''; }
+    v = String(v || '').trim();
+    tokens[name] = v || fallback;
+    return tokens[name];
+  }
+  function tokenMs(name, fallback) {
+    var v = token(name, ''), n;
+    if (/ms\s*$/.test(v)) n = parseFloat(v);
+    else if (/s\s*$/.test(v)) n = parseFloat(v) * 1000;
+    else n = NaN;
+    return isFinite(n) && n > 0 ? n : fallback;
+  }
+
+  function easeOut() { return token('--ease-out', 'cubic-bezier(.16,.86,.42,1)'); }
+  function drop() { return tokenMs('--dur-3', 420); }
 
   function play(node, frames, opts) {
     if (!node || reduced() || typeof node.animate !== 'function') return null;
@@ -590,7 +612,7 @@
     try {
       g = D.createElementNS(SVGNS, 'g');
       g.setAttribute('data-fx', '1');
-      g.style.transformBox = 'fill-box';
+      g.style.transformBox = 'fill-box';      /* scale about the nail, not the page */
       g.style.transformOrigin = '50% 50%';
       parent.insertBefore(g, node);
       g.appendChild(node);
@@ -598,76 +620,50 @@
     } catch (e) { return null; }
   }
 
-  /* the acknowledgement: a nail that was just changed gives one small bounce */
+  /* the acknowledgement: a nail that was just changed gives one small bounce.
+     `.sn-pulse` is the house class for exactly this; the wrapper is rebuilt on
+     every repaint, so a fresh element means repeat taps never queue. */
   function popNails(list, host) {
-    var stage = host || refs.stage, i, node, wrap;
+    var stage = host || refs.stage, step = tokenMs('--stagger', 44), i, node, wrap;
     if (!stage || reduced() || !Array.isArray(list)) return;
     if (!onScreen(rectOf(stage))) return;      /* nothing to acknowledge off-screen */
     for (i = 0; i < list.length && i < 10; i++) {
       node = stage.querySelector ? stage.querySelector('g.nail[data-key="' + fk(list[i]) + '"]') : null;
       wrap = node ? fxWrap(node) : null;
       if (!wrap) continue;
-      play(wrap, [
-        { transform: 'scale(1)' },
-        { transform: 'scale(1.075)', offset: 0.42 },
-        { transform: 'scale(1)' }
-      ], { duration: 300, delay: Math.min(i * 34, 240), easing: EASE_POP });
+      wrap.setAttribute('class', 'sn-pulse');
+      try { wrap.style.animationDelay = Math.min(i * step * 0.6, 240) + 'ms'; }
+      catch (e) { /* the pulse is worth having even without the stagger */ }
     }
   }
 
-  /* ---- the sparkle ----------------------------------------------------- */
-  /* Fixed to the viewport rather than parented into the preview: the mobile
-     stage is a clipped strip, and a burst that gets cut in half is worse than
-     none. It is removed the moment it finishes. */
+  /* ---- the payoff ------------------------------------------------------ */
+  /* base.css ships `.sn-burst` as a 12-spark rose-and-gold burst that needs a
+     position:relative host. Ours is pinned to the viewport instead of parented
+     into the preview, because the mobile stage is a clipped strip and a burst
+     cut in half is worse than none. The layer is forced to `direction:ltr` so
+     its logical insets resolve to the same physical corner a DOMRect is
+     measured from, in Arabic and English alike. */
 
-  function starMark(size, color, opacity) {
-    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" ' +
-      'fill="' + color + '" opacity="' + opacity + '" aria-hidden="true" focusable="false" ' +
-      'style="display:block"><path d="M12 0c.72 6.5 4.78 10.56 12 12-7.22 1.44-11.28 5.5-12 12' +
-      '-.72-6.5-4.78-10.56-12-12C7.22 10.56 11.28 6.5 12 0Z"/></svg>';
-  }
-
-  var SPARK_SEATS = [
-    { a: -90, d: 34, s: 13 }, { a: -30, d: 30, s: 10 }, { a: 30, d: 33, s: 8 },
-    { a: 96, d: 28, s: 11 }, { a: 158, d: 31, s: 9 }, { a: -152, d: 29, s: 12 }
-  ];
-
-  /* rect: a DOMRect-ish. scale: 1 = the standard charm burst.
-     The layer is forced to `direction:ltr` so its logical insets resolve to the
-     same physical corner a DOMRect is measured from, in Arabic and English
-     alike — no `left`/`top` needed anywhere. */
   function sparkleAt(rect, scale) {
-    var host, cx, cy, k = num(scale, 1), i, seat, node, rad, dx, dy;
+    var host, burst, k = num(scale, 1), i;
     if (!rect || reduced() || !D.body) return;
-    if (!onScreen(rect)) return;            /* never burst off the visible page */
-    cx = rect.left + rect.width / 2;
-    cy = rect.top + rect.height / 2;
-    if (!isFinite(cx) || !isFinite(cy)) return;
+    if (!onScreen(rect)) return;              /* never burst off the visible page */
 
-    host = el('div', { 'aria-hidden': 'true' });
+    burst = el('div', { 'class': 'sn-burst', 'aria-hidden': 'true' });
+    for (i = 0; i < 12; i++) burst.appendChild(el('i', {}));
+
+    host = el('div', { 'aria-hidden': 'true' }, [burst]);
     host.style.cssText = 'direction:ltr;position:fixed;z-index:70;pointer-events:none;' +
-      'inline-size:0;block-size:0;inset-block-start:' + cy + 'px;inset-inline-start:' + cx + 'px;';
+      'inline-size:' + rect.width + 'px;block-size:' + rect.height + 'px;' +
+      'inset-block-start:' + rect.top + 'px;inset-inline-start:' + rect.left + 'px;' +
+      (k === 1 ? '' : 'transform:scale(' + k + ');');
     D.body.appendChild(host);
 
-    for (i = 0; i < SPARK_SEATS.length; i++) {
-      seat = SPARK_SEATS[i];
-      rad = seat.a * Math.PI / 180;
-      dx = Math.cos(rad) * seat.d * k;
-      dy = Math.sin(rad) * seat.d * k;
-      node = el('span', { html: starMark(Math.round(seat.s * k), i % 2 ? '#C2A05E' : '#FFFFFF', i % 2 ? 0.95 : 0.85) });
-      node.style.cssText = 'position:absolute;inset-block-start:0;inset-inline-start:0;' +
-        'will-change:transform,opacity;';
-      host.appendChild(node);
-      play(node, [
-        { transform: 'translate(-50%,-50%) scale(.2) rotate(0deg)', opacity: 0 },
-        { transform: 'translate(calc(-50% + ' + (dx * 0.55) + 'px),calc(-50% + ' + (dy * 0.55) + 'px)) scale(1) rotate(40deg)', opacity: 1, offset: 0.38 },
-        { transform: 'translate(calc(-50% + ' + dx + 'px),calc(-50% + ' + dy + 'px)) scale(.35) rotate(95deg)', opacity: 0 }
-      ], { duration: 620, delay: i * 26, easing: EASE_OUT });
-    }
-
+    /* .sn-burst takes itself off screen; this takes it out of the document */
     window.setTimeout(function () {
       if (host && host.parentNode) host.parentNode.removeChild(host);
-    }, 900);
+    }, Math.round(tokenMs('--dur-3', 420) * 2.4) + 260);
   }
 
   function rectOf(node) {
@@ -700,15 +696,15 @@
 
   /* the sparkle goes where SHE is looking: the big editor nail when it is on
      screen, otherwise the small hand in the preview — and nowhere at all if
-     neither is, because a burst off the bottom of the page is just wasted work */
+     neither is, because a burst off the bottom of the page is wasted work */
   function sparkleOnCharm(key, index) {
     var canvas = editorCanvasEl();
     var svg = canvas ? canvas.firstChild : null;
     var marks = (svg && svg.querySelectorAll) ? svg.querySelectorAll('g.nail-charm') : null;
     var r = (marks && marks[index]) ? rectOf(marks[index]) : null;
-    if (onScreen(r)) { sparkleAt(r, 1.25); return; }
+    if (onScreen(r)) { sparkleAt(r, 0.62); return; }
     r = refs.stage ? rectOf(refs.stage.querySelector('g.nail[data-key="' + fk(key) + '"]')) : null;
-    if (onScreen(r)) sparkleAt(r, 0.9);
+    if (onScreen(r)) sparkleAt(r, 0.5);
   }
 
   /* ====================================================================== */
@@ -1231,20 +1227,16 @@
     return t('studio.progLeft', { n: nfm(left) });
   }
 
-  /* the warm confirmation: the chip that just earned its tick gives one bounce
-     and a small spark. It fires once per step, never on a re-render. */
+  /* the warm confirmation: the tick that was just earned blooms once and
+     throws the smallest of the bursts. Once per step, never on a re-render. */
   function celebrateStep(n) {
-    var host = refs.steps, btn, r;
-    if (!host || !host.querySelector) return;
+    var host = refs.steps, btn, dot;
+    if (!host || !host.querySelector || reduced()) return;
     btn = host.querySelector('[data-fk="' + fk('step-' + n) + '"]');
     if (!btn || !onScreen(rectOf(btn))) return;
-    play(btn, [
-      { transform: 'scale(1)' },
-      { transform: 'scale(1.12)', offset: 0.4 },
-      { transform: 'scale(1)' }
-    ], { duration: 380, easing: EASE_POP });
-    r = rectOf(btn.querySelector('.studio-step-n') || btn);
-    if (r) sparkleAt(r, 0.62);
+    dot = btn.querySelector('.studio-step-n') || btn;
+    dot.classList.add('sn-glow');
+    sparkleAt(rectOf(dot), 0.42);
   }
 
   /* called after every render of the step strip */
@@ -1327,14 +1319,14 @@
       { transform: 'translate(0,0) scale(.82)', opacity: 1, offset: 0.6 },
       { transform: 'scale(1.1)', offset: 0.8 },
       { transform: 'scale(1)', opacity: 1 }
-    ], { duration: 460, easing: EASE_OUT });
+    ], { duration: drop(), easing: easeOut() });
   }
 
   /* what a tap will affect, said plainly: one nail gets named, a hand gets
      named, anything else gets counted */
   function selectionLabel() {
     var kk = activeKeys(state.design), n = state.sel.length, right = 0, i;
-    if (!n) return t('studio.selEmpty');
+    if (!n) return countT('selCount', 0);
     if (n === 1) return nailName(state.sel[0]);
     if (n === kk.length) return countT('selCount', n);
     for (i = 0; i < state.sel.length; i++) if (sideOf(state.sel[i]) === 'right') right++;
@@ -1551,9 +1543,10 @@
                 state.design.hand = o.id;
                 state.sel = activeKeys(state.design);
                 state.activeCharm = -1;
+                /* queued from inside the change, so the single repaint that
+                   follows carries the reaction — never a second render */
+                react(state.sel);
               });
-              react(activeKeys(state.design));
-              renderStage();
             }
           }
         }, [ico, el('span', { text: t(o.label) })]));
@@ -2494,7 +2487,7 @@
       { transform: 'scale(1.16)' },
       { transform: 'scale(.97)', offset: 0.55 },
       { transform: 'scale(1)' }
-    ], { duration: 260, easing: EASE_OUT });
+    ], { duration: Math.round(drop() * 0.62), easing: easeOut() });
   }
 
   function editorCanvas() {
@@ -2523,7 +2516,7 @@
           { transform: 'translate(0,0) scale(.84)', opacity: 1, offset: 0.6 },
           { transform: 'scale(1.08)', offset: 0.8 },
           { transform: 'scale(1)', opacity: 1 }
-        ], { duration: 460, easing: EASE_OUT });
+        ], { duration: drop(), easing: easeOut() });
       }
     }
 
@@ -2617,7 +2610,7 @@
       if (box.classList) box.classList.add('is-drag');
       /* the nail itself answers the grab, so the charm feels attached to it */
       if (!reduced()) {
-        box.style.transition = 'transform .16s var(--ease)';
+        box.style.transition = 'transform var(--dur-1) var(--ease-out)';
         box.style.transform = 'scale(1.025)';
       }
       paint();
@@ -2786,7 +2779,7 @@
     refresh();
     toast(t('studio.randDone', { name: pick(pal.name) }), 'ok');
     r = rectOf(refs.stage);
-    if (r) window.setTimeout(function () { sparkleAt(r, 1.7); }, 120);
+    if (r) window.setTimeout(function () { sparkleAt(r, 1.15); }, 120);
   }
 
   /* A beat of anticipation, then the reveal. Three throwaway looks flash past
@@ -2839,8 +2832,10 @@
          thing a thumb reaches. Beside it, the two shortcuts that stop this
          feeling like ten separate jobs. */
       rollBtn = shortcutBtn('dice', 'studio.randomize', 'a-rand', true, randomize);
+      /* while it shuffles the button says so but stays focusable: disabling it
+         would drop keyboard focus for the third of a second the roll lasts.
+         Repeat presses are already swallowed by `state.rolling`. */
       if (state.rolling) {
-        rollBtn.disabled = true;
         rollBtn.setAttribute('aria-busy', 'true');
         rollBtn.lastChild.textContent = t('studio.randRoll');
       }
@@ -3312,7 +3307,10 @@
      already owns, shown large, with the price told honestly underneath and one
      obvious way forward. The details she can audit sit below the fold. */
   function buildStep6(host) {
-    var art = el('div', { 'class': 'studio-review-art' });
+    /* one quiet moment of pride as the finished set arrives: the house
+       entrance, and the one slow sweep of light the system reserves for a
+       moment like this */
+    var art = el('div', { 'class': 'studio-review-art' + (reduced() ? '' : ' sn-in sn-shine') });
     var res = (SN.Checkout && SN.Checkout.priceCustom) ? SN.Checkout.priceCustom(state.design) : null;
 
     reviewSvg = null;
@@ -3339,7 +3337,7 @@
        to a friend is how this shop grows. */
     host.appendChild(section('studio.shareImg', 'studio.shareImgText', [
       el('div', { 'class': 'studio-row' }, [
-        shortcutBtn('share', 'studio.shareImg', 'share-img', true, shareImage),
+        shortcutBtn('share', 'studio.shareImg', 'share-img', false, shareImage),
         shortcutBtn('download', 'studio.png', 'png', false, downloadPNG),
         shortcutBtn('copy', 'studio.shareBtn', 'share-link', false, copyShareLink),
         el('button', {
@@ -3363,11 +3361,6 @@
       })
     ]));
 
-    /* one quiet moment of pride as the finished set arrives */
-    play(art, [
-      { transform: 'translateY(14px) scale(.985)', opacity: 0 },
-      { transform: 'none', opacity: 1 }
-    ], { duration: 460, easing: EASE_OUT });
   }
 
   function openCheckout() {
@@ -3403,7 +3396,9 @@
       img = new window.Image();
       img.onerror = function () { done(null); };
       img.onload = function () {
-        var W = 1080, H = 1350, cv, ctx, g, pad = 84, availW, availH, s, dw, dh;
+        /* a 4:5 portrait — the shape Instagram gives the most room to */
+        var W = 1080, H = 1350, pad = 60, capH = 200;
+        var cv, ctx, g, s, dw, dh, x, y, blockH;
         try {
           cv = D.createElement('canvas');
           if (!cv.getContext || !cv.toBlob) { done(null); return; }
@@ -3412,26 +3407,49 @@
 
           g = ctx.createLinearGradient(0, 0, W, H);
           g.addColorStop(0, '#FDF5F2');
-          g.addColorStop(1, '#F4E3E6');
+          g.addColorStop(1, '#F2DFE3');
           ctx.fillStyle = g;
           ctx.fillRect(0, 0, W, H);
 
-          availW = W - pad * 2;
-          availH = H - pad - 250;
-          s = Math.min(availW / img.width, availH / img.height);
+          s = Math.min((W - pad * 2) / img.width, (H - pad * 2 - capH) / img.height);
           dw = img.width * s;
           dh = img.height * s;
-          ctx.drawImage(img, (W - dw) / 2, pad + (availH - dh) / 2, dw, dh);
+          /* the set and its caption are ONE block, centred together — art
+             floating in a sea of empty gradient reads as a mistake */
+          blockH = dh + capH;
+          x = (W - dw) / 2;
+          y = (H - blockH) / 2;
+
+          /* the render brings its own pale ground; give it rounded corners and
+             a soft shadow so it reads as a card, not a seam */
+          ctx.save();
+          ctx.shadowColor = 'rgba(74,43,57,.16)';
+          ctx.shadowBlur = 44;
+          ctx.shadowOffsetY = 16;
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, dw, dh, 34);
+          else ctx.rect(x, y, dw, dh);
+          ctx.fillStyle = '#FFF8F6';
+          ctx.fill();
+          ctx.restore();
+
+          ctx.save();
+          ctx.beginPath();
+          if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, dw, dh, 34);
+          else ctx.rect(x, y, dw, dh);
+          ctx.clip();
+          ctx.drawImage(img, x, y, dw, dh);
+          ctx.restore();
 
           ctx.textAlign = 'center';
           ctx.textBaseline = 'alphabetic';
           ctx.fillStyle = '#8C4459';
           ctx.font = '700 62px Tajawal, "Reem Kufi", sans-serif';
-          ctx.fillText(brand, W / 2, H - 132);
+          ctx.fillText(brand, W / 2, y + dh + 108);
           if (handle) {
             ctx.fillStyle = '#A85A73';
             ctx.font = '500 38px Tajawal, sans-serif';
-            ctx.fillText('@' + handle, W / 2, H - 74);
+            ctx.fillText('@' + handle, W / 2, y + dh + 166);
           }
 
           cv.toBlob(function (out) { done(out); }, 'image/png');

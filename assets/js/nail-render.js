@@ -87,38 +87,135 @@
 
   var HAND_VIEW = { w: 300, h: 380 };
 
-  /* Finger geometry, right hand, viewBox 0 0 300 380, thumb on the right
-     (we are looking at the BACK of the hand, which is where the nails are).
-       x, y   knuckle / base centre of the finger, on the knuckle line
-       angle  degrees, 0 = straight up, positive splays towards +x
-       width  width of the finger AT ITS BASE (it tapers towards the tip)
-       length base -> fingertip
-     Relative lengths matter more than absolute ones: middle longest, ring and
-     index close behind, pinky clearly shortest and thinnest. The proportions
-     are adult, not infantile — the middle finger is about as long as the palm
-     is tall (knuckle line y~=180, wrist crease y~=333), and the palm is
-     clearly taller than it is wide. The thumb has its own entry below.
-     This is the one table to touch when the hand looks off. */
+  /* ---------------------------------------------------------------------- *
+   * HAND ANATOMY                                                            *
+   *                                                                         *
+   * Right hand, viewBox 0 0 300 380, seen from the BACK (that is where the  *
+   * nails are), thumb on the +x side.                                       *
+   *                                                                         *
+   *   x, y    centre of the MCP knuckle — the finger's base                 *
+   *   angle   degrees, 0 = straight up, positive splays toward +x           *
+   *   width   the finger's width AT THE KNUCKLE (it tapers from here)       *
+   *   length  knuckle -> the very end of the fingertip                      *
+   *   curve   lateral bow of the centreline, in finger lengths; real        *
+   *           fingers are not straight and no two bow the same way          *
+   *   creases where the two visible joint folds sit, as fractions of length *
+   *                                                                         *
+   * PROPORTIONS. What made the old hand read as a cartoon was NOT the        *
+   * fingers on their own — it was the palm they were sitting on. Measured:   *
+   *   - the palm used to be 1.40x as tall as it is wide (crotch to wrist     *
+   *     crease, over the width across the knuckles). A real one is about as  *
+   *     tall as it is wide. This table puts it at 0.91, and the wrist crease *
+   *     came up the frame with it. A long palm makes any finger look stubby. *
+   *   - the middle finger's VISIBLE length — from the crotch, because that   *
+   *     is all the eye sees — used to be 0.86x the height of the palm. On a  *
+   *     hand like the reference photographs it is clearly longer than the    *
+   *     palm is tall; here it is 1.33x.                                     *
+   *   - adjacent fingers all but touch at the knuckles: 1.5 to 4 units of    *
+   *     gap, not the 6 to 8 that turned every crotch into an open V.         *
+   *   - each finger is about 5 times as long as it is wide, from the crotch. *
+   * This is the one table to touch when the hand looks off.                 *
+   * ---------------------------------------------------------------------- */
   var HAND_GEOM = {
-    pinky:  { x: 88,  y: 190, angle: -15, width: 24, length: 106 },
-    ring:   { x: 117, y: 174, angle: -9,  width: 28, length: 136 },
-    middle: { x: 148, y: 168, angle: -1,  width: 30, length: 142 },
-    index:  { x: 179, y: 176, angle: 10,  width: 29, length: 130 },
+    pinky:  { x: 74,    y: 220, angle: -9.6, width: 28.4, length: 110,
+              curve: -0.050, creases: [0.585, 0.255], knuck: 0.90 },
+    ring:   { x: 109.5, y: 198, angle: -5.6, width: 32.0, length: 139,
+              curve: -0.020, creases: [0.570, 0.243], knuck: 1.00 },
+    middle: { x: 145,   y: 190, angle: 1.2,  width: 33.4, length: 148,
+              curve: 0.014,  creases: [0.598, 0.252], knuck: 1.07 },
+    index:  { x: 180.5, y: 199, angle: 8.2,  width: 32.2, length: 133,
+              curve: 0.042,  creases: [0.582, 0.236], knuck: 0.97 },
     /* The thumb is not a capsule: it is a limb that BENDS, from a wide mound
-       rooted in the palm heel (h0), through the knuckle (c / hc), out to a
-       clearly narrower distal segment (p2 / h2). Two overlapping capsules
-       always leave a step where they cross, so it is drawn as one tapered
-       ribbon swept along this quadratic spine. `tip` is derived from the
-       spine in initThumb() and exists only so the nail plate and the joint
-       hints can be positioned exactly like every other finger's. */
+       rooted in the palm heel (h0), through the knuckle (hc), out to a
+       clearly narrower distal segment (h2). It is swept along this quadratic
+       spine. `tip` is derived from the spine in initThumb() and exists only
+       so the nail plate can be seated exactly like every other finger's. */
     thumb:  {
-      spine: { p0: [172, 336], c: [228, 290], p2: [271, 216],
-               h0: 30, hc: 21, h2: 13.5 },
+      spine: { p0: [182, 296], c: [230, 284], p2: [256, 222],
+               h0: 23.5, hc: 16.8, h2: 11.6 },
       tip: null
     }
   };
 
-  /* --- the bent thumb ---------------------------------------------------- */
+  /* How a finger's width runs from knuckle (t=0) to fingertip (t=1), as a
+     fraction of `width`. A real finger is NOT a tube: it narrows steadily,
+     swells a little over each of the two joints, dips again in the shafts
+     between them, and ends narrower still at the nail bed. Measured on a
+     real hand the nail bed is about four fifths of the knuckle, and the
+     joints break that ramp by two or three percent each way — which is
+     small, but it is the difference between a finger and a length of hose. */
+  var FINGER_PROFILE = [
+    [0.00, 1.000], [0.10, 0.984], [0.26, 0.906], [0.39, 0.944],
+    [0.52, 0.872], [0.65, 0.906], [0.77, 0.846], [0.89, 0.832],
+    [1.00, 0.800]
+  ];
+  /* the very tip is a touch narrower than the nail bed, so the cap is not a
+     half circle stuck on the end of a strap */
+  var TIP_MUL = 0.93;
+  /* how far BELOW the knuckle each finger's walls start, in finger lengths,
+     and how much wider they are down there */
+  var ROOT_T = 0.05;
+  var ROOT_FLARE = 1.04;
+
+  /* The crotches. `drop` is how far BELOW the midpoint of the two knuckles
+     the deepest point of the web sits. Small numbers on purpose: on a real
+     hand these are narrow slots, and the fingers run parallel out of them for
+     a good part of their length before they start to separate. */
+  var WEB = [
+    { a: 'pinky',  b: 'ring',   drop: 6.0 },
+    { a: 'ring',   b: 'middle', drop: 7.5 },
+    { a: 'middle', b: 'index',  drop: 7.5 }
+  ];
+  /* the notch where the thumb leaves the hand */
+  var CROOK = { x: 198, y: 266 };
+
+  /* The palm, as the handful of control points the silhouette runs through
+     between the pinky's outer wall and the index's outer one. Kept as data
+     so the outline stays one continuous authored curve rather than a blob
+     path unioned with four capsules — that union is what produced the
+     mitten. y~=333 is the wrist crease; the forearm below it deliberately
+     runs off the bottom of the viewBox so it never ends in a stub. */
+  var PALM = {
+    /* pinky side, read from the pinky's knuckle down to the wrist */
+    ulnar:  [[58, 232], [52, 255], [54, 282], [66, 305], [80, 320]],
+    wristL: [99, 334],
+    wristR: [178, 333],
+    /* the last of the thumb mound, between the thumb's root and the wrist */
+    thenar: [[189, 326]],
+    /* the second metacarpal, read from the index's knuckle down to the crook */
+    radial: [[197, 224], [198, 245]],
+    armY: 440, armSpread: -4
+  };
+  /* where along the thumb's spine the crook joins its upper wall */
+  var THUMB_CROOK_T = 0.30;
+
+  /* Nail plate seating. PLATE_W is a fraction of the finger's width AT THE
+     CUTICLE — resolved from FINGER_PROFILE at whatever t the cuticle lands
+     on — so a plate can never be wider than the fingertip it lies on, and
+     it always covers the same generous share of it. On a real press-on the
+     side walls sit right up against the skin folds: only a thin strip of
+     flesh shows beside the plate, so this number is high on purpose.
+     PLATE_SEAT decides how far back from the fingertip the cuticle sits: at
+     length factor 1 the plate is seated so its free edge lands exactly on
+     the fingertip, shorter sets pull just inside it, and only long / xlong
+     reach past it. */
+  var PLATE_W = 0.845;
+  var PLATE_SEAT = 0.16;
+
+
+  /* ====================================================================== */
+  /* 1b. Turning that table into an outline                                  */
+  /*                                                                         */
+  /*  The hand used to be a blob path unioned with four capsules and four    */
+  /*  circles. A union cannot be shaped: wherever two pieces crossed you got */
+  /*  whatever the boolean gave you, which is why every crotch was an open V */
+  /*  and the knuckle line a smooth arc. Here the whole silhouette — palm,   */
+  /*  four fingers, webs, thumb, wrist — is ONE authored polyline, sampled   */
+  /*  from the geometry above and smoothed into a single path. Every part of */
+  /*  the outline is therefore something a person chose, and it costs one    */
+  /*  path element instead of nine.                                          */
+  /* ====================================================================== */
+
   function qAt(a, b, c, t) {
     var u = 1 - t;
     return u * u * a + 2 * u * t * b + t * t * c;
@@ -130,38 +227,121 @@
       h: qAt(sp.h0, sp.hc, sp.h2, t)
     };
   }
-  /* one closed outline: rounded root, both offset walls, rounded tip cap */
-  function spinePath(sp, steps) {
-    var N = steps || 26, i, t, a, b, dx, dy, L, nx, ny, pt;
-    var left = [], right = [];
-    for (i = 0; i <= N; i++) {
-      t = i / N;
-      pt = spinePt(sp, t);
-      a = spinePt(sp, Math.max(0, t - 0.02));
-      b = spinePt(sp, Math.min(1, t + 0.02));
-      dx = b.x - a.x; dy = b.y - a.y;
-      L = Math.sqrt(dx * dx + dy * dy) || 1;
-      nx = -dy / L; ny = dx / L;
-      left.push([pt.x + nx * pt.h, pt.y + ny * pt.h]);
-      right.push([pt.x - nx * pt.h, pt.y - ny * pt.h]);
+
+  /* FINGER_PROFILE, read with a smoothstep between knots so the walls never
+     show a facet where two knots meet */
+  function profileAt(t) {
+    var P = FINGER_PROFILE, i, a, b, u;
+    if (t < 0) return P[0][1] + (-t / ROOT_T) * (ROOT_FLARE - P[0][1]);
+    if (t === 0) return P[0][1];
+    if (t >= 1) return P[P.length - 1][1];
+    for (i = 1; i < P.length; i++) {
+      if (t <= P[i][0]) {
+        a = P[i - 1]; b = P[i];
+        u = (t - a[0]) / ((b[0] - a[0]) || 1);
+        u = u * u * (3 - 2 * u);
+        return a[1] + (b[1] - a[1]) * u;
+      }
     }
-    var p = pb();
-    p.M(left[0][0], left[0][1]);
-    for (i = 1; i <= N; i++) p.L(left[i][0], left[i][1]);
-    p.A(sp.h2, sp.h2, 0, 0, 0, right[N][0], right[N][1]);
-    for (i = N - 1; i >= 0; i--) p.L(right[i][0], right[i][1]);
-    p.A(sp.h0, sp.h0, 0, 0, 0, left[0][0], left[0][1]);
-    p.Z();
-    return p.d();
+    return P[P.length - 1][1];
+  }
+  /* the thumb's stand-in limb is already a measured width, so it opts out */
+  function widthAt(gm, t) {
+    return gm.flat ? gm.width : gm.width * profileAt(t);
   }
 
-  /* derive the straight stand-in limb the nail plate rides on */
+  /* One finger's two walls, in world coordinates.
+     Returns { L: [...], R: [...], apex: [x,y], tEnd: n } where L runs base ->
+     tip on the -x side, R the same on the +x side, and apex is the very end
+     of the fingertip. */
+  function limbWalls(gm, N) {
+    var a = rad(gm.angle);
+    var ux = Math.sin(a), uy = -Math.cos(a);       /* along the finger */
+    var vx = Math.cos(a), vy = Math.sin(a);        /* across it, toward +x */
+    var Ln = gm.length, bow = num(gm.curve, 0) * Ln;
+    var hTip = (gm.width / 2) * profileAt(1) * TIP_MUL;
+    var tEnd = clamp(1 - hTip / Ln, 0.4, 0.99);
+    var L = [], R = [], i, t, cx, cy, s, h, dx, dy, len, nx, ny, p0, p1;
+    var t0 = gm.flat ? 0 : -ROOT_T;
+    N = N || 16;
+    function C(t) {
+      s = Math.sin(Math.PI * t) * bow;
+      return [gm.x + ux * Ln * t + vx * s, gm.y + uy * Ln * t + vy * s];
+    }
+    for (i = 0; i <= N; i++) {
+      t = t0 + (tEnd - t0) * i / N;
+      p0 = C(t - 0.01);
+      p1 = C(Math.min(1, t + 0.01));
+      dx = p1[0] - p0[0]; dy = p1[1] - p0[1];
+      len = Math.sqrt(dx * dx + dy * dy) || 1;
+      nx = dy / len; ny = -dx / len;               /* points toward -x */
+      cx = C(t)[0]; cy = C(t)[1];
+      h = widthAt(gm, t) / 2;
+      L.push([cx + nx * h, cy + ny * h]);
+      R.push([cx - nx * h, cy - ny * h]);
+    }
+    return { L: L, R: R, apex: C(1), tEnd: tEnd, hTip: hTip };
+  }
+
+  /* The cap. Not a half circle: a fingertip under a press-on is a rounded
+     wedge, fuller on the way up than on the way down, so three points do
+     more than an arc ever did. */
+  function tipCap(w, out) {
+    var l = w.L[w.L.length - 1], r = w.R[w.R.length - 1], a = w.apex;
+    var mx = (l[0] + r[0]) / 2, my = (l[1] + r[1]) / 2;
+    var dx = a[0] - mx, dy = a[1] - my;
+    var sx = (r[0] - l[0]) / 2, sy = (r[1] - l[1]) / 2;
+    out.push([l[0] + dx * 0.46 - sx * 0.045, l[1] + dy * 0.46 - sy * 0.045]);
+    out.push([mx + dx * 0.88 - sx * 0.30, my + dy * 0.88 - sy * 0.30]);
+    out.push([mx + dx * 0.97, my + dy * 0.97]);
+    out.push([mx + dx * 0.88 + sx * 0.30, my + dy * 0.88 + sy * 0.30]);
+    out.push([r[0] + dx * 0.46 + sx * 0.045, r[1] + dy * 0.46 + sy * 0.045]);
+  }
+
+  function pushRun(out, arr, from, to) {
+    var i;
+    if (from <= to) { for (i = from; i <= to; i++) out.push(arr[i]); }
+    else { for (i = from; i >= to; i--) out.push(arr[i]); }
+  }
+
+  /* the deepest point of one crotch, plus the two shoulders that lead into
+     it, so the web reads as a narrow slot instead of a rounded valley */
+  function webRun(out, w, A, B) {
+    var pa = A.R[0], pb2 = B.L[0];
+    /* ONE point. Two fingers at the knuckle are barely a unit apart, so any
+       attempt to round the bottom of the slot puts two shoulder points wider
+       apart than the walls they sit between, the smoothing crosses itself and
+       a white bite appears at the base of every crotch. The corner smoothing
+       rounds a single point into exactly the narrow slot this wants. */
+    out.push([(pa[0] + pb2[0]) / 2, (pa[1] + pb2[1]) / 2 + w.drop]);
+  }
+
+  /* a polyline -> one smooth path. Every corner is replaced by a quadratic
+     through the midpoints of its two edges, which is exactly the curvature a
+     hand outline wants and costs nothing. */
+  function smoothClosed(pts) {
+    var n = pts.length, i, p, q, mx, my;
+    if (n < 3) return '';
+    var d = pb();
+    d.M((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2);
+    for (i = 1; i < n; i++) {
+      p = pts[i]; q = pts[(i + 1) % n];
+      mx = (p[0] + q[0]) / 2; my = (p[1] + q[1]) / 2;
+      d.Q(p[0], p[1], mx, my);
+    }
+    p = pts[0]; q = pts[1];
+    d.Q(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2);
+    d.Z();
+    return d.d();
+  }
+
+  /* derive the straight stand-in limb the thumb's nail plate rides on */
   (function initThumb() {
     var sp = HAND_GEOM.thumb.spine;
-    var k = spinePt(sp, 0.45);          /* the knuckle: base of the stand-in */
-    var a = spinePt(sp, 0.82), b = spinePt(sp, 1);
-    /* aim the stand-in along the tangent AT THE TIP, so the plate lies flat
-       on the last segment instead of following the chord of the whole bend */
+    var k = spinePt(sp, 0.42);
+    var a = spinePt(sp, 0.84), b = spinePt(sp, 1);
+    /* aim it along the tangent AT THE TIP so the plate lies flat on the last
+       segment instead of following the chord of the whole bend */
     var dx = b.x - a.x, dy = b.y - a.y;
     var ang = Math.atan2(dx, -dy);
     var len = Math.sqrt((b.x - k.x) * (b.x - k.x) + (b.y - k.y) * (b.y - k.y));
@@ -169,61 +349,13 @@
       x: b.x - Math.sin(ang) * len,
       y: b.y + Math.cos(ang) * len,
       angle: ang * 180 / Math.PI,
-      width: k.h * 2,
+      width: spinePt(sp, 0.88).h * 2,
       length: len,
-      taper: sp.h2 / k.h
+      flat: true,
+      creases: [0.42, 0.16],
+      knuck: 0.9
     };
   }());
-
-  /* how far a finger capsule reaches back INTO the palm, in finger widths,
-     so the two silhouettes fuse into one shape */
-  var FINGER_ROOT = 1.5;
-  /* the finger tip is this fraction of the base width */
-  var FINGER_TAPER = 0.74;
-
-  /* The rounded webs where two fingers separate. Without these the two
-     capsules simply cross and the crotch comes to a hard point.
-     `t` = how far down between the two bases the web sits, `r` = its radius. */
-  var WEB = [
-    { a: 'pinky',  b: 'ring',   drop: 7, r: 13 },
-    { a: 'ring',   b: 'middle', drop: 7, r: 14 },
-    { a: 'middle', b: 'index',  drop: 7, r: 14 },
-    { x: 203, y: 273, r: 14 }               /* index <-> thumb */
-  ];
-
-  /* The palm: clearly taller than it is wide, tapering to the wrist, with the
-     thenar (thumb mound) bulging out on the thumb side. In an adult hand the
-     middle finger is about as long as the palm is tall — the knuckle line
-     here sits at y~=182 and the wrist crease at y~=330, which is exactly the
-     length of the middle finger above it. Same coordinates as HAND_GEOM. */
-  var PALM_D =
-    /* clockwise from the pinky-side knuckle. The first control leaves that
-       corner along the pinky's own outer edge, so the hypothenar continues
-       the little finger instead of notching into it. */
-    'M82 212 ' +
-    'C89 236 71 246 70 264 ' +       /* hypothenar bulge           */
-    'C69 294 96 316 103 330 ' +      /* down to the wrist          */
-    'C110 344 192 344 199 330 ' +    /* the heel of the hand       */
-    'C206 314 206 288 206 252 ' +    /* up the index-side edge     */
-    'C206 228 203 210 196 202 ' +    /* the index knuckle          */
-    'C186 194 136 185 104 190 ' +    /* back across the knuckles   */
-    'C93 192 84 200 82 212 Z';
-
-  /* a wrist stub so the hand does not float */
-  /* deliberately taller than the viewBox so it always runs off the bottom
-     edge rather than ending in a visible rounded stub */
-  var WRIST = { x: 103, y: 296, w: 96, h: 140, r: 20 };
-
-  /* Nail plate seating. PLATE_W is a fraction of the finger's width AT THE
-     NAIL BED (measured PLATE_AT of the way to the tip), never of its base, so
-     a plate can never be wider than the fingertip it lies on.
-     PLATE_SEAT decides how far back from the fingertip the cuticle sits: at
-     length factor 1 the plate is seated so its free edge lands exactly on the
-     fingertip, shorter sets pull just inside it, and only long / xlong reach
-     past it. */
-  var PLATE_W = 0.945;
-  var PLATE_AT = 0.80;
-  var PLATE_SEAT = 0.16;
 
   /* ====================================================================== */
   /* 2. Tiny helpers                                                         */
@@ -2323,56 +2455,37 @@
   /*  the upper left, always.                                                */
   /* ====================================================================== */
 
+  /* FINGERS is thumb-first because that is the order the studio lists them.
+     The outline has to walk the hand the other way, little finger to index. */
+  var FOUR = ['pinky', 'ring', 'middle', 'index'];
+
   function fingerTF(gm) {
     return 'translate(' + f(gm.x) + ' ' + f(gm.y) + ') rotate(' + f(gm.angle) + ')';
   }
 
-  /* One limb in its own frame: base centre at (0,0), tip at (0,-length).
-     A finger is not a capsule — it swells a little at each joint and the pad
-     at the tip is wider than the shaft just behind it. */
-  function limbPath(gm, rootMul) {
-    var hb = gm.width / 2;
-    var ht = hb * num(gm.taper, FINGER_TAPER);
-    var y0 = gm.width * num(rootMul, FINGER_ROOT);
-    var yTip = -(gm.length - ht);
-    var span = y0 - yTip;
-    var mid = hb * 0.955, knu = hb * 0.99, pad = ht * 1.045;
-    /* one closed run: base -> left wall -> pad -> right wall -> base */
-    var q = pb();
-    q.M(-hb, y0);
-    q.C(-hb, y0 - span * 0.16, -knu, y0 - span * 0.34, -knu, y0 - span * 0.44);
-    q.C(-knu, y0 - span * 0.56, -mid, y0 - span * 0.62, -mid, y0 - span * 0.70);
-    q.C(-mid, y0 - span * 0.82, -pad * 1.05, y0 - span * 0.88, -pad, yTip + ht * 0.30);
-    q.C(-pad, yTip - ht * 0.42, -pad * 0.66, yTip - ht * 1.02, 0, yTip - ht * 1.03);
-    q.C(pad * 0.66, yTip - ht * 1.02, pad, yTip - ht * 0.42, pad, yTip + ht * 0.30);
-    q.C(pad * 1.05, y0 - span * 0.88, mid, y0 - span * 0.82, mid, y0 - span * 0.70);
-    q.C(mid, y0 - span * 0.62, knu, y0 - span * 0.56, knu, y0 - span * 0.44);
-    q.C(knu, y0 - span * 0.34, hb, y0 - span * 0.16, hb, y0);
-    q.Z();
-    return q.d();
-  }
-  function fingerPath(gm) { return limbPath(gm, FINGER_ROOT); }
-
+  /* the world position of the deepest point of each crotch — the shading
+     wants them too, for the valleys that run back over the metacarpals */
   function webs(geom) {
-    var out = [], i, w, A, B, cx, cy;
+    var out = [], i, w, A, B;
     for (i = 0; i < WEB.length; i++) {
       w = WEB[i];
-      if (w.a) {
-        A = geom[w.a]; B = geom[w.b];
-        cx = (A.x + B.x) / 2;
-        cy = (A.y + B.y) / 2 + w.drop;
-      } else { cx = w.x; cy = w.y; }
-      out.push({ cx: cx, cy: cy, r: w.r });
+      A = geom[w.a]; B = geom[w.b];
+      out.push({
+        cx: (A.x + B.x) / 2,
+        cy: (A.y + B.y) / 2 + w.drop + ROOT_T * B.length,
+        r: 4
+      });
     }
+    out.push({ cx: CROOK.x, cy: CROOK.y, r: 9 });
     return out;
   }
 
-  /* Both hands are the same anatomy, but a real pair is never pixel identical:
-     the left splays a shade wider and sits a degree off, which is enough to
-     stop the eye reading "stamped twice". */
+  /* Both hands are the same anatomy, but a real pair is never pixel
+     identical: the left splays a shade wider and sits a degree off, which is
+     enough to stop the eye reading "stamped twice". */
   var HAND_VARIANT = {
-    right: { splay: 0, lift: 0, wrist: 0 },
-    left:  { splay: 1.6, lift: -1.4, wrist: -1.5 }
+    right: { splay: 0, lift: 0 },
+    left:  { splay: 1.5, lift: -1.6 }
   };
 
   function geomFor(side) {
@@ -2386,69 +2499,140 @@
       if (!src || src.spine) continue;
       out[fk] = {
         x: src.x, y: src.y + v.lift * (i === 2 ? 1 : 0.5),
-        angle: src.angle + v.splay * (i - 1.7) * 0.4,
-        width: src.width, length: src.length + (i === 1 ? 1.5 : 0)
+        angle: src.angle + v.splay * (i - 1.7) * 0.34,
+        width: src.width, length: src.length + (i === 1 ? 1.6 : 0),
+        curve: src.curve * (i === 4 ? 1.25 : 0.85),
+        creases: src.creases, knuck: src.knuck
       };
     }
     return out;
   }
 
   /* The silhouette is stamped four or five times per hand (clip, outline,
-     knock-out, …) and the thumb alone walks a 26 step sweep to build its
-     outline, so the geometry is resolved ONCE per hand and only the elements
-     are rebuilt. Keyed on the numbers themselves, so tuning HAND_GEOM at
-     runtime still takes effect. */
+     knock-out, …), so it is resolved ONCE per hand and only the elements are
+     rebuilt. Keyed on the numbers themselves, so tuning HAND_GEOM at runtime
+     still takes effect. */
   var SIL_CACHE = {};
+
+  /* THE OUTLINE. Read it top to bottom and you are walking round a hand:
+     up the little-finger side of the palm, out and back along each finger in
+     turn with a narrow web between, down the second metacarpal into the
+     crook, out along the thumb, back down the thenar and off the bottom of
+     the frame at the wrist. */
+  function outlineD(geom) {
+    var pts = [], i, W = [], sp, T, tc;
+
+    for (i = 0; i < FOUR.length; i++) W.push(limbWalls(geom[FOUR[i]], 15));
+
+    /* the forearm, running off the bottom edge so it never ends in a stub */
+    pts.push([PALM.wristL[0] - PALM.armSpread, PALM.armY]);
+    pts.push(PALM.wristL);
+    /* up the hypothenar to the pinky's outer wall */
+    for (i = PALM.ulnar.length - 1; i >= 0; i--) pts.push(PALM.ulnar[i]);
+
+    for (i = 0; i < 4; i++) {
+      pushRun(pts, W[i].L, 0, W[i].L.length - 1);
+      tipCap(W[i], pts);
+      pushRun(pts, W[i].R, W[i].R.length - 1, 0);
+      if (i < 3) webRun(pts, WEB[i], W[i], W[i + 1]);
+    }
+
+    /* down the second metacarpal into the crook between index and thumb */
+    for (i = 0; i < PALM.radial.length; i++) pts.push(PALM.radial[i]);
+    pts.push([CROOK.x, CROOK.y]);
+
+    /* the thumb, joined to the crook part way along its upper wall */
+    sp = geom.thumb.spine;
+    /* the thumb is swept along its own spine, not along a straight axis */
+    T = spineWalls(sp, 20);
+    tc = Math.round(THUMB_CROOK_T * (T.L.length - 1));
+    pushRun(pts, T.L, tc, T.L.length - 1);
+    tipCap(T, pts);
+    pushRun(pts, T.R, T.R.length - 1, 0);
+
+    /* back down the thumb mound to the wrist */
+    for (i = 0; i < PALM.thenar.length; i++) pts.push(PALM.thenar[i]);
+    pts.push(PALM.wristR);
+    pts.push([PALM.wristR[0] + PALM.armSpread, PALM.armY]);
+
+    return smoothClosed(pts);
+  }
+
+  /* the thumb's walls, offset along its quadratic spine */
+  function spineWalls(sp, N) {
+    var L = [], R = [], i, t, p, a, b, dx, dy, len, nx, ny;
+    for (i = 0; i <= N; i++) {
+      t = i / N;
+      p = spinePt(sp, t);
+      a = spinePt(sp, Math.max(0, t - 0.02));
+      b = spinePt(sp, Math.min(1, t + 0.02));
+      dx = b.x - a.x; dy = b.y - a.y;
+      len = Math.sqrt(dx * dx + dy * dy) || 1;
+      nx = dy / len; ny = -dx / len;
+      L.push([p.x + nx * p.h, p.y + ny * p.h]);
+      R.push([p.x - nx * p.h, p.y - ny * p.h]);
+    }
+    return { L: L, R: R, apex: [spinePt(sp, 1).x, spinePt(sp, 1).y], hTip: sp.h2 };
+  }
+  /* the thumb on its own, for the shading that runs across its bend */
+  function spinePath(sp, steps) {
+    var w = spineWalls(sp, steps || 20), pts = [], i;
+    pushRun(pts, w.L, 0, w.L.length - 1);
+    tipCap(w, pts);
+    pushRun(pts, w.R, w.R.length - 1, 0);
+    return smoothClosed(pts);
+  }
+
   function silhouette(geom) {
-    var sig = '', i, k, gm, pts, out;
-    for (i = 0; i < FINGERS.length; i++) {
-      gm = geom[FINGERS[i].key];
-      sig += gm.spine
-        ? 's' + gm.spine.p0 + gm.spine.c + gm.spine.p2 + gm.spine.h0 + gm.spine.hc + gm.spine.h2
-        : '|' + gm.x + ',' + gm.y + ',' + gm.angle + ',' + gm.width + ',' + gm.length;
+    var sig = '', i, k, gm, sp = geom.thumb.spine;
+    for (i = 0; i < FOUR.length; i++) {
+      gm = geom[FOUR[i]];
+      sig += '|' + gm.x + ',' + gm.y + ',' + gm.angle + ',' + gm.width +
+             ',' + gm.length + ',' + gm.curve;
     }
+    sig += 's' + sp.p0 + sp.c + sp.p2 + sp.h0 + sp.hc + sp.h2;
     if (SIL_CACHE[sig]) return SIL_CACHE[sig];
-    out = [];
-    out.push({ t: 'rect', a: {
-      x: f(WRIST.x), y: f(WRIST.y), width: f(WRIST.w), height: f(WRIST.h),
-      rx: f(WRIST.r), ry: f(WRIST.r)
-    } });
-    out.push({ t: 'path', a: { d: PALM_D } });
-    pts = webs(geom);
-    for (i = 0; i < pts.length; i++) {
-      out.push({ t: 'circle', a: { cx: f(pts[i].cx), cy: f(pts[i].cy), r: f(pts[i].r) } });
-    }
-    for (i = 0; i < FINGERS.length; i++) {
-      gm = geom[FINGERS[i].key];
-      if (gm.spine) out.push({ t: 'path', a: { d: spinePath(gm.spine) } });
-      else out.push({ t: 'path', a: { d: fingerPath(gm), transform: fingerTF(gm) } });
-    }
-    /* keep the map from growing without bound if someone animates the table */
     k = 0;
     for (i in SIL_CACHE) if (Object.prototype.hasOwnProperty.call(SIL_CACHE, i)) k++;
     if (k > 8) SIL_CACHE = {};
-    SIL_CACHE[sig] = out;
-    return out;
+    SIL_CACHE[sig] = outlineD(geom);
+    return SIL_CACHE[sig];
   }
 
+  /* one element, not nine — every layer that wants the hand's shape asks for
+     this and gets a single path */
   function skinShapes(geom, attrs) {
-    var parts = silhouette(geom), out = [], i, k, a;
-    for (i = 0; i < parts.length; i++) {
-      a = {};
-      for (k in parts[i].a) if (Object.prototype.hasOwnProperty.call(parts[i].a, k)) a[k] = parts[i].a[k];
-      out.push(E(parts[i].t, mergeAttrs(a, attrs || {})));
-    }
-    return out;
-  }
-  function mergeAttrs(base, extra) {
-    var k;
-    for (k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) base[k] = extra[k];
-    return base;
+    var a = { d: silhouette(geom) }, k;
+    if (attrs) for (k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) a[k] = attrs[k];
+    return [E('path', a)];
   }
 
   function nailLimbOf(geom, fk) {
     var gm = geom[fk];
     return (gm && gm.tip) ? gm.tip : gm;
+  }
+
+  /* Where the plate sits on one finger. The cuticle's position depends on the
+     plate's height and the plate's width depends on how wide the finger is at
+     the cuticle, so it is solved rather than assumed — two passes is plenty
+     and it keeps the side walls hard against the skin folds at every length. */
+  function plateFor(gm, aspect, factor) {
+    var w = widthAt(gm, 0.90) * PLATE_W, nhMed, nh, back, dist, i;
+    for (i = 0; i < 2; i++) {
+      nhMed = w * aspect;
+      back = clamp(nhMed * (PLATE_SEAT + (1 - PLATE_SEAT) * Math.min(factor, 1)),
+                   w * 0.8, gm.length * 0.62);
+      dist = gm.length - back;
+      /* measured a little PAST the cuticle, because that is where the plate
+         is widest and where it would otherwise overhang the fingertip */
+      w = widthAt(gm, clamp(dist / gm.length + 0.05, 0, 1)) * PLATE_W;
+    }
+    nhMed = w * aspect;
+    nh = nhMed * factor;
+    back = clamp(nhMed * (PLATE_SEAT + (1 - PLATE_SEAT) * Math.min(factor, 1)),
+                 w * 0.8, gm.length * 0.62);
+    dist = gm.length - back;
+    return { w: w, hMed: nhMed, h: nh, dist: dist };
   }
 
   function handContent(side, design, opts) {
@@ -2464,7 +2648,7 @@
     var g = E('g', { 'class': 'sn-hand-body' });
     var defs = add(g, E('defs'));
     var clipId = uid('hand');
-    var i, gm, fk, key, nw, nh, nhMed, back, dist, px, py, factor, aspect, shape, kn, el, edge, wp;
+    var i, gm, fk, key, nw, nh, nhMed, dist, px, py, factor, aspect, shape, kn, el, edge, wp, pl, v;
     var q = clamp(num(opts.detail, 0.55), 0.25, 1);
 
     /* world-space x: pre-flipped so that after the outer scale(-1,1) every
@@ -2503,7 +2687,7 @@
     /* every paint that repeats per finger is resolved ONCE per hand: grad()
        hashes its stop list on every call, so asking five times for the same
        gradient costs five hashes and buys nothing */
-    var CREASE_INK = taperX(occ), CREASE_LIT = taperX(hi);
+    var CREASE_INK = taperX(occ);
     var VALLEY_INK = taperY(occ, 0.85);
     var KNUCKLE_FILL = radGrad(defs, [
       [0, mix(hi, warm, 0.22), 0.52], [0.55, hi, 0.2], [1, skin, 0]
@@ -2529,9 +2713,12 @@
 
     /* 1. one darker edge around the WHOLE silhouette (opaque on purpose: a
        translucent edge turns into a pale halo on a light page) */
-    edge = mix(skin, occ, 0.42);
+    /* A 3px ink line around the whole hand is the single loudest cartoon
+       tell there is. All this has to do is stop the antialiased edge showing
+       the page through it, so it is a hairline in a tone close to the skin. */
+    edge = mix(skin, occ, 0.30);
     add(g, E('g', {
-      fill: edge, stroke: edge, 'stroke-width': 3,
+      fill: edge, stroke: edge, 'stroke-width': 1.1,
       'stroke-linejoin': 'round', 'stroke-linecap': 'round'
     }, skinShapes(geom)));
 
@@ -2541,27 +2728,44 @@
        painting one would just be a layer nobody ever sees. */
     clipped([rect(0, 0, W, HB, {
       fill: grad(defs, 'linearGradient', [
-        [0, mix(hi, '#FFFFFF', 0.25)], [0.18, hi], [0.42, mix(hi, skin, 0.4)],
-        [0.62, skin], [0.84, mix(sh1, sh2, 0.45)], [1, mix(sh2, occ, 0.5)]
+        [0, mix(hi, '#FFFFFF', 0.34)], [0.14, hi], [0.36, mix(hi, skin, 0.3)],
+        [0.56, skin], [0.76, mix(sh1, sh2, 0.5)], [1, mix(sh2, occ, 0.35)]
       ], {
-        x1: f(LX(28)), y1: 20, x2: f(LX(292)), y2: 330,
+        x1: f(LX(64)), y1: 44, x2: f(LX(252)), y2: 340,
         gradientUnits: 'userSpaceOnUse'
       })
     })]);
 
-    /* 2b. the inner edge: flood the silhouette with the shadow tone, then knock
-       it back out with a blurred copy nudged toward the light. What survives
-       hugs the outline — thick on the shaded side, a hairline on the lit one.
-       It has to happen HERE, under the form layers: run it last and it paints
-       flat skin back over everything and the hand goes flat again. */
-    clipped([
-      rect(0, 0, W, HB, { fill: mix(sh2, occ, 0.45) }),
-      E('g', {
-        fill: skin,
-        transform: 'translate(' + f(SX(-3.4)) + ' -4.6)',
-        filter: blurF(defs, 5)
-      }, skinShapes(geom))
-    ], { opacity: 0.55 });
+    /* 2b. THE EDGES, and the rule they follow: a real hand is CRISP where it
+       turns away from the light and SOFT where it turns toward it. Both rims
+       come from the same trick — a full-bleed wash shown only through a mask
+       that is the silhouette knocked out by a blurred copy of itself, nudged
+       one way or the other. What survives is a band that is fat on the side
+       the copy moved away from and a hairline on the other.
+       It matters that this is a MASK. Painting the wash and then repainting
+       the skin tone over the middle of it, which is how this used to work,
+       lays a flat colour over three quarters of the hand and every gradient
+       underneath dies — that is most of why the hand looked like paper. */
+    function edgeMask(dx, dy, blur) {
+      var mid = uid('em');
+      add(defs, E('mask', {
+        id: mid, maskUnits: 'userSpaceOnUse',
+        x: -20, y: -20, width: f(W + 40), height: f(HB + 40)
+      }, [
+        rect(-20, -20, W + 40, HB + 40, { fill: '#FFFFFF' }),
+        E('g', {
+          fill: '#000000', transform: 'translate(' + f(dx) + ' ' + f(dy) + ')',
+          filter: blurF(defs, blur)
+        }, skinShapes(geom))
+      ]));
+      return 'url(#' + mid + ')';
+    }
+    /* the shaded side: tight, dark, and it stops fast */
+    clipped([rect(0, 0, W, HB, { fill: mix(sh2, occ, 0.55) })],
+      { mask: edgeMask(SX(-2.4), -3.0, 2.75), opacity: 0.82 });
+    /* the lit side: wider, weaker, and it dies away into the form */
+    clipped([rect(0, 0, W, HB, { fill: mix(hi, '#FFFFFF', 0.38) })],
+      { mask: edgeMask(SX(3.2), 4.0, 5.25), opacity: 0.32 });
 
     /* 3. EVERY FINGER IS A CYLINDER. Without this a hand is four flat straps;
        with it, it has volume. The ramp runs across each finger in its own
@@ -2576,9 +2780,10 @@
       return out;
     }
     var CYL = [
-      [0.00, occ, 0.55], [0.07, sh2, 0.42], [0.20, sh1, 0.16],
-      [0.36, '#FFFFFF', 0.20], [0.46, '#FFFFFF', 0.10],
-      [0.66, sh1, 0.10], [0.85, sh2, 0.40], [1.00, occ, 0.60]
+      [0.00, occ, 0.42], [0.09, sh2, 0.30], [0.24, sh1, 0.13],
+      [0.34, '#FFFFFF', 0.09], [0.44, '#FFFFFF', 0.12],
+      [0.56, '#FFFFFF', 0.07], [0.66, sh1, 0.07],
+      [0.78, sh1, 0.20], [0.90, sh2, 0.46], [1.00, occ, 0.66]
     ];
     /* the cylinders run the length of each finger and have to STOP somewhere;
        a straight cut across the back of the hand is worse than no shading at
@@ -2604,8 +2809,8 @@
       gm = geom[fk];
       if (gm.spine) continue;
       add(kn, E('rect', {
-        x: f(-gm.width * 0.62), y: f(-gm.length * 1.15),
-        width: f(gm.width * 1.24), height: f(gm.length * 1.9),
+        x: f(-gm.width * 0.47), y: f(-gm.length * 1.15),
+        width: f(gm.width * 0.94), height: f(gm.length * 1.9),
         fill: CYL_FILL,
         transform: fingerTF(gm)
       }));
@@ -2614,7 +2819,8 @@
        along it — and faded out towards its root, because the root of the
        thumb is a disc buried in the palm and shading it like a cylinder puts
        a dark half-moon in the middle of the hand. */
-    var thumbMask = shared(defs, 'tmask', function (dd) {
+    var tsp = geom.thumb.spine;
+    var thumbMask = shared(defs, 'tmask|' + tsp.p0 + tsp.p2, function (dd) {
       var id = uid('tm');
       add(dd, E('mask', {
         id: id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: f(W), height: f(H + 120)
@@ -2622,7 +2828,8 @@
         rect(0, 0, W, H + 120, {
           fill: grad(dd, 'linearGradient',
             [[0, '#000000'], [0.14, '#000000'], [0.44, '#FFFFFF'], [1, '#FFFFFF']],
-            { x1: 172, y1: 336, x2: 271, y2: 216, gradientUnits: 'userSpaceOnUse' })
+            { x1: f(tsp.p0[0]), y1: f(tsp.p0[1]), x2: f(tsp.p2[0]), y2: f(tsp.p2[1]),
+              gradientUnits: 'userSpaceOnUse' })
         })
       ]));
       return 'url(#' + id + ')';
@@ -2633,9 +2840,17 @@
       fill: grad(defs, 'linearGradient', cyl(mirror, [
         [0.00, occ, 0.32], [0.15, sh2, 0.2], [0.44, '#FFFFFF', 0.18],
         [0.58, '#FFFFFF', 0.06], [0.80, sh1, 0.14], [1.00, occ, 0.4]
-      ]), {
-        x1: f(LX(202)), y1: 264, x2: f(LX(248)), y2: 302, gradientUnits: 'userSpaceOnUse'
-      })
+      ]), (function () {
+        /* across the thumb's own bend at its midpoint, wherever that now is */
+        var m = spinePt(tsp, 0.5), t1 = spinePt(tsp, 0.56), a0 = spinePt(tsp, 0.44);
+        var dx = t1.x - a0.x, dy = t1.y - a0.y, L = Math.sqrt(dx * dx + dy * dy) || 1;
+        var nx = -dy / L, ny = dx / L, r = m.h * 1.15;
+        return {
+          x1: f(LX(m.x + nx * r)), y1: f(m.y + ny * r),
+          x2: f(LX(m.x - nx * r)), y2: f(m.y - ny * r),
+          gradientUnits: 'userSpaceOnUse'
+        };
+      }()))
     }));
 
     /* 4. the back of the hand is not flat either: knuckle mounds catch the
@@ -2647,45 +2862,34 @@
       gm = geom[fk];
       if (gm.spine) continue;
       /* the knuckle itself. Its core is WARM, not just bright: the skin over
-         a knuckle is thin and the blood sits right under it. */
+         a knuckle is thin and the blood sits right under it. Each one is a
+         slightly different size — `knuck` — because on a real hand they are.
+         What is NOT here any more: the crease under it and the lit ridge
+         under that. At this scale a knuckle reads entirely as a soft mound;
+         drawing the fold as well is illustration, not observation. */
+      v = num(gm.knuck, 1);
       add(kn, E('ellipse', {
-        cx: f(gm.x - SX(gm.width * 0.14)), cy: f(gm.y + 8),
-        rx: f(gm.width * 0.56), ry: f(gm.width * 0.46),
-        fill: KNUCKLE_FILL
-      }));
-      /* the crease under it, plus the lit bulge of skin just below the
-         crease. The valley that used to sit beside every knuckle is gone —
-         it landed on the same spot as the web shadow and the crevice
-         shadow, and three subtle washes stacked into one visible patch. */
-      add(kn, E('path', {
-        d: pb().M(gm.x - gm.width * 0.32, gm.y + 20)
-          .Q(gm.x, gm.y + 25.5, gm.x + gm.width * 0.32, gm.y + 20).d(),
-        fill: 'none', stroke: CREASE_INK, 'stroke-width': 2.2, opacity: 0.15,
-        'stroke-linecap': 'round'
-      }));
-      add(kn, E('path', {
-        d: pb().M(gm.x - gm.width * 0.28, gm.y + 24.5)
-          .Q(gm.x, gm.y + 29.5, gm.x + gm.width * 0.28, gm.y + 24.5).d(),
-        fill: 'none', stroke: CREASE_LIT, 'stroke-width': 2.4, opacity: 0.2,
-        'stroke-linecap': 'round'
+        cx: f(gm.x - SX(gm.width * 0.13)), cy: f(gm.y + 7),
+        rx: f(gm.width * 0.54 * v), ry: f(gm.width * 0.44 * v),
+        fill: KNUCKLE_FILL, opacity: 0.95
       }));
     }
     /* the whole back of the hand domes up over the metacarpals */
     add(kn, E('ellipse', {
-      cx: f(LX(128)), cy: 246, rx: 66, ry: 70,
+      cx: f(LX(126)), cy: 250, rx: 66, ry: 58,
       fill: radGrad(defs, [
-        [0, hi, 0.42], [0.45, mix(hi, skin, 0.5), 0.2], [0.8, skin, 0.03], [1, skin, 0]
+        [0, hi, 0.52], [0.45, mix(hi, skin, 0.5), 0.24], [0.8, skin, 0.03], [1, skin, 0]
       ])
     }));
     add(kn, E('ellipse', {
-      cx: f(LX(194)), cy: 268, rx: 44, ry: 62,
-      fill: radGrad(defs, [[0, hi, 0.5], [0.5, hi, 0.22], [1, skin, 0]]),
-      transform: 'rotate(' + f(SX(-12)) + ' ' + f(LX(194)) + ' 268)'
+      cx: f(LX(178)), cy: 274, rx: 34, ry: 46,
+      fill: radGrad(defs, [[0, hi, 0.26], [0.5, hi, 0.12], [1, skin, 0]]),
+      transform: 'rotate(' + f(SX(-14)) + ' ' + f(LX(178)) + ' 274)'
     }));
     add(kn, E('ellipse', {
-      cx: f(LX(92)), cy: 262, rx: 26, ry: 62,
+      cx: f(LX(74)), cy: 268, rx: 26, ry: 54,
       fill: radGrad(defs, [[0, sh2, 0.20], [0.6, sh2, 0.09], [1, sh2, 0]]),
-      transform: 'rotate(' + f(SX(8)) + ' ' + f(LX(92)) + ' 262)'
+      transform: 'rotate(' + f(SX(8)) + ' ' + f(LX(74)) + ' 268)'
     }));
     /* warmth where blood is close to the surface — fingertips and knuckles */
     for (i = 0; i < FINGERS.length; i++) {
@@ -2703,20 +2907,13 @@
 
     /* one joint crease, in the finger's own frame: a fine tapered dark line
        and, just below it, the lit ridge of skin the fold pushes up */
-    function crease(parent, gm, yc, ymid, sp, w, o) {
-      var tf = fingerTF(gm);
+    function crease(parent, gm, yc, sp, w, o) {
+      var hw = widthAt(gm, yc) / 2;
       add(parent, E('path', {
-        d: pb().M(-gm.width * sp, -gm.length * yc)
-          .Q(0, -gm.length * ymid, gm.width * sp, -gm.length * yc).d(),
+        d: pb().M(-hw * sp, -gm.length * yc)
+          .Q(0, -gm.length * (yc - 0.022), hw * sp, -gm.length * yc).d(),
         fill: 'none', stroke: CREASE_INK, 'stroke-width': f(w), opacity: o,
-        'stroke-linecap': 'round', transform: tf
-      }));
-      if (q < 0.5) return;
-      add(parent, E('path', {
-        d: pb().M(-gm.width * (sp - 0.03), -gm.length * (yc - 0.024))
-          .Q(0, -gm.length * (ymid - 0.024), gm.width * (sp - 0.03), -gm.length * (yc - 0.024)).d(),
-        fill: 'none', stroke: CREASE_LIT, 'stroke-width': f(w * 0.85), opacity: f(o * 0.8),
-        'stroke-linecap': 'round', transform: tf
+        'stroke-linecap': 'round', transform: fingerTF(gm)
       }));
     }
 
@@ -2733,7 +2930,7 @@
       add(kn, E('path', {
         d: pb().M(wp[i].cx - SX(1), wp[i].cy - 7)
           .Q(wp[i].cx + SX(3), wp[i].cy + 14, wp[i].cx + SX(5), wp[i].cy + 33).d(),
-        fill: 'none', stroke: VALLEY_INK, 'stroke-width': 9, opacity: 0.13,
+        fill: 'none', stroke: VALLEY_INK, 'stroke-width': 11, opacity: 0.19,
         'stroke-linecap': 'round'
       }));
     }
@@ -2750,47 +2947,42 @@
     for (i = 0; i < FINGERS.length; i++) {
       fk = FINGERS[i].key;
       gm = nailLimbOf(geom, fk);
-      /* two knuckle creases — a real finger folds, twice */
-      crease(kn, gm, 0.585, 0.55, 0.36, 2.2, 0.19);
-      crease(kn, gm, 0.26, 0.215, 0.4, 2.6, 0.15);
+      /* the two joints a straight finger actually shows, at the height this
+         finger's own table entry puts them — no two fingers fold in the same
+         place, and four identical pairs of arcs is what a cartoon looks like */
+      v = gm.creases || [0.58, 0.25];
+      if (q >= 0.4) {
+        crease(kn, gm, v[0], 0.62, 1.7, 0.115);
+        crease(kn, gm, v[1], 0.68, 1.9, 0.095);
+      }
       /* the shadow one finger drops on the next — darkest where the two
          touch, gone by the middle of the finger */
       add(kn, E('rect', {
-        x: f(SX(1) > 0 ? gm.width * 0.3 : -gm.width * 0.64),
-        y: f(-gm.length * 1.02), width: f(gm.width * 0.34), height: f(gm.length * 1.02),
-        fill: CAST_FILL, opacity: 0.12, transform: fingerTF(gm)
+        x: f(SX(1) > 0 ? gm.width * 0.26 : -gm.width * 0.66),
+        y: f(-gm.length * 1.02), width: f(gm.width * 0.40), height: f(gm.length * 1.02),
+        fill: CAST_FILL, opacity: 0.21, transform: fingerTF(gm)
       }));
     }
     /* tendons running from the knuckles back toward the wrist */
-    for (i = 0; i < FINGERS.length - 1; i++) {
+    for (i = 0; q >= 0.4 && i < FINGERS.length - 1; i++) {
       gm = geom[FINGERS[i].key];
       if (gm.spine) continue;
+      /* A tendon on the back of a relaxed hand is a hint of a ridge, not a
+         cord. One pale stroke each, and the dark companion that used to run
+         beside it is gone: together they drew a diagram of a hand. */
       add(kn, E('path', {
-        d: pb().M(gm.x, gm.y + 10)
-          .C(gm.x + (148 - gm.x) * 0.34, gm.y + 56, gm.x + (150 - gm.x) * 0.6, gm.y + 92,
-             gm.x + (152 - gm.x) * 0.74, gm.y + 132).d(),
-        fill: 'none', stroke: hi, 'stroke-width': 7, opacity: 0.08, 'stroke-linecap': 'round'
-      }));
-      add(kn, E('path', {
-        d: pb().M(gm.x + SX(7), gm.y + 14)
-          .C(gm.x + SX(7) + (148 - gm.x) * 0.34, gm.y + 60,
-             gm.x + SX(7) + (150 - gm.x) * 0.6, gm.y + 96,
-             gm.x + SX(7) + (152 - gm.x) * 0.74, gm.y + 136).d(),
-        fill: 'none', stroke: occ, 'stroke-width': 4, opacity: 0.035, 'stroke-linecap': 'round'
+        d: pb().M(gm.x, gm.y + 14)
+          .C(gm.x + (140 - gm.x) * 0.34, gm.y + 50, gm.x + (142 - gm.x) * 0.6, gm.y + 82,
+             gm.x + (144 - gm.x) * 0.74, gm.y + 114).d(),
+        fill: 'none', stroke: hi, 'stroke-width': 10, opacity: 0.075, 'stroke-linecap': 'round'
       }));
     }
     /* the crease where the thumb mound meets the palm: tapered away at both
        ends, with the lit edge of the mound running alongside it */
     add(kn, E('path', {
-      d: 'M' + f(LX(192)) + ' 214 C' + f(LX(210)) + ' 240 ' + f(LX(216)) + ' 280 ' +
-         f(LX(205)) + ' 316',
-      fill: 'none', stroke: taperY(occ, 0), 'stroke-width': 3, opacity: 0.15,
-      'stroke-linecap': 'round'
-    }));
-    add(kn, E('path', {
-      d: 'M' + f(LX(197)) + ' 217 C' + f(LX(215)) + ' 242 ' + f(LX(221)) + ' 280 ' +
-         f(LX(210)) + ' 313',
-      fill: 'none', stroke: taperY(hi, 0), 'stroke-width': 3.4, opacity: 0.16,
+      d: 'M' + f(LX(190)) + ' 214 C' + f(LX(200)) + ' 242 ' + f(LX(200)) + ' 282 ' +
+         f(LX(190)) + ' 316',
+      fill: 'none', stroke: taperY(occ, 0), 'stroke-width': 3, opacity: 0.115,
       'stroke-linecap': 'round'
     }));
     /* the wrist reads as sitting behind the hand */
@@ -2804,21 +2996,17 @@
     /* the wrist crease, and then the arm falling away into shadow rather than
        stopping at a line. It rides in this group on purpose: a full width rect
        inside a blurred group makes the filter region — and the cost — jump. */
-    add(kn, rect(0, 290, W, 220, {
+    add(kn, rect(0, 296, W, 214, {
       fill: grad(defs, 'linearGradient', [
-        [0, occ, 0], [0.20, occ, 0.15], [0.34, occ, 0.19],
-        [0.52, occ, 0.12], [1, occ, 0.24]
-      ], { x1: 0, y1: 290, x2: 0, y2: 510, gradientUnits: 'userSpaceOnUse' })
+        [0, occ, 0], [0.14, occ, 0.13], [0.24, occ, 0.18],
+        [0.38, occ, 0.13], [0.7, occ, 0.24], [1, occ, 0.30]
+      ], { x1: 0, y1: 290, x2: 0, y2: 505, gradientUnits: 'userSpaceOnUse' })
     }));
     for (i = 0; i < FINGERS.length; i++) {
       fk = FINGERS[i].key;
       gm = nailLimbOf(geom, fk);
-      nw = gm.width * (1 - (1 - num(gm.taper, FINGER_TAPER)) * PLATE_AT) * PLATE_W;
-      nhMed = nw * aspect;
-      nh = nhMed * factor;
-      back = clamp(nhMed * (PLATE_SEAT + (1 - PLATE_SEAT) * Math.min(factor, 1)),
-                   nw * 0.8, gm.length * 0.62);
-      dist = gm.length - back;
+      pl = plateFor(gm, aspect, factor);
+      nw = pl.w; nhMed = pl.hMed; nh = pl.h; dist = pl.dist;
       /* the bed: a hair wider than the plate, pinker than the finger */
       add(kn, E('ellipse', {
         cx: 0, cy: f(-dist + nhMed * 0.34), rx: f(nw * 0.56), ry: f(nhMed * 0.48),
@@ -2852,12 +3040,8 @@
       fk = FINGERS[i].key;
       gm = nailLimbOf(geom, fk);
       key = side + fk.charAt(0).toUpperCase() + fk.slice(1);
-      nw = gm.width * (1 - (1 - num(gm.taper, FINGER_TAPER)) * PLATE_AT) * PLATE_W;
-      nhMed = nw * aspect;
-      nh = nhMed * factor;
-      back = clamp(nhMed * (PLATE_SEAT + (1 - PLATE_SEAT) * Math.min(factor, 1)),
-                   nw * 0.8, gm.length * 0.62);
-      dist = gm.length - back;
+      pl = plateFor(gm, aspect, factor);
+      nw = pl.w; nh = pl.h; dist = pl.dist;
       px = gm.x + Math.sin(rad(gm.angle)) * dist;
       py = gm.y - Math.cos(rad(gm.angle)) * dist;
       el = nailSVG(design.nails[key], {
