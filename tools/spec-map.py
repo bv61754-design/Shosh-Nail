@@ -94,28 +94,42 @@ def unwrap(lum, m):
 
 
 def reflection(uv):
-    """What is both very bright and hard-edged. The cat-eye band is broad and
-       the glitter is speckle; neither survives."""
-    hi = uv - nd.gaussian_filter(uv, (UH * 0.11, UW * 0.11), mode='nearest')
-    t = np.percentile(hi, 85)
-    s = np.clip((hi - t) / max(1e-6, hi.max() - t), 0, 1)
-    lab, k = nd.label(s > 0.18)
+    """For a near-black gel the luminance IS very nearly the reflection, so the
+       honest operation is a black point, not a high-pass.
+
+       WHAT THIS FIXES. The first version high-passed the tile and kept what
+       stood above the 85th percentile. That finds the CORES of the bars and
+       throws their shoulders away, and the shoulders are most of a reflection:
+       against the source photograph the sheet was three times short above 0.6
+       of white, four times short above 0.85 and five times short above 0.95.
+       On the site that showed up as a plate that never reached three times its
+       own median anywhere, where a real nail has four per cent of its area up
+       there.
+
+       The black point sits above the cat-eye band on purpose. That band is
+       pigment doing something clever, not the shape of the light, and it
+       belongs in the design rather than on every nail on the site."""
+    black = np.percentile(uv, 78)
+    s = np.clip((uv - black) / max(1e-6, 1.0 - black), 0, 1)
+    # glitter is thousands of isolated specks; a reflected strip light is one
+    # connected object. Anything too small to be a reflection is dropped, or
+    # every nail on the site inherits this nail's glitter.
+    lab, k = nd.label(s > 0.12)
     if k:
-        sz = nd.sum(s > 0.18, lab, range(1, k + 1))
+        sz = nd.sum(s > 0.12, lab, range(1, k + 1))
         big = np.zeros_like(s, bool)
         for q in range(k):
             if sz[q] >= 0.004 * UW * UH:
                 big |= lab == q + 1
         s = s * nd.binary_dilation(big, np.ones((5, 5)))
-    s = nd.gaussian_filter(s, 1.1)
+    s = nd.gaussian_filter(s, 0.9)
     # A real reflection is not just its core. Measured out from the centre of
     # one, a real nail is still at 1.66x its own base three units away and
-    # 1.38x at six; the drawn ellipse it replaces had fallen to nothing by
-    # then. That surrounding pool of light is what reads as WET, so each bar
-    # keeps a soft halo of its own.
-    s = np.maximum(s, 0.42 * nd.gaussian_filter(s, (UH * 0.055, UW * 0.055)) /
-                   max(1e-6, nd.gaussian_filter(s, (UH * 0.055, UW * 0.055)).max()))
-    return s / max(s.max(), 1e-6)
+    # 1.38x at six; the drawn ellipse this replaces had fallen to nothing by
+    # then. That surrounding pool of light is what reads as WET.
+    halo = nd.gaussian_filter(s, (UH * 0.05, UW * 0.05))
+    s = np.maximum(s, 0.34 * halo / max(1e-6, halo.max()))
+    return np.clip(s, 0, 1)
 
 
 def main():
