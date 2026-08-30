@@ -214,11 +214,19 @@
   gap:18px;
   align-items:start;
 }
+/* Desktop: the preview column used to stop at 392px, which on a 1400px screen
+   left a single nail about 22px wide — enough to read a colour, not enough to
+   read a pattern — while the controls sat in 700px of half-empty rows. Give it
+   a share of the grid instead of a fixed ceiling, so it grows with the screen;
+   the controls keep the larger half and only lose slack. */
 @media (min-width:901px){
   .studio-grid{
-    grid-template-columns:minmax(300px,392px) minmax(0,1fr);
+    grid-template-columns:minmax(300px,44%) minmax(0,1fr);
     gap:30px;
   }
+}
+@media (min-width:1180px){
+  .studio-grid{ grid-template-columns:minmax(340px,46%) minmax(0,1fr); }
 }
 
 .studio-pane{
@@ -245,13 +253,30 @@
 }
 .studio-stage svg{ display:block; inline-size:100%; block-size:auto; max-block-size:100%; }
 
-/* mobile: a compact strip that expands on demand */
+/* Mobile: a compact preview that enlarges on demand — compact by SCALE, never
+   by crop. The pair render is portrait (fingers up, wrists down), so the old
+   fixed 118px strip cut a landscape band out of the middle of it and showed
+   her knuckles instead of her nails.
+   So the limit sits on the <svg>, not on the box, and it is expressed as a
+   share of the pane rather than as a height: the svg keeps `block-size:auto`,
+   so it always draws at its own ratio, and `preserveAspectRatio: xMidYMid meet`
+   letterboxes the whole pair inside whatever box it ends up with. The stage is
+   height:auto and simply hugs it. Nothing here knows the render's aspect ratio,
+   so re-cropping the hands again cannot re-break this rule.
+   78% keeps the collapsed pair deliberately below its natural size, so
+   «تكبير المعاينة» still has something to do and the controls keep the larger
+   half of the screen; the vh cap is what protects a short viewport, where the
+   drawing scales down further inside that width. */
 @media (max-width:900px){
   .studio-stage{
-    max-block-size:118px;
+    max-block-size:none;
     overflow:hidden;
   }
-  .studio-pane.is-open .studio-stage{ max-block-size:min(56vh,420px); }
+  .studio-stage svg{ max-inline-size:78%; max-block-size:30vh; }
+  .studio-pane.is-open .studio-stage svg{
+    max-inline-size:100%;
+    max-block-size:min(56vh,420px);
+  }
   .studio-pane-in{ padding:6px; }
 }
 @media (min-width:901px){
@@ -261,7 +286,14 @@
     background:transparent;
   }
   .studio-pane-in{ padding:14px; }
-  .studio-stage{ min-block-size:300px; }
+  /* only a floor for the card before the render lands — the portrait pair is
+     taller than this from ~1050px up, so it is slack, not a size */
+  .studio-stage{ min-block-size:260px; }
+  /* the pane is sticky between the header and the fixed action bar, so on a
+     short window the pair scales down rather than sliding under the bar.
+     240px = header + card chrome + foot row + bar; it only bites below ~570px
+     of viewport height, where the alternative is a hidden undo button. */
+  .studio-stage svg{ max-block-size:calc(100vh - 240px); }
 }
 
 .studio-pane-foot{
@@ -1243,7 +1275,11 @@ body[data-page="studio"] #sn-footer{
 
 /* ---- the wizard itself -------------------------------------------------- */
 .studio-progress > i{ transition:inline-size var(--dur-3) var(--ease-out); }
-.studio-stage{ transition:max-block-size var(--dur-2) var(--ease-out); }
+.studio-stage,
+.studio-stage svg{
+  transition:max-block-size var(--dur-2) var(--ease-out),
+             max-inline-size var(--dur-2) var(--ease-out);
+}
 .studio-canvas.is-drag{ transition:none; }
 .studio-toolbtn[aria-selected="true"]{ transition-duration:var(--dur-2); }
 .studio-sharelink,.studio-hex{ transition:border-color var(--dur-2) var(--ease); }
@@ -1253,6 +1289,7 @@ body[data-page="studio"] #sn-footer{
 
 @media (prefers-reduced-motion:reduce){
   .studio-stage,
+  .studio-stage svg,
   .studio-skin-dot,
   .studio-opt,
   .studio-charm,

@@ -3449,56 +3449,101 @@
   /* ====================================================================== */
   /* 12b. photoHand() — the customer's set on a REAL hand                    */
   /*                                                                         */
-  /*  assets/img/hand-real.jpg is ONE photograph: a left hand, back up,      */
-  /*  fingers pointing to the image's left, thumb toward the top, flat on    */
-  /*  dark charcoal linen. It is the LEFT hand as shot; the right hand is    */
-  /*  the same frame mirrored.                                              */
+  /*  TWO photographs of the same hands, on the same dark charcoal linen,    */
+  /*  under the same daylight:                                               */
   /*                                                                         */
-  /*  Every nail photograph ever taken is FINGERS UP, so the composition     */
-  /*  takes a quarter turn on its way to the screen (see photoTurn), and a   */
-  /*  pair stands side by side with the wrists at the bottom and the thumbs  */
-  /*  facing each other. Nothing else knows about the turn: the mask, the    */
-  /*  anchors, the crop and the mirror all stay in the photo's own frame.    */
+  /*    assets/img/hand-real.jpg        1017x681  the LEFT hand              */
+  /*    assets/img/hand-real-right.jpg  1081x816  the RIGHT hand             */
   /*                                                                         */
-  /*  The one photograph carries every skin tone: the linen and the skin     */
-  /*  separate cleanly on r-g (the fabric is NEGATIVE, skin is strongly      */
-  /*  POSITIVE), so a mask is built once on a canvas and each tone is        */
-  /*  recoloured through it and cached. Same origin, so the canvas is never  */
+  /*  Both were shot back-of-hand up with the fingers pointing to the        */
+  /*  image's left, so the left hand carries its thumb at the top of the     */
+  /*  frame and the right hand carries its thumb at the bottom. There is no  */
+  /*  mirror anywhere in the normal path: a mirrored pair folds the linen's  */
+  /*  creases about the centre line, and no photograph of two hands has      */
+  /*  ever done that. It is the single thing that gave the old pair away.    */
+  /*                                                                         */
+  /*  Every nail photograph ever taken is FINGERS UP, so each frame takes a  */
+  /*  quarter turn on its way to the screen (see photoTurn), and the pair    */
+  /*  stands side by side with the wrists at the bottom and the thumbs       */
+  /*  facing each other. It happens that BOTH frames turn the same way —     */
+  /*  clockwise — because the two poses are already each other's opposite;   */
+  /*  that is what puts each thumb on the inside of its own panel. Nothing   */
+  /*  else knows about the turn: the masks, the anchors and the crops all    */
+  /*  stay in their own photograph's frame.                                  */
+  /*                                                                         */
+  /*  Each photograph carries every skin tone: linen and skin separate       */
+  /*  cleanly on r-g (the fabric is NEGATIVE, skin strongly POSITIVE), so a  */
+  /*  mask is built once per photo on a canvas and each tone is recoloured   */
+  /*  through it and cached, per photo. Same origin, so the canvas is never  */
   /*  tainted and the recoloured data URL rasterises straight into toPNG.    */
   /* ====================================================================== */
 
+  /* ---------------------------------------------------------------------- *
+   * THE TWO FRAMES.                                                         *
+   *                                                                         *
+   *   w, h          the master's intrinsic size; both variants share the     *
+   *                 framing, so everything below is normalised to it        *
+   *   seedX, seedY  a point that is certainly inside the back of the hand   *
+   *   cx..ch        the window the preview is cut to, in the photo's own    *
+   *                 frame. cx/cw run ALONG the fingers, cy/ch across them,  *
+   *                 so after the turn cw is the panel's HEIGHT on screen    *
+   *                 and ch its WIDTH.                                       *
+   *   smean         mean luminance under the mask, measured on this file.   *
+   *                 It is re-measured at load; the constant is only the     *
+   *                 value used before the pixels arrive. Recolouring each   *
+   *                 photo against ITS OWN mean is what lands both hands on  *
+   *                 the same tone — the two masks differ by 0.001 here, so  *
+   *                 the pair reads as one person either way, but the rule   *
+   *                 holds if the owner ever reshoots one of them.           *
+   *   linenA/linenB the linen gain at y = 0 and at y = h, straight-line      *
+   *                 interpolated in between. See THE LINEN RAMP below.      *
+   *                                                                         *
+   * The left window reaches slightly OUTSIDE its photograph on the left and *
+   * the top, because an extra long stiletto on the middle finger ends 25px  *
+   * past the frame's edge and on the thumb 10px above it. That margin is    *
+   * filled by mirroring the frame about its own edges (photoTiles), and     *
+   * since everything out there is plain linen the joins are invisible. The  *
+   * right window sits wholly inside its frame and so needs no tiles at all. *
+   *                                                                         *
+   * The two windows are cut to the same PHYSICAL scale: the right hand was  *
+   * shot ~2% larger (its fingers measure 74/77/72/63px across the nail bed  *
+   * against the left's 74/76/68/60), so its window runs 918px along the     *
+   * fingers against 900 and is divided back down by CELL_H/cw on the way    *
+   * out. That is what makes the two hands the same person's hands and not a *
+   * big one next to a small one. ACROSS the fingers it needs more room —    *
+   * 712 against 656 — because this hand is splayed wider and its thumb      *
+   * reaches further from the palm; that is pose, not size, and the scale    *
+   * carries it through unchanged. As cut, the pair is 1354 x 900 — 1.50:1,  *
+   * the shape of a real two hand shot, and it works from 390px to 1400px.   *
+   * ---------------------------------------------------------------------- */
+
   var PHOTO = {
+    key: 'left',
     src: 'assets/img/hand-real.jpg',
     small: 'assets/img/hand-real-sm.jpg',
-    /* the intrinsic size of the master; both variants share this framing */
     w: 1017, h: 681,
-    /* a point that is certainly inside the back of the hand */
     seedX: 0.62, seedY: 0.45,
-    /* The window every preview is cut to, in the photo's own frame. It is
-       quoted here the way it was measured — cx/cw run along the fingers,
-       cy/ch across them — but on screen the turn swaps them, so cw is the
-       composition's HEIGHT and ch is one hand's WIDTH.
-       The window reaches slightly OUTSIDE the photograph on the left and the
-       top, because an extra long stiletto on the middle finger ends 25px past
-       the frame's edge and on the thumb 10px above it; that margin is filled
-       by mirroring the photo about its own edges, and since everything out
-       there is plain linen the joins are invisible.
-       ch stops 57px past the little finger rather than at the frame's bottom
-       edge: the strip below it is pure linen, and carrying it would push a
-       pair of hands to 1.6:1 — too wide to fill a phone. As cut, one hand is
-       0.73:1 and the pair 1.46:1, which is the shape of a real two hand shot
-       and works from 390px to 1400px without either hand being cropped. */
     cx: -46, cy: -22, cw: 900, ch: 656,
-    /* mean luminance over the mask, measured on this exact file */
-    smean: 0.6214
+    smean: 0.6213,
+    linenA: 0.760, linenB: 1.018
+  };
+
+  var PHOTO_RIGHT = {
+    key: 'right',
+    src: 'assets/img/hand-real-right.jpg',
+    small: 'assets/img/hand-real-right-sm.jpg',
+    w: 1081, h: 816,
+    seedX: 0.66, seedY: 0.48,
+    cx: 8, cy: 84, cw: 918, ch: 712,
+    smean: 0.6223,
+    linenA: 0.994, linenB: 1.044
   };
 
   /* ---------------------------------------------------------------------- *
    * PHOTO ANCHORS — the whole job.                                          *
    *                                                                         *
-   * Five per hand, for the LEFT hand (the frame exactly as it was shot),    *
-   * everything normalised to the photo so the master and the phone variant  *
-   * are interchangeable:                                                    *
+   * Five per hand, in that hand's own photograph, everything normalised to  *
+   * that photograph so the master and the phone variant are interchangeable:*
    *                                                                         *
    *   x, y    the CUTICLE point — where the plate meets the skin            *
    *   angle   the direction the finger points, degrees, 0 = straight up,    *
@@ -3508,11 +3553,15 @@
    *   width   the finger's width at the nail bed (fraction of photo width)  *
    *   tip     cuticle -> the very end of the fingertip. A press-on always   *
    *           clears the flesh, so this is the floor under a short plate.   *
+   *   fore    OPTIONAL foreshortening, default 1: how much of the plate's   *
+   *           length survives projection. Only a digit whose nail tilts     *
+   *           away from the camera needs it. See photoContent.             *
    *                                                                         *
-   * Read off the photograph, not computed: the fingertip extremes and the   *
-   * finger centrelines come from the skin mask, the cuticle position and    *
-   * the nail-bed width were then nudged by eye against a calibration page   *
-   * that draws the plates and a marker at every anchor.                     *
+   * Read off each photograph, not computed and NEVER derived from the other *
+   * hand: the two hands are posed differently — the right one's fingers are *
+   * splayed a little wider and its index sits almost straight where the     *
+   * left's leans 9 degrees — and that difference is exactly what stops the  *
+   * pair reading as one picture and its reflection.                         *
    * ---------------------------------------------------------------------- */
   var PHOTO_ANCHOR = {
     thumb:  { x: 0.5451, y: 0.1636, angle: -53.5, width: 0.0777, tip: 0.0850 },
@@ -3522,36 +3571,74 @@
     pinky:  { x: 0.2970, y: 0.7942, angle: -88.5, width: 0.0580, tip: 0.0398 }
   };
 
-  /* mirroring happens about the centre of the crop window, not the centre of
-     the frame, so the right hand lands inside the same window as the left */
-  function mirrorAxis() { return PHOTO.cx * 2 + PHOTO.cw; }
+  /* The right hand, in hand-real-right.jpg. Its thumb is at the BOTTOM of
+     the frame, so the finger order down the frame is pinky, ring, middle,
+     index, thumb — the reverse of the left photograph's.
+     Four rounds of draw-screenshot-read-nudge over the calibration page got
+     here: the fingers went in from the skin mask (the plate centred on the
+     nail bed to within half a pixel on all four, and the cuticle landing at
+     the same point on the nail's own red-to-pale step as the left hand's do)
+     and the thumb went in by eye, because it lies flatter than the left one
+     and its nail tilts away — which is what `fore` is for. */
+  var PHOTO_ANCHOR_RIGHT = {
+    thumb:  { x: 0.5255, y: 0.8230, angle: -124.0, width: 0.0700, tip: 0.0697, fore: 0.85 },
+    index:  { x: 0.2699, y: 0.6059, angle: -88.1, width: 0.0674, tip: 0.0560 },
+    middle: { x: 0.2298, y: 0.4485, angle: -84.8, width: 0.0694, tip: 0.0550 },
+    ring:   { x: 0.2947, y: 0.3189, angle: -81.4, width: 0.0656, tip: 0.0527 },
+    pinky:  { x: 0.4098, y: 0.1936, angle: -74.3, width: 0.0573, tip: 0.0384 }
+  };
+
+  var PHOTO_ANCHORS = { left: PHOTO_ANCHOR, right: PHOTO_ANCHOR_RIGHT };
+
+  function sideOf(s) { return s === 'right' ? 'right' : 'left'; }
+
+  /* mirroring — only ever the FALLBACK, when one file is missing — happens
+     about the centre of the crop window, not the centre of the frame, so the
+     substitute lands inside the same window as the hand it stands in for */
+  function mirrorAxis(def) { return def.cx * 2 + def.cw; }
 
   /* ---------------------------------------------------------------------- *
    * THE QUARTER TURN.                                                       *
    *                                                                         *
-   * The shot is landscape with the fingers pointing to the image's left, so  *
-   * turning it a quarter turn clockwise stands the fingers up. Doing that    *
-   * on the way OUT means the anchors, the mask, the tiles and the crop all   *
-   * stay in the photograph's own frame — and so does the light, which is     *
-   * the point: the plates' highlights are computed against the photograph's  *
-   * light, and rotating the picture rotates that light with it.              *
+   * Both shots are landscape with the fingers pointing to the image's left, *
+   * so a quarter turn CLOCKWISE stands the fingers up in both. Doing it on  *
+   * the way OUT means the anchors, the masks, the tiles and the crops all   *
+   * stay in the photographs' own frames — and so does the light, which is   *
+   * the point: the plates' highlights are computed against the photograph's *
+   * light, and rotating the picture rotates that light with it.             *
    *                                                                         *
-   * The mirrored hand turns the other way. Mirroring the frame in x and      *
-   * then turning both hands the same way would stand the second one on its   *
-   * head; turning it anticlockwise instead makes it the first hand reflected *
-   * in a VERTICAL line, which is what a pair of hands is. The reflection     *
-   * axis is the join between the two windows, so the two hands meet on the   *
-   * same column of pixels and the seam disappears.                           *
+   * rotate(90) sends (x, y) to (-y, x): the fingertips (small x) go to the  *
+   * top, and the frame's own top edge (small y) goes to the RIGHT. The left *
+   * hand carries its thumb at the top of its frame, so its thumb lands on   *
+   * the right of its panel; the right hand carries its thumb at the bottom, *
+   * so its thumb lands on the left of its panel. Side by side, the thumbs   *
+   * face each other, which is how two hands are photographed.               *
+   *                                                                         *
+   * The mirrored substitute turns the other way instead. Mirroring a frame  *
+   * in x and then turning it the same way would stand it on its head;       *
+   * turning it anticlockwise makes it the first hand reflected in a         *
+   * VERTICAL line, which is what a pair of hands is, and it lands on        *
+   * exactly the same window.                                                *
    * ---------------------------------------------------------------------- */
-  function photoTurn(side) {
-    if (side !== 'right') return 'rotate(90)';
-    return 'translate(' + f(-(PHOTO.cy * 2 + PHOTO.ch)) + ' ' + f(mirrorAxis()) + ') rotate(-90)';
+  function photoTurn(def, mirror) {
+    if (!mirror) return 'rotate(90)';
+    return 'translate(' + f(-(def.cy * 2 + def.ch)) + ' ' + f(mirrorAxis(def)) + ') rotate(-90)';
   }
 
-  /* the crop window as the screen sees it, after the turn: what was measured
-     across the fingers is now the width, and what ran along them the height */
-  function turnedView() {
-    return { x: -(PHOTO.cy + PHOTO.ch), y: PHOTO.cx, w: PHOTO.ch, h: PHOTO.cw };
+  /* Every panel is drawn this many user units tall, whichever photograph is
+     behind it; a window cut from a frame shot at a different distance is
+     scaled to match, so both hands come out life size against each other. */
+  var CELL_H = PHOTO.cw;
+
+  function cellScale(def) { return CELL_H / def.cw; }
+  function cellW(def) { return def.ch * cellScale(def); }
+
+  /* the crop window placed into the composition: the turn puts it at
+     x in [-(cy+ch), -cy], y in [cx, cx+cw], and this brings that to
+     [ox, ox + cellW] x [0, CELL_H] */
+  function cellPlace(def, ox) {
+    return 'translate(' + f(ox) + ' 0) scale(' + f(cellScale(def)) + ') ' +
+           'translate(' + f(def.cy + def.ch) + ' ' + f(-def.cx) + ')';
   }
 
   /* A press-on is not as wide as the finger: its side walls stop just inside
@@ -3562,20 +3649,36 @@
 
   /* ------------------------------------------------------ photo runtime -- */
 
-  var photoOK = true;          /* optimistic: proven false only by a failure */
-  var photo = {
-    state: 'idle',             /* idle | loading | ready | failed */
-    promise: null,
-    src: '',
-    w: 0, h: 0,
-    base: null,                /* Uint8ClampedArray, the untouched pixels     */
-    mask: null,                /* Uint8Array 0..255, soft edged skin coverage */
-    smean: PHOTO.smean,
-    ratio: null,               /* lum -> shading ratio LUT                    */
-    work: null,                /* the canvas every tone is painted on         */
-    tones: {},                 /* hex -> data URL                             */
-    order: []
-  };
+  var photoAble = true;        /* optimistic: proven false only by a failure */
+  var photoOK = true;          /* photoAble AND at least one file that loads */
+
+  function photoState(def) {
+    return {
+      def: def,
+      ok: true,
+      state: 'idle',           /* idle | loading | ready | failed            */
+      promise: null,
+      src: '',
+      w: 0, h: 0,
+      base: null,              /* Uint8ClampedArray, the untouched pixels     */
+      mask: null,              /* Uint8Array 0..255, soft edged skin coverage */
+      gain: null,              /* Float32Array per row, the linen ramp        */
+      smean: def.smean,
+      ratio: null,             /* lum -> shading ratio LUT                    */
+      work: null,              /* the canvas every tone is painted on         */
+      tiles: null,             /* the edge mirrors this window actually needs */
+      tones: {},               /* hex -> data URL                             */
+      order: []
+    };
+  }
+
+  var photos = { left: photoState(PHOTO), right: photoState(PHOTO_RIGHT) };
+
+  function photoDown(key) {
+    photos[key].ok = false;
+    photoOK = photoAble && (photos.left.ok || photos.right.ok);
+    if (SN.Nail) SN.Nail.PHOTO_OK = photoOK;
+  }
 
   function canvasCtx(w, h) {
     var c, x;
@@ -3593,19 +3696,20 @@
 
   /* everything the photo mode needs, checked once, cheaply, at load */
   (function () {
-    if (typeof window === 'undefined' || typeof document === 'undefined') { photoOK = false; return; }
-    if (typeof window.Promise !== 'function' || typeof window.Image !== 'function') { photoOK = false; return; }
-    if (typeof Uint8Array !== 'function' || typeof Int32Array !== 'function') { photoOK = false; return; }
-    if (!canvasCtx(1, 1)) photoOK = false;
+    if (typeof window === 'undefined' || typeof document === 'undefined') { photoAble = false; }
+    else if (typeof window.Promise !== 'function' || typeof window.Image !== 'function') { photoAble = false; }
+    else if (typeof Uint8Array !== 'function' || typeof Int32Array !== 'function') { photoAble = false; }
+    else if (!canvasCtx(1, 1)) photoAble = false;
+    photoOK = photoAble;
   }());
 
-  function photoFile() {
+  function photoFile(def) {
     var wide = 9999;
     try {
       wide = Math.max(window.innerWidth || 0, (document.documentElement || {}).clientWidth || 0) ||
              9999;
     } catch (e) { wide = 9999; }
-    return wide <= 520 ? PHOTO.small : PHOTO.src;
+    return wide <= 520 ? def.small : def.src;
   }
 
   function setHref(el, url) {
@@ -3620,7 +3724,8 @@
    * back of the hand is in -> soften the edge. Over a BINARY image a median  *
    * is a majority vote and a dilate/erode are a floor/ceiling on the same    *
    * 3x3 sum, so all three are one separable box sum with a different test —  *
-   * nine compares per pixel become two adds.                                 */
+   * nine compares per pixel become two adds. The same thresholds hold on     *
+   * both photographs: 42.0% coverage on the left frame, 34.8% on the right.  */
 
   function boxSum3(src, tmp, dst, w, h) {
     var x, y, o, i;
@@ -3694,10 +3799,39 @@
     }
   }
 
-  function buildMask(data, w, h) {
+  /* ---------------------------------------------------------------------- *
+   * THE LINEN RAMP.                                                         *
+   *                                                                         *
+   * The recolour deliberately leaves the linen alone — same surface, only    *
+   * the person changes — but the two frames are not lit identically across   *
+   * the cloth. Both are brightest at the top of their own frame and fall     *
+   * away toward the bottom, and the turn puts the left photo's bright edge   *
+   * ON the join while the right photo's dark edge lands there: median linen  *
+   * luminance 77 meeting 41, a step you cannot miss on a flat dark fabric.   *
+   *                                                                         *
+   * So each frame's linen carries a straight-line gain in y. Each gain is    *
+   * pinned to 1 at the panel's OUTER edge — the cloth there is whatever the  *
+   * camera saw — and set at the join by measuring the rendered pair and      *
+   * moving both sides onto the same number. Measured across the seam now:    *
+   * 51, 52 | 52, 51, against 45 | 60 before, and the whole pair falls from   *
+   * about 30 at the far left to 71 at the far right like one piece of cloth  *
+   * under one light. Skin is untouched (the gain is weighted by 1 - mask),   *
+   * and the gain runs with y only, so the x edge mirror is exactly seamless; *
+   * the y one folds a 22px strip back on itself, where the ramp is off by    *
+   * 0.8% — a third of a level on linen this dark.                            *
+   * ---------------------------------------------------------------------- */
+  function linenGain(def, h) {
+    var g = new Float32Array(h), i;
+    for (i = 0; i < h; i++) {
+      g[i] = def.linenA + (def.linenB - def.linenA) * (i / (h > 1 ? h - 1 : 1));
+    }
+    return g;
+  }
+
+  function buildMask(st, data, w, h) {
     var n = w * h, i, i4, r, g, b, l;
     var bin = new Uint8Array(n), tmp = new Uint8Array(n), sum = new Uint8Array(n);
-    var soft, buf, keep;
+    var soft, buf, keep, def = st.def;
 
     /* r-g is the discriminator: the linen's is negative, skin's is strongly
        positive. Luminance alone overlaps between lit fabric and shaded fingers. */
@@ -3712,7 +3846,7 @@
     morph(bin, tmp, sum, w, h, 9);   /* erode 9   — put the edge back       */
 
     keep = component(bin, w, h,
-      Math.round(PHOTO.seedX * w), Math.round(PHOTO.seedY * h));
+      Math.round(def.seedX * w), Math.round(def.seedY * h));
 
     soft = new Float32Array(n);
     buf = new Float32Array(n);
@@ -3725,7 +3859,8 @@
     for (i = 0; i < n; i++) tmp[i] = soft[i] < 0 ? 0 : (soft[i] > 255 ? 255 : soft[i]);
 
     /* the mean luminance UNDER the mask is what every tone is scaled against;
-       measuring it beats trusting a constant when the phone variant is loaded */
+       measuring it per photo beats trusting a constant, and it is what makes
+       two frames with slightly different exposure land on the same skin */
     r = 0; g = 0;
     for (i = 0; i < n; i++) {
       if (!keep[i]) continue;
@@ -3733,53 +3868,85 @@
       r += 0.2126 * data[i4] + 0.7152 * data[i4 + 1] + 0.0722 * data[i4 + 2];
       g++;
     }
-    if (g > 0) photo.smean = clamp((r / g) / 255, 0.2, 0.95);
+    if (g > 0) st.smean = clamp((r / g) / 255, 0.2, 0.95);
     return tmp;
+  }
+
+  /* the edge mirrors this window actually needs. Each mirror overshoots its
+     seam by one unit and the untouched frame is painted LAST, so every tile
+     edge has an opaque tile underneath it — draw them flush and the
+     renderer's antialiasing leaves a hairline of page background along the
+     join. A window that stays inside its frame gets no tiles at all. */
+  function photoTiles(def) {
+    var xs = [null], ys = [null], out = [], i, j, sx, sy, tx, ty;
+    if (def.cx < 0) xs.push(0);
+    if (def.cx + def.cw > def.w) xs.push(def.w);
+    if (def.cy < 0) ys.push(0);
+    if (def.cy + def.ch > def.h) ys.push(def.h);
+    for (i = 0; i < xs.length; i++) {
+      for (j = 0; j < ys.length; j++) {
+        if (xs[i] === null && ys[j] === null) continue;
+        sx = xs[i] === null ? 1 : -1;
+        sy = ys[j] === null ? 1 : -1;
+        tx = xs[i] === null ? 0 : 2 * xs[i] + 1;
+        ty = ys[j] === null ? 0 : 2 * ys[j] + 1;
+        out.push('translate(' + f(tx) + ' ' + f(ty) + ') scale(' + sx + ' ' + sy + ')');
+      }
+    }
+    out.push(null);
+    return out;
   }
 
   /* ---- load ------------------------------------------------------------- */
 
-  function loadPhoto() {
-    if (photo.promise) return photo.promise;
-    photo.state = 'loading';
-    photo.promise = new Promise(function (resolve, reject) {
+  function loadPhoto(key) {
+    var st = photos[sideOf(key)];
+    if (st.promise) return st.promise;
+    if (!photoAble) {
+      st.promise = Promise.reject(new Error('SN.Nail: no canvas for the hand photograph'));
+      st.promise['catch'](function () { /* handled through st.ok */ });
+      photoDown(st.def.key);
+      return st.promise;
+    }
+    st.state = 'loading';
+    st.promise = new Promise(function (resolve, reject) {
       var img, done = false, cv;
       function fail(e) {
         if (done) return;
         done = true;
-        photo.state = 'failed';
-        photoOK = false;
-        if (SN.Nail) SN.Nail.PHOTO_OK = false;
-        reject(e instanceof Error ? e : new Error('SN.Nail: the hand photograph is unavailable'));
+        st.state = 'failed';
+        photoDown(st.def.key);
+        reject(e instanceof Error ? e : new Error('SN.Nail: a hand photograph is unavailable'));
       }
       try {
-        photo.src = photoFile();
+        st.src = photoFile(st.def);
         img = new window.Image();
         img.decoding = 'async';
         img.onload = function () {
           if (done) return;
           try {
-            photo.w = img.naturalWidth || PHOTO.w;
-            photo.h = img.naturalHeight || PHOTO.h;
-            cv = canvasCtx(photo.w, photo.h);
+            st.w = img.naturalWidth || st.def.w;
+            st.h = img.naturalHeight || st.def.h;
+            cv = canvasCtx(st.w, st.h);
             if (!cv) { fail(new Error('SN.Nail: no 2D canvas')); return; }
-            cv.ctx.drawImage(img, 0, 0, photo.w, photo.h);
-            photo.base = cv.ctx.getImageData(0, 0, photo.w, photo.h).data;
-            photo.mask = buildMask(photo.base, photo.w, photo.h);
-            photo.work = cv;
-            photo.ratio = ratioLUT(photo.smean);
-            photo.state = 'ready';
+            cv.ctx.drawImage(img, 0, 0, st.w, st.h);
+            st.base = cv.ctx.getImageData(0, 0, st.w, st.h).data;
+            st.mask = buildMask(st, st.base, st.w, st.h);
+            st.gain = linenGain(st.def, st.h);
+            st.work = cv;
+            st.ratio = ratioLUT(st.smean);
+            st.state = 'ready';
             done = true;
-            resolve(photo);
+            resolve(st);
           } catch (e2) { fail(e2); }
         };
-        img.onerror = function () { fail(new Error('SN.Nail: the hand photograph did not load')); };
-        img.src = photo.src;
-        photo.img = img;
+        img.onerror = function () { fail(new Error('SN.Nail: a hand photograph did not load')); };
+        img.src = st.src;
+        st.img = img;
       } catch (e3) { fail(e3); }
     });
-    photo.promise['catch'](function () { /* handled through photoOK */ });
-    return photo.promise;
+    st.promise['catch'](function () { /* handled through st.ok */ });
+    return st.promise;
   }
 
   /* ---- recolour --------------------------------------------------------- *
@@ -3788,9 +3955,9 @@
    *           blowing out on a deep tone)                                    *
    *  out    = curve[lum] + (rgb - lum) * res    (the residue is what keeps   *
    *           knuckle redness, veins and the nail beds alive)                *
-   *  final  = mix(original, out, mask)                                       *
+   *  final  = mix(original * linen gain, out, mask)                          *
    *  Validated against all six store tones — the linen deliberately does     *
-   *  NOT change: the surface is the same, only the person is different.      */
+   *  NOT change colour: the surface is the same, only the person differs.    */
 
   function ratioLUT(smean) {
     var t = new Float32Array(256), i, v;
@@ -3827,8 +3994,8 @@
   var TONE_DESAT = 3.2;    /* how hard highlights neutralise on a deep tone  */
   var TONE_WARM = 0.20;    /* how much chroma the shadow end gains           */
 
-  function toneCurve(p) {
-    var lut = photo.ratio || ratioLUT(photo.smean);
+  function toneCurve(st, p) {
+    var lut = st.ratio || ratioLUT(st.smean);
     var tl = 0.2126 * p.r + 0.7152 * p.g + 0.0722 * p.b;
     var dark = clamp((1 - tl / 255 - 0.18) / 0.62, 0, 1);
     var k = TONE_DESAT * dark, sh = TONE_WARM * dark;
@@ -3848,74 +4015,140 @@
     return { r: R, g: G, b: B, res: 0.45 * (1 - 0.88 * dark * dark) };
   }
 
-  function paintTone(hex) {
+  function paintTone(st, hex) {
     var p = parseHex(hex) || { r: 235, g: 192, b: 160 };
-    var w = photo.w, h = photo.h, n = w * h;
-    var src = photo.base, mask = photo.mask, cur = toneCurve(p);
+    var w = st.w, h = st.h;
+    var src = st.base, mask = st.mask, gain = st.gain, cur = toneCurve(st, p);
     var cr = cur.r, cg = cur.g, cb = cur.b, res = cur.res;
-    var out = photo.work.ctx.createImageData(w, h);
+    var out = st.work.ctx.createImageData(w, h);
     var d = out.data;
-    var i, i4, r, g, b, l, li, k, or_, og, ob;
+    var i, i4, r, g, b, l, li, k, or_, og, ob, y, gn, e;
 
-    for (i = 0; i < n; i++) {
-      i4 = i << 2;
-      r = src[i4]; g = src[i4 + 1]; b = src[i4 + 2];
-      k = mask[i];
-      d[i4 + 3] = 255;
-      if (k === 0) { d[i4] = r; d[i4 + 1] = g; d[i4 + 2] = b; continue; }
-      l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      li = l < 0 ? 0 : (l > 255 ? 255 : l | 0);
-      or_ = cr[li] + (r - l) * res;
-      og = cg[li] + (g - l) * res;
-      ob = cb[li] + (b - l) * res;
-      if (or_ < 0) or_ = 0; else if (or_ > 255) or_ = 255;
-      if (og < 0) og = 0; else if (og > 255) og = 255;
-      if (ob < 0) ob = 0; else if (ob > 255) ob = 255;
-      if (k === 255) { d[i4] = or_; d[i4 + 1] = og; d[i4 + 2] = ob; continue; }
-      k /= 255;
-      d[i4] = r + (or_ - r) * k;
-      d[i4 + 1] = g + (og - g) * k;
-      d[i4 + 2] = b + (ob - b) * k;
+    for (y = 0; y < h; y++) {
+      gn = gain ? gain[y] : 1;
+      for (i = y * w, e = i + w; i < e; i++) {
+        i4 = i << 2;
+        r = src[i4] * gn; g = src[i4 + 1] * gn; b = src[i4 + 2] * gn;
+        if (r > 255) r = 255;
+        if (g > 255) g = 255;
+        if (b > 255) b = 255;
+        k = mask[i];
+        d[i4 + 3] = 255;
+        if (k === 0) { d[i4] = r; d[i4 + 1] = g; d[i4 + 2] = b; continue; }
+        /* inside the mask the recolour reads the UNTOUCHED pixel: the ramp is
+           the cloth's lighting, not the hand's */
+        r = src[i4]; g = src[i4 + 1]; b = src[i4 + 2];
+        l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        li = l < 0 ? 0 : (l > 255 ? 255 : l | 0);
+        or_ = cr[li] + (r - l) * res;
+        og = cg[li] + (g - l) * res;
+        ob = cb[li] + (b - l) * res;
+        if (or_ < 0) or_ = 0; else if (or_ > 255) or_ = 255;
+        if (og < 0) og = 0; else if (og > 255) og = 255;
+        if (ob < 0) ob = 0; else if (ob > 255) ob = 255;
+        if (k === 255) { d[i4] = or_; d[i4 + 1] = og; d[i4 + 2] = ob; continue; }
+        k /= 255;
+        d[i4] = r * gn + (or_ - r * gn) * k;
+        d[i4 + 1] = g * gn + (og - g * gn) * k;
+        d[i4 + 2] = b * gn + (ob - b * gn) * k;
+      }
     }
-    photo.work.ctx.putImageData(out, 0, 0);
+    st.work.ctx.putImageData(out, 0, 0);
     /* a photograph belongs in a photographic container — a PNG of this frame
        is ten times the bytes for no visible gain, and both rasterise the same */
-    return photo.work.canvas.toDataURL('image/jpeg', 0.92);
+    return st.work.canvas.toDataURL('image/jpeg', 0.92);
   }
 
   function toneKey(hex) { return col(hex, DEF.skin); }
 
-  /* the cached data URL for a tone, or null when it has not been made yet */
-  function toneCached(hex) {
-    var k = toneKey(hex);
-    return (photo.state === 'ready' && photo.tones[k]) ? photo.tones[k] : null;
+  /* ---------------------------------------------------------------------- *
+   * TWO HANDLES ON THE SAME RECOLOURED FRAME.                               *
+   *                                                                         *
+   *   .data  a data: URL. Export needs it: an <svg> rasterised through an    *
+   *          <img> is a restricted context that fetches nothing external,    *
+   *          so a plain path or a blob: href arrives at the canvas blank.    *
+   *   .ref   a blob: URL of the same bytes, and what the LIVE page uses.     *
+   *                                                                         *
+   * The difference is only how long the string is, and the string is what    *
+   * costs: a recoloured frame is a quarter megabyte of base64, and writing   *
+   * that onto an href measured 1.4ms — twice per hand, on every repaint of   *
+   * a preview that repaints on every tap. A blob: URL is fifty characters.   *
+   * exportReady swaps them back for the real thing before anything is        *
+   * serialised, so toPNG is unaffected.                                      *
+   * ---------------------------------------------------------------------- */
+  function blobRef(url) {
+    var i, bin, n, arr, k;
+    try {
+      if (typeof atob !== 'function' || typeof Blob !== 'function' ||
+          typeof URL === 'undefined' || !URL.createObjectURL) return url;
+      i = url.indexOf(',');
+      if (i < 0) return url;
+      bin = atob(url.slice(i + 1));
+      n = bin.length;
+      arr = new Uint8Array(n);
+      for (k = 0; k < n; k++) arr[k] = bin.charCodeAt(k) & 255;
+      return URL.createObjectURL(new Blob([arr], { type: 'image/jpeg' }));
+    } catch (e) { return url; }
   }
 
-  function toneURL(hex) {
-    var k = toneKey(hex);
-    return loadPhoto().then(function () {
-      if (photo.tones[k]) return photo.tones[k];
-      photo.tones[k] = paintTone(k);
-      photo.order.push(k);
-      while (photo.order.length > 8) delete photo.tones[photo.order.shift()];
-      return photo.tones[k];
+  function dropTone(st, k) {
+    var e = st.tones[k];
+    if (e && e.ref !== e.data) {
+      try { URL.revokeObjectURL(e.ref); } catch (e2) { /* ignore */ }
+    }
+    delete st.tones[k];
+  }
+
+  /* the cached entry for a tone on one photo, or null when it is not made */
+  function toneCached(key, hex) {
+    var st = photos[sideOf(key)], k = toneKey(hex);
+    return (st.state === 'ready' && st.tones[k]) ? st.tones[k] : null;
+  }
+
+  function toneURL(key, hex) {
+    var side = sideOf(key), k = toneKey(hex);
+    return loadPhoto(side).then(function (st) {
+      var data;
+      if (st.tones[k]) return st.tones[k];
+      data = paintTone(st, k);
+      st.tones[k] = { data: data, ref: blobRef(data) };
+      st.order.push(k);
+      while (st.order.length > 8) dropTone(st, st.order.shift());
+      return st.tones[k];
     });
   }
 
   /* ---- the svg ---------------------------------------------------------- */
 
-  function photoAnchors(side) {
-    var out = [], i, k, a, m = side === 'right';
+  /* Which photograph actually draws a given side. Normally its own — and
+     `mirror` is the graceful degradation: if one file 404s but the other
+     loaded, the survivor stands in for it, reflected, exactly as the pair
+     was built before the second photograph existed. With neither, the whole
+     preview quietly becomes the drawn hand instead. */
+  function photoPlan(side) {
+    var s = sideOf(side), o = s === 'right' ? 'left' : 'right';
+    if (!photoAble) return null;
+    if (photos[s].ok) return { side: s, src: s, mirror: false, def: photos[s].def };
+    if (photos[o].ok) return { side: s, src: o, mirror: true, def: photos[o].def };
+    return null;
+  }
+
+  function photoAnchors(plan) {
+    var def = plan.def, m = plan.mirror;
+    var set = PHOTO_ANCHORS[m ? plan.src : plan.side];
+    var ax = m ? mirrorAxis(def) : 0;
+    var out = [], i, k, a;
     for (i = 0; i < FINGERS.length; i++) {
       k = FINGERS[i].key;
-      a = PHOTO_ANCHOR[k];
+      a = set[k];
       out.push({
         finger: k,
-        x: m ? mirrorAxis() - a.x * PHOTO.w : a.x * PHOTO.w,
-        y: a.y * PHOTO.h,
+        x: m ? ax - a.x * def.w : a.x * def.w,
+        y: a.y * def.h,
         angle: m ? -a.angle : a.angle,
-        width: a.width * PHOTO.w,
-        tip: a.tip * PHOTO.w
+        width: a.width * def.w,
+        tip: a.tip * def.w,
+        fore: num(a.fore, 1)
       });
     }
     return out;
@@ -3946,44 +4179,57 @@
     return g;
   }
 
-  function photoContent(side, design, opts, onFail) {
-    var outer = E('g', { 'class': 'sn-photo-body sn-photo-' + side });
+  /* one hand, placed at `ox` in the composition and cut to its own window */
+  function photoContent(plan, ox, design, opts, onFail) {
+    var def = plan.def;
+    var outer = E('g', {
+      'class': 'sn-photo-body sn-photo-' + plan.side,
+      transform: cellPlace(def, ox)
+    });
     var defs = add(outer, E('defs'));
     /* the quarter turn wraps everything; inside it the photograph's own frame
        is untouched, which is why the anchors below need no adjustment */
-    var turn = add(outer, E('g', { 'class': 'sn-photo-turn', transform: photoTurn(side) }));
+    var turn = add(outer, E('g', {
+      'class': 'sn-photo-turn', transform: photoTurn(def, plan.mirror)
+    }));
     /* two hands sit side by side, and each frame is wider than the window it
        is cut to, so without this the second one paints over the first */
-    var g = add(turn, E('g', { 'clip-path': photoClip(defs) }));
-    var mirror = side === 'right';
+    var g = add(turn, E('g', { 'clip-path': photoClip(defs, plan.src) }));
     var shape = shapeId(design.shape);
     var aspect = ASPECT[shape];
     var factor = lenFactor(design.length);
-    var anchors = photoAnchors(side);
+    var anchors = photoAnchors(plan);
     var q = clamp(num(opts.detail, 0.7), 0.25, 1);
     var tone = toneKey(design.skin);
-    var id = photoImage(defs, tone, onFail);
+    var id = photoImage(defs, plan.src, tone, onFail);
     var frame = E('g', { 'class': 'sn-photo-frame' });
+    var tiles = photos[plan.src].tiles ||
+                (photos[plan.src].tiles = photoTiles(def));
     var i, an, nw, nh, key, el, wrap, t;
 
-    /* the photograph, then itself mirrored about each of its own edges, so the
-       window can reach past the frame without ever showing a hole */
-    for (t = 0; t < PHOTO_TILES.length; t++) {
-      add(frame, E('use', {
-        href: '#' + id, 'xlink:href': '#' + id, transform: PHOTO_TILES[t]
-      }));
+    /* the photograph, plus itself mirrored about whichever of its own edges
+       the window reaches past, so the crop never shows a hole */
+    for (t = 0; t < tiles.length; t++) {
+      add(frame, E('use', tiles[t]
+        ? { href: '#' + id, 'xlink:href': '#' + id, transform: tiles[t] }
+        : { href: '#' + id, 'xlink:href': '#' + id }));
     }
-    if (mirror) {
-      add(g, E('g', { transform: 'translate(' + f(mirrorAxis()) + ' 0) scale(-1 1)' }, [frame]));
+    if (plan.mirror) {
+      add(g, E('g', { transform: 'translate(' + f(mirrorAxis(def)) + ' 0) scale(-1 1)' }, [frame]));
     } else {
       add(g, frame);
     }
 
     for (i = 0; i < anchors.length; i++) {
       an = anchors[i];
-      key = side + an.finger.charAt(0).toUpperCase() + an.finger.slice(1);
+      key = plan.side + an.finger.charAt(0).toUpperCase() + an.finger.slice(1);
       nw = an.width * PHOTO_PLATE_W;
-      nh = nw * aspect * factor;
+      /* `fore` is foreshortening, and only the thumbs ever need it: a digit
+         lying with its nail tilted away from the camera keeps its full width
+         but loses length, so the same press-on projects shorter on it. Without
+         this the right thumb — pressed flatter than the left — came out with a
+         visibly longer nail than its partner on the same "medium". */
+      nh = nw * aspect * factor * an.fore;
       /* even the shortest press-on covers the natural nail and clears the
          flesh — that is what makes it a press-on and not a sticker */
       if (nh < an.tip * PHOTO_TIP_CLEAR) nh = an.tip * PHOTO_TIP_CLEAR;
@@ -3993,7 +4239,7 @@
         transform: 'translate(' + f(an.x) + ' ' + f(an.y) + ') rotate(' + f(an.angle) + ') ' +
                    'translate(' + f(-nw / 2) + ' ' + f(-nh) + ')'
       });
-      add(wrap, contactShadow(defs, path(shape, nw, nh), nw, nh, an.angle, mirror, q));
+      add(wrap, contactShadow(defs, path(shape, nw, nh), nw, nh, an.angle, plan.mirror, q));
       el = nailSVG(design.nails[key], {
         shape: shape, w: nw, h: nh, key: key, mirror: false,
         light: an.angle,
@@ -4010,43 +4256,33 @@
     return outer;
   }
 
-  /* The frame, plus itself mirrored about x = 0, about y = 0 and about both.
-     Each mirror overshoots its seam by one unit and the untouched frame is
-     painted LAST, so every tile edge has an opaque tile underneath it — draw
-     them flush and the renderer's antialiasing leaves a hairline of page
-     background along each join. */
-  var PHOTO_TILES = [
-    'translate(1 1) scale(-1 -1)',
-    'translate(0 1) scale(1 -1)',
-    'translate(1 0) scale(-1 1)',
-    null
-  ];
-
-  /* ONE <image> per svg, in the shared defs, referenced by every tile of every
-     hand: the recoloured tone is a quarter megabyte of base64, and putting it
-     on eight elements would put eight copies of it in the DOM */
-  function photoImage(defs, tone, onFail) {
-    return shared(defs, 'pimg|' + tone, function (d) {
+  /* ONE <image> per photograph per svg, in the shared defs, referenced by
+     every tile of every hand: a recoloured tone is a quarter megabyte of
+     base64, and putting it on eight elements would put eight copies in the
+     DOM. Keyed by photograph AND tone, so the pair carries exactly two. */
+  function photoImage(defs, key, tone, onFail) {
+    var side = sideOf(key), def = photos[side].def;
+    return shared(defs, 'pimg|' + side + '|' + tone, function (d) {
       var id = uid('pimg');
-      var cached = toneCached(tone);
+      var cached = toneCached(side, tone);
       var im = E('image', {
-        id: id, x: 0, y: 0, width: f(PHOTO.w), height: f(PHOTO.h),
-        preserveAspectRatio: 'none', 'data-sn-photo-tone': tone
+        id: id, x: 0, y: 0, width: f(def.w), height: f(def.h),
+        preserveAspectRatio: 'none',
+        'data-sn-photo-tone': tone, 'data-sn-photo-side': side
       });
       function fail() {
-        photoOK = false;
-        if (SN.Nail) SN.Nail.PHOTO_OK = false;
+        photoDown(side);
         if (typeof onFail === 'function') onFail();
       }
       /* the raw file first so the frame paints as soon as it decodes, then the
          recoloured canvas swaps in — never the other way round, or the first
          paint waits on a mask build it does not need */
-      setHref(im, cached || photoFile());
+      setHref(im, cached ? cached.ref : photoFile(def));
       if (!cached) {
         /* Safari does not reliably fire 'error' on an SVG <image>; the HTML
            Image inside loadPhoto always does, so this is the path that
            actually catches a missing asset there */
-        toneURL(tone).then(function (url) { setHref(im, url); }, fail);
+        toneURL(side, tone).then(function (e) { setHref(im, e.ref); }, fail);
       }
       im.addEventListener('error', fail);
       add(d, im);
@@ -4054,11 +4290,20 @@
     });
   }
 
-  function photoClip(defs) {
-    return shared(defs, 'pcrop', function (d) {
+  /* Each window is clipped one unit wider than its slot on every side. Two
+     panels drawn flush leave a hairline of page background down the join —
+     at 2x it measured a full white pixel against linen — because the clip
+     edge and the next panel's edge land on the same fractional coordinate
+     and both antialias away from it. A unit of bleed makes them overlap
+     instead; the later panel paints over it, so nothing moves. */
+  var PHOTO_BLEED = 1;
+
+  function photoClip(defs, key) {
+    var side = sideOf(key), def = photos[side].def, b = PHOTO_BLEED;
+    return shared(defs, 'pcrop|' + side, function (d) {
       var id = uid('pcrop');
       add(d, E('clipPath', { id: id, clipPathUnits: 'userSpaceOnUse' },
-        [rect(PHOTO.cx, PHOTO.cy, PHOTO.cw, PHOTO.ch)]));
+        [rect(def.cx - b, def.cy - b, def.cw + b * 2, def.ch + b * 2)]));
       return 'url(#' + id + ')';
     });
   }
@@ -4079,28 +4324,32 @@
 
   function photoHand(opts) {
     opts = opts || {};
-    var side = opts.side === 'right' ? 'right' : 'left';
+    var side = sideOf(opts.side), plan = photoPlan(side);
     var design, svg;
-    if (!photoOK) return hand(opts);
+    if (!plan) return hand(opts);
     design = normDesign(opts.design);
     svg = newSvg(opts);
     svg.setAttribute('class', 'sn-svg sn-hand sn-photo-hand sn-hand-' + side);
     inCtx(svg, function () {
-      add(svg, photoContent(side, design, opts, function () {
-        degrade(svg, function () { return hand(opts); });
+      add(svg, photoContent(plan, 0, design, opts, function () {
+        /* the photograph this was built on has just been marked missing:
+           build again, which now picks the survivor or the drawn hand */
+        degrade(svg, function () { return photoHand(opts); });
       }));
     });
-    return sizeCrop(svg, opts.w, 1);
+    return sizeCells(svg, opts.w, [plan]);
   }
 
-  /* the viewBox is the turned crop window, repeated `n` times across */
-  function sizeCrop(svg, w, n) {
-    var v = turnedView(), nw = num(w, 0), vw = v.w * n, vh = v.h;
-    svg.setAttribute('viewBox', f(v.x) + ' ' + f(v.y) + ' ' + f(vw) + ' ' + f(vh));
+  /* the viewBox is the composition: every panel CELL_H tall, laid left to
+     right, each as wide as its own window scaled to that height */
+  function sizeCells(svg, w, plans) {
+    var vw = 0, nw = num(w, 0), i;
+    for (i = 0; i < plans.length; i++) vw += cellW(plans[i].def);
+    svg.setAttribute('viewBox', '0 0 ' + f(vw) + ' ' + f(CELL_H));
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     if (nw > 0) {
       svg.setAttribute('width', f(nw));
-      svg.setAttribute('height', f(nw * vh / vw));
+      svg.setAttribute('height', f(nw * CELL_H / vw));
       svg.setAttribute('style', 'display:block;max-width:100%;height:auto');
     } else {
       svg.setAttribute('style', 'display:block;width:100%;height:auto');
@@ -4108,7 +4357,7 @@
     return svg;
   }
 
-  /* photo unless the caller says otherwise, or unless the asset is not there */
+  /* photo unless the caller says otherwise, or unless the assets are gone */
   function previewMode(opts) {
     var m = opts && opts.mode;
     if (m === 'vector' || m === 'drawn' || m === 'svg') return 'vector';
@@ -4116,25 +4365,32 @@
   }
 
   /* Two hands stand side by side, fingers up, wrists at the bottom, thumbs
-     facing each other — the pose every nail photograph uses. The left hand
-     as shot goes on the left, where its thumb points inward; the right hand
-     is that frame reflected in the join between the two windows, so the two
-     halves meet on the same column of pixels and the seam disappears. */
+     facing each other — the pose every nail photograph uses. Each hand is
+     its own photograph, so the linen's weave and folds do not agree across
+     the join the way a reflection's would, which is the whole point. */
   function photoPreview(d, opts) {
-    var svg = newSvg(opts);
-    function fail() { degrade(svg, function () { return vectorPreview(d, opts); }); }
-    if (d.hand === 'both') {
-      svg.setAttribute('class', 'sn-svg sn-preview sn-photo-preview sn-preview-both');
-      inCtx(svg, function () {
-        add(svg, photoContent('left', d, opts, fail));
-        add(svg, E('g', { transform: 'translate(' + f(turnedView().w) + ' 0)' },
-          [photoContent('right', d, opts, fail)]));
+    var svg = newSvg(opts), plans, i, ox;
+    function fail() {
+      degrade(svg, function () {
+        return photoOK ? photoPreview(d, opts) : vectorPreview(d, opts);
       });
-      return sizeCrop(svg, opts.w, 2);
     }
+    if (d.hand === 'both') {
+      plans = [photoPlan('left'), photoPlan('right')];
+    } else {
+      plans = [photoPlan(d.hand)];
+    }
+    for (i = 0; i < plans.length; i++) if (!plans[i]) return vectorPreview(d, opts);
     svg.setAttribute('class', 'sn-svg sn-preview sn-photo-preview sn-preview-' + d.hand);
-    inCtx(svg, function () { add(svg, photoContent(d.hand, d, opts, fail)); });
-    return sizeCrop(svg, opts.w, 1);
+    inCtx(svg, function () {
+      var x = 0, j;
+      for (j = 0; j < plans.length; j++) {
+        ox = x;
+        add(svg, photoContent(plans[j], ox, d, opts, fail));
+        x += cellW(plans[j].def);
+      }
+    });
+    return sizeCells(svg, opts.w, plans);
   }
 
   /* every photo <image> in a tree, upgraded to its recoloured data URL. An
@@ -4150,8 +4406,9 @@
         im = imgs[i];
         href = im.getAttribute('href') || im.getAttributeNS(XLINK, 'href') || '';
         if (href.indexOf('data:') === 0) continue;
-        list.push(toneURL(im.getAttribute('data-sn-photo-tone')).then(
-          (function (node) { return function (url) { setHref(node, url); }; }(im)),
+        list.push(toneURL(im.getAttribute('data-sn-photo-side'),
+                          im.getAttribute('data-sn-photo-tone')).then(
+          (function (node) { return function (e) { setHref(node, e.data); }; }(im)),
           function () { /* the drawn hand is already the fallback */ }
         ));
       }
@@ -4161,10 +4418,14 @@
     }
   }
 
-  /* warm the photo up without blocking anything — safe to call many times */
+  /* warm both photographs up without blocking anything — safe to call many
+     times, and one missing file never fails the other */
   function preloadPhoto() {
-    if (!photoOK) return Promise.resolve(false);
-    return loadPhoto().then(function () { return true; }, function () { return false; });
+    if (!photoAble) return Promise.resolve(false);
+    function one(k) { return loadPhoto(k).then(function () { return true; }, function () { return false; }); }
+    return Promise.all([one('left'), one('right')]).then(function (r) {
+      return !!(r[0] || r[1]);
+    });
   }
 
   /* ====================================================================== */
@@ -4409,7 +4670,9 @@
     HAND_GEOM: HAND_GEOM,
 
     PHOTO: PHOTO,
+    PHOTO_RIGHT: PHOTO_RIGHT,
     PHOTO_ANCHOR: PHOTO_ANCHOR,
+    PHOTO_ANCHOR_RIGHT: PHOTO_ANCHOR_RIGHT,
     PHOTO_OK: photoOK,
 
     path: path,
