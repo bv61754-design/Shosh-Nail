@@ -96,6 +96,7 @@
         selLeft: 'تحديد اليد اليسرى',
         selNone: 'إلغاء التحديد',
         selCount: '{n} ظفر محدّد',
+        selCount1: 'ظفر واحد محدّد',
         selEmpty: 'ما فيه ظفر محدّد — اضغطي على ظفر من المعاينة فوق.',
         toolColor: 'اللون',
         toolFinish: 'اللمسة',
@@ -183,6 +184,7 @@
         plain: 'بدون نقشة',
         noCharms: 'بدون زخارف',
         charmsN: '{n} زخرفة',
+        charmsN1: 'زخرفة وحدة',
 
         /* misc */
         restoreTitle: 'عندك تصميم ما خلّصتيه',
@@ -261,7 +263,8 @@
         selRight: 'Select right hand',
         selLeft: 'Select left hand',
         selNone: 'Clear selection',
-        selCount: '{n} nail(s) selected',
+        selCount: '{n} nails selected',
+        selCount1: '1 nail selected',
         selEmpty: 'No nail selected — tap one in the preview above.',
         toolColor: 'Colour',
         toolFinish: 'Finish',
@@ -346,7 +349,8 @@
         lblCharms: 'Charms',
         plain: 'No pattern',
         noCharms: 'No charms',
-        charmsN: '{n} charm(s)',
+        charmsN: '{n} charms',
+        charmsN1: '1 charm',
 
         restoreTitle: 'You have an unfinished design',
         restoreText: 'We kept the last design you were working on in this browser.',
@@ -386,6 +390,13 @@
   }
   function money(n) { return (SN.I18n && SN.I18n.money) ? SN.I18n.money(n) : String(n); }
   function nfm(n) { return (SN.I18n && SN.I18n.num) ? SN.I18n.num(n) : String(n); }
+  /* "{n} nails selected" reads wrong at one, and Arabic wants its own singular
+     too, so every counted string ships a `<key>1` twin used when n === 1. */
+  function countT(key, n) {
+    return n === 1
+      ? t('studio.' + key + '1')
+      : t('studio.' + key, { n: nfm(n) });
+  }
   function toast(msg, type) { if (SN.UI && SN.UI.toast) SN.UI.toast(msg, type || 'info'); }
 
   function list(key) {
@@ -944,7 +955,7 @@
     host.appendChild(el('p', {
       'class': 'studio-pane-note',
       text: state.step === 4
-        ? t('studio.selCount', { n: nfm(state.sel.length) })
+        ? countT('selCount', state.sel.length)
         : t('studio.stepOf', { n: nfm(state.step), total: nfm(STEP_COUNT) })
     }));
     host.appendChild(el('button', {
@@ -1524,7 +1535,7 @@
         right.length ? chip(t('studio.selRight'), false, function () { selectKeys(right); }, 'sel-r') : null,
         left.length ? chip(t('studio.selLeft'), false, function () { selectKeys(left); }, 'sel-l') : null,
         chip(t('studio.selNone'), !state.sel.length, function () { selectKeys([]); }, 'sel-none'),
-        el('span', { 'class': 'studio-selcount', text: t('studio.selCount', { n: nfm(state.sel.length) }) })
+        el('span', { 'class': 'studio-selcount', text: countT('selCount', state.sel.length) })
       ]));
       host.appendChild(el('p', { 'class': 'studio-hint' }, [
         el('span', { html: icon('sparkle', 16), 'aria-hidden': 'true' }),
@@ -2529,7 +2540,7 @@
         arr = list('patterns');
         for (j = 0; j < arr.length; j++) if (arr[j].kind === n.pattern.kind) { patName = pick(arr[j].name); break; }
       }
-      pat = patName + ' · ' + (n.charms.length ? t('studio.charmsN', { n: nfm(n.charms.length) }) : t('studio.noCharms'));
+      pat = patName + ' · ' + (n.charms.length ? countT('charmsN', n.charms.length) : t('studio.noCharms'));
       box.appendChild(el('div', { 'class': 'studio-nailrow' }, [
         el('i', { style: { background: n.color }, 'aria-hidden': 'true' }),
         el('span', {}, [
@@ -2675,6 +2686,30 @@
       try { refs.progress.firstChild.style.setProperty('inline-size', Math.round(state.step / STEP_COUNT * 100) + '%'); }
       catch (e) { refs.progress.firstChild.style.width = Math.round(state.step / STEP_COUNT * 100) + '%'; }
     }
+    revealStep();
+  }
+
+  /* On a narrow screen the six chips overflow the strip, and the browser's
+     resting scroll position leaves the later ones outside it — clipped off the
+     end in LTR, off the start in RTL, which is why the RTL strip cut the label
+     in half from step 4 on. Centre the active chip when it is not fully in
+     view. Two details matter: the move is expressed as a delta, because
+     `scrollLeft` counts rightwards in every engine but its origin differs
+     between them (0..max vs -max..0), and it has to clear half a chip, because
+     `scroll-snap-type: proximity` drags any smaller nudge straight back. */
+  function revealStep() {
+    var host = refs.steps, btn, hr, br, delta;
+    if (!host || typeof host.getBoundingClientRect !== 'function') return;
+    btn = host.querySelector ? host.querySelector('.studio-step-btn.is-on') : null;
+    if (!btn) return;
+    try {
+      hr = host.getBoundingClientRect();
+      br = btn.getBoundingClientRect();
+      if (!hr.width || !br.width) return;                    /* not laid out yet */
+      if (br.left >= hr.left - 1 && br.right <= hr.right + 1) return;
+      delta = (br.left + br.width / 2) - (hr.left + hr.width / 2);
+      host.scrollLeft += delta;
+    } catch (e) { /* a detached strip must never break the wizard */ }
   }
 
   function totalNow() {

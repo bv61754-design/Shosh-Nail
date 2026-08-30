@@ -156,6 +156,9 @@
   var COLLECTIONS = ['skinTones','shapes','lengths','finishes','colors','patterns','charms',
     'sizeGuide','sizeSets','measureMethods','paymentMethods','designs','faqCats','faq','orders'];
 
+  /* Collections that live one level down, under `home`. */
+  var HOME_LISTS = ['features','steps','testimonials','stats'];
+
   var PREFIX = {
     colors: 'c', charms: 'ch', patterns: 'p', shapes: 'sh', finishes: 'f', lengths: 'l',
     skinTones: 'sk', designs: 'd', faq: 'q', faqCats: 'fc', orders: 'o',
@@ -187,14 +190,29 @@
     return state;
   }
 
+  /* Restore one array-valued slot from the defaults when the saved state put
+     something that is not an array there. An EMPTY array is a legitimate saved
+     value (the owner deleted every row), so only non-arrays are healed —
+     otherwise a single corrupt field would silently wipe a whole collection. */
+  function repairArray(host, defHost, key){
+    var d;
+    if (Array.isArray(host[key])) return;
+    d = isObj(defHost) ? defHost[key] : undefined;
+    host[key] = Array.isArray(d) ? clone(d) : [];
+  }
+
   function repair(){
-    var i, k;
-    if (!isObj(state.settings)) state.settings = clone(defaults().settings || FALLBACK.settings);
-    if (!isObj(state.pricing))  state.pricing  = clone(defaults().pricing  || FALLBACK.pricing);
-    if (!isObj(state.home))     state.home     = clone(defaults().home     || FALLBACK.home);
+    var def = defaults(), i, k;
+    if (!isObj(state.settings)) state.settings = clone(def.settings || FALLBACK.settings);
+    if (!isObj(state.pricing))  state.pricing  = clone(def.pricing  || FALLBACK.pricing);
+    if (!isObj(state.home))     state.home     = clone(def.home     || FALLBACK.home);
     for (i = 0; i < COLLECTIONS.length; i++){
       k = COLLECTIONS[i];
-      if (!Array.isArray(state[k])) state[k] = [];
+      repairArray(state, def, k);
+    }
+    for (i = 0; i < HOME_LISTS.length; i++){
+      k = HOME_LISTS[i];
+      repairArray(state.home, isObj(def.home) ? def.home : null, k);
     }
   }
 
@@ -299,9 +317,13 @@
   Store.list = function(key){
     var v = getPath(state, key);
     if (Array.isArray(v)) return v;
-    /* Only create the array when nothing lives at that path — never clobber
-       an existing object (e.g. a typo like list('settings')). */
-    if (!parts(key).length || (v !== undefined && v !== null)) return [];
+    if (!parts(key).length) return [];
+    /* Never clobber an existing object (e.g. a typo like list('settings')) —
+       that one stays read-only and yields an empty list. Anything else at that
+       path (missing, or a primitive left behind by a corrupt/hand-edited save)
+       becomes a real array attached to the state, so add/remove/move actually
+       persist instead of silently writing into a detached copy. */
+    if (isObj(v)) return [];
     setPath(state, key, []);
     v = getPath(state, key);
     return Array.isArray(v) ? v : [];

@@ -185,8 +185,14 @@
    02  THE TWO-PANE GRID + STICKY PREVIEW
    ========================================================================= */
 
+/* The action bar is fixed to the bottom of the viewport, so the page has to
+   reserve its height — but only its height. It measures 65px (10px padding +
+   a 44px control + 10px padding, plus the safe-area inset on iOS), and the
+   old 104-124px reservation stacked on top of the footer's own 40-80px top
+   margin left ~200px of dead ground above the footer. Reserve bar + a small
+   breathing gap here, and drop the footer margin on this page only. */
 .studio-wrap{
-  padding-block:18px clamp(104px,14vw,124px);
+  padding-block:18px clamp(80px,8vw,92px);
 }
 .studio-grid{
   display:grid;
@@ -1087,6 +1093,14 @@
   box-shadow:0 -6px 24px rgba(74,43,57,.10);
   padding-block-end:env(safe-area-inset-bottom,0px);
 }
+/* scoped to this page, so nothing here leaks into another one:
+   the studio ends in a fixed bar, so the footer needs no extra air above it,
+   and it does need room below so the bar cannot sit on the copyright line */
+body[data-page="studio"] #sn-footer{
+  margin-block-start:0;
+  padding-block-end:calc(66px + env(safe-area-inset-bottom,0px));
+}
+
 .studio-bar-in{
   display:flex;
   align-items:center;

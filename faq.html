@@ -252,6 +252,13 @@
 .faq-remove-t{ font-weight:800; color:var(--ink); }
 
 .faq-more{ margin-block-start:clamp(18px,2.6vw,26px); }
+/* these chips carry whole questions, not one-word filters, so they wrap
+   instead of running off the side of a narrow phone */
+.faq-more .chip{
+  max-inline-size:100%;
+  white-space:normal;
+  text-align:start;
+}
 .faq-more-t{
   font-size:.8rem;
   font-weight:800;

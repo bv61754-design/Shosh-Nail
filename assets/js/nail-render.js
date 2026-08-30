@@ -53,10 +53,13 @@
 
   var SHAPES = ['almond', 'coffin', 'stiletto', 'square', 'squoval', 'round', 'oval', 'lipstick'];
 
-  /* height / width of one plate, per shape, at length factor 1 */
+  /* height / width of one plate, per shape, at length factor 1.
+     A real press-on nail is clearly TALLER than it is wide — anything under
+     ~1.3 immediately reads as an egg rather than a nail, so these are the
+     single most load bearing numbers in the file. */
   var ASPECT = {
-    almond: 1.45, coffin: 1.52, stiletto: 1.78, square: 1.24,
-    squoval: 1.28, round: 1.30, oval: 1.40, lipstick: 1.50
+    almond: 1.62, coffin: 1.58, stiletto: 1.96, square: 1.40,
+    squoval: 1.43, round: 1.36, oval: 1.52, lipstick: 1.50
   };
 
   /* fallbacks used only when SN.Store has nothing to say */
@@ -86,31 +89,50 @@
 
   /* Finger geometry, right hand, viewBox 0 0 300 380, thumb on the right
      (we are looking at the BACK of the hand, which is where the nails are).
-       x, y   knuckle / base centre of the finger
-       angle  degrees, 0 = straight up, positive leans towards +x
-       width  capsule width
-       length capsule length from the base to the fingertip
-     Tuned by eye — this is the one table to touch when the hand looks off. */
+       x, y   knuckle / base centre of the finger, on the knuckle line
+       angle  degrees, 0 = straight up, positive splays towards +x
+       width  width of the finger AT ITS BASE (it tapers towards the tip)
+       length base -> fingertip
+     Relative lengths matter more than absolute ones: middle longest, ring and
+     index close behind, pinky clearly shortest and thinnest, thumb short and
+     thick and coming off the SIDE of the palm.
+     This is the one table to touch when the hand looks off. */
   var HAND_GEOM = {
-    pinky:  { x: 82,  y: 248, angle: -15, width: 24, length: 104 },
-    ring:   { x: 116, y: 232, angle: -6,  width: 28, length: 134 },
-    middle: { x: 152, y: 226, angle: 1,   width: 30, length: 148 },
-    index:  { x: 188, y: 234, angle: 9,   width: 28, length: 136 },
-    thumb:  { x: 232, y: 302, angle: 40,  width: 32, length: 104 }
+    pinky:  { x: 84,  y: 248, angle: -14, width: 30, length: 101 },
+    ring:   { x: 116, y: 231, angle: -6,  width: 34, length: 137 },
+    middle: { x: 151, y: 223, angle: 0,   width: 36, length: 150 },
+    index:  { x: 186, y: 232, angle: 8,   width: 35, length: 132 },
+    thumb:  { x: 202, y: 294, angle: 40,  width: 44, length: 90 }
   };
 
-  /* the palm blob (same coordinate system as HAND_GEOM) */
-  var PALM_D =
-    /* knuckle line -> thumb mound -> wrist -> back up the pinky edge */
-    'M70 262 C68 240 76 228 94 224 C116 219 140 217 164 220 ' +
-    'C186 223 204 230 218 242 C236 258 250 280 252 306 ' +
-    'C254 334 244 356 222 368 C198 381 152 382 124 374 ' +
-    'C100 367 84 350 78 324 C73 304 71 282 70 262 Z';
+  /* how far a finger capsule reaches back INTO the palm, in finger widths,
+     so the two silhouettes fuse into one shape */
+  var FINGER_ROOT = 1.5;
+  /* the finger tip is this fraction of the base width */
+  var FINGER_TAPER = 0.74;
 
-  /* plate width relative to the finger width, and how far the cuticle sits
-     back from the fingertip (also relative to the finger width) */
-  var PLATE_W = 0.88;
-  var PLATE_BACK = 0.72;
+  /* The palm: a slightly tapered rounded rectangle — clearly wider across the
+     knuckles than at the wrist — with the thenar (thumb mound) bulging out on
+     the thumb side. Same coordinate system as HAND_GEOM. */
+  var PALM_D =
+    'M65 254 ' +
+    'C66 232 82 219 107 216 ' +      /* pinky-side knuckle corner  */
+    'C142 212 180 214 207 227 ' +    /* across the knuckle line    */
+    'C224 236 234 258 236 284 ' +    /* the thenar (thumb mound)   */
+    'C238 310 226 336 204 346 ' +    /* in towards the wrist       */
+    'C188 353 114 353 98 344 ' +     /* the heel of the hand       */
+    'C78 333 65 298 65 254 Z';
+
+  /* a wrist stub so the hand does not float */
+  /* deliberately taller than the viewBox so it always runs off the bottom
+     edge rather than ending in a visible rounded stub */
+  var WRIST = { x: 98, y: 324, w: 104, h: 110, r: 22 };
+
+  /* plate width as a fraction of the finger's BASE width, and how far the
+     plate's cuticle sits back from the fingertip, in finger widths. Press-on
+     nails are the dominant feature of a fingertip — keep these generous. */
+  var PLATE_W = 0.84;
+  var PLATE_BACK = 1.12;
 
   /* ====================================================================== */
   /* 2. Tiny helpers                                                         */
@@ -426,80 +448,125 @@
   /*    believable cuticle and the same side flare.                          */
   /* ====================================================================== */
 
-  /* the widest point of the plate, as a fraction of h */
-  function widestY(s) {
-    if (s === 'stiletto') return 0.66;
-    if (s === 'oval') return 0.58;
-    return 0.61;
+  /* The plate is widest at WIDE_Y (a fraction of h, measured from the tip).
+     Real nails are widest just above the cuticle and then run parallel or
+     taper slightly IN toward the tip — they never barrel out. */
+  var WIDE_Y = 0.74;
+  /* how far the cuticle arc dips below its corners, as a fraction of h.
+     A cuticle line is a shallow, wide arc — almost flat. */
+  var CUTICLE_DIP = 0.035;
+  /* where the side walls meet the cuticle corners. The cuticle line is a
+     little narrower than the widest point, which is what gives a nail its
+     rounded shoulders instead of a chopped-off bottom. */
+  var CUTICLE_X = 0.150;
+
+  /* A side wall: a cubic from the current point to (x1,y1) that is straight
+     to the eye. `bow` (in user units, signed on x) lets a wall bulge a hair
+     outward so the silhouette never looks mechanically ruled. */
+  function wall(p, x0, y0, x1, y1, bow) {
+    var dx = x1 - x0, dy = y1 - y0;
+    bow = bow || 0;
+    p.C(x0 + dx * 0.32 + bow, y0 + dy * 0.34,
+        x0 + dx * 0.70 + bow * 0.75, y0 + dy * 0.70,
+        x1, y1);
   }
 
-  function tipSegment(p, s, w, h, ay) {
-    var xl, xr, r, rx, ry, c2y;
+  /* Draws the outline from the left widest point (0, yW) across the tip and
+     back down to the right widest point (w, yW). */
+  function tipSegment(p, s, w, h, yW) {
+    var xl, xr, r, rx, ry, bw;
 
-    if (s === 'coffin') {
-      /* tapered walls, flat tip at ~46% of the base width */
-      r = Math.min(w * 0.045, 2.2);
-      /* nearly straight walls so the taper reads as a coffin, not a dome */
-      p.C(w * 0.001, h * 0.44, w * 0.16, h * 0.19, w * 0.265, r);
-      p.Q(w * 0.26, 0, w * 0.265 + r, 0);
-      p.L(w * 0.735 - r, 0);
-      p.Q(w * 0.74, 0, w * 0.735, r);
-      p.C(w * 0.84, h * 0.19, w * 0.999, h * 0.44, w, ay);
-      return;
-    }
-
-    if (s === 'stiletto') {
-      /* one long concave taper into a real point */
-      p.C(w * 0.02, h * 0.42, w * 0.33, h * 0.17, w * 0.5, 0);
-      p.C(w * 0.67, h * 0.17, w * 0.98, h * 0.42, w, ay);
-      return;
-    }
-
-    if (s === 'square' || s === 'squoval') {
-      xl = w * (s === 'square' ? 0.05 : 0.055);
-      xr = w - xl;
-      r = s === 'square' ? Math.min(w * 0.045, 2.2) : (xr - xl) * 0.25;
-      c2y = Math.max(r * 1.2, h * 0.18);
-      p.C(0, ay * 0.70, w * 0.028, c2y, xl, r);
+    if (s === 'square') {
+      /* dead straight, near vertical sidewalls + a flat free edge */
+      xl = w * 0.030; xr = w - xl;
+      r = w * 0.055;
+      wall(p, 0, yW, xl, r, -w * 0.002);
       p.Q(xl, 0, xl + r, 0);
       p.L(xr - r, 0);
       p.Q(xr, 0, xr, r);
-      p.C(w - w * 0.028, c2y, w, ay * 0.70, w, ay);
+      wall(p, xr, r, w, yW, w * 0.002);
+      return;
+    }
+
+    if (s === 'squoval') {
+      /* same straight walls, generously softened corners */
+      xl = w * 0.035; xr = w - xl;
+      r = w * 0.290;
+      wall(p, 0, yW, xl, r, -w * 0.003);
+      p.C(xl, r * 0.42, xl + r * 0.42, 0, xl + r, 0);
+      p.L(xr - r, 0);
+      p.C(xr - r * 0.42, 0, xr, r * 0.42, xr, r);
+      wall(p, xr, r, w, yW, w * 0.003);
       return;
     }
 
     if (s === 'round') {
-      /* straight walls, then a true half circle */
-      xl = w * 0.04; xr = w - xl;
+      /* parallel walls, then a true semicircle — this is what separates
+         'round' from 'oval' at a glance */
+      xl = w * 0.022; xr = w - xl;
       rx = (xr - xl) / 2;
-      ry = Math.min(rx, ay * 0.62);
-      c2y = ry + (ay - ry) * 0.38;
-      p.C(0, ay * 0.80, w * 0.012, c2y, xl, ry);
+      ry = rx;
+      wall(p, 0, yW, xl, ry, -w * 0.002);
       p.A(rx, ry, 0, 0, 1, xr, ry);
-      p.C(w - w * 0.012, c2y, w, ay * 0.80, w, ay);
+      wall(p, xr, ry, w, yW, w * 0.002);
       return;
     }
 
     if (s === 'oval') {
-      /* one continuous egg-like curve, no straight section at all */
-      p.C(0, h * 0.34, w * 0.10, h * 0.13, w * 0.30, h * 0.035);
-      p.C(w * 0.38, 0, w * 0.62, 0, w * 0.70, h * 0.035);
-      p.C(w * 0.90, h * 0.13, w, h * 0.34, w, ay);
+      /* one continuous curve from the widest point to the tip — there is no
+         straight section anywhere, and the tip is narrower than round's */
+      xl = w * 0.045; xr = w - xl;
+      rx = (xr - xl) / 2;
+      ry = h * 0.455;
+      wall(p, 0, yW, xl, ry, -w * 0.004);
+      p.A(rx, ry, 0, 0, 1, xr, ry);
+      wall(p, xr, ry, w, yW, w * 0.004);
+      return;
+    }
+
+    if (s === 'coffin') {
+      /* ballerina: straight sidewalls for two thirds, taper only in the top
+         third, ending on a flat tip ~57% of the base width */
+      bw = 0.55;
+      xl = w * (1 - bw) / 2; xr = w - xl;
+      r = w * 0.05;
+      wall(p, 0, yW, w * 0.028, h * 0.365, -w * 0.001);   /* straight wall */
+      wall(p, w * 0.028, h * 0.365, xl, r, 0);            /* the taper */
+      p.Q(xl, 0, xl + r, 0);
+      p.L(xr - r, 0);
+      p.Q(xr, 0, xr, r);
+      wall(p, xr, r, w - w * 0.028, h * 0.365, 0);
+      wall(p, w - w * 0.028, h * 0.365, w, yW, w * 0.001);
+      return;
+    }
+
+    if (s === 'stiletto') {
+      /* long, nearly straight walls converging on a sharp point */
+      wall(p, 0, yW, w * 0.275, h * 0.215, -w * 0.008);
+      p.C(w * 0.365, h * 0.115, w * 0.455, h * 0.042, w * 0.5, 0);
+      p.C(w * 0.545, h * 0.042, w * 0.635, h * 0.115, w * 0.725, h * 0.215);
+      wall(p, w * 0.725, h * 0.215, w, yW, w * 0.008);
       return;
     }
 
     if (s === 'lipstick') {
-      /* a bullet cut on the diagonal: low on one wall, sharp on the other */
-      p.C(0, h * 0.47, w * 0.028, h * 0.38, w * 0.09, h * 0.30);
-      p.C(w * 0.26, h * 0.205, w * 0.52, h * 0.078, w * 0.78, h * 0.02);
-      p.C(w * 0.93, h * 0.10, w, h * 0.34, w, ay);
+      /* a clean straight diagonal slice: one wall runs almost to the top,
+         the other stops low, and a ruled line joins them */
+      wall(p, 0, yW, w * 0.035, h * 0.145, -w * 0.003);
+      p.C(w * 0.035, h * 0.055, w * 0.10, h * 0.012, w * 0.195, h * 0.032);
+      p.L(w * 0.845, h * 0.352);                          /* the slice */
+      p.C(w * 0.945, h * 0.40, w * 0.985, h * 0.455, w * 0.99, h * 0.545);
+      wall(p, w * 0.99, h * 0.545, w, yW, w * 0.002);
       return;
     }
 
-    /* almond (and the fallback for anything unknown) */
-    p.C(w * 0.005, h * 0.34, w * 0.22, h * 0.085, w * 0.42, h * 0.02);
-    p.C(w * 0.468, 0, w * 0.532, 0, w * 0.58, h * 0.02);
-    p.C(w * 0.78, h * 0.085, w * 0.995, h * 0.34, w, ay);
+    /* almond (and the fallback for anything unknown): straight tapered walls
+       resolving into a soft, narrow point */
+    wall(p, 0, yW, w * 0.150, h * 0.300, -w * 0.010);
+    p.C(w * 0.225, h * 0.150, w * 0.355, h * 0.040, w * 0.450, h * 0.011);
+    p.Q(w * 0.5, h * -0.006, w * 0.550, h * 0.011);
+    p.C(w * 0.645, h * 0.040, w * 0.775, h * 0.150, w * 0.850, h * 0.300);
+    wall(p, w * 0.850, h * 0.300, w, yW, w * 0.010);
   }
 
   function path(shape, w, h) {
@@ -509,15 +576,22 @@
     if (!(w > 0)) w = NAIL_BOX.w;
     if (!(h > 0)) h = w * ASPECT[s];
 
-    var ay = h * widestY(s);
-    var clx = w * 0.085, crx = w - clx, cy = h * 0.86;
+    var yW = h * WIDE_Y;                       /* widest point, near the cuticle */
+    var dip = h * CUTICLE_DIP;                 /* how deep the cuticle arc sinks */
+    var clx = w * CUTICLE_X, crx = w - clx;
+    var cy = h - dip;                          /* the cuticle corners */
+    /* control y that puts the middle of the arc exactly `dip` lower */
+    var ccy = cy + dip * 1.334;
     var p = pb();
 
     p.M(clx, cy);
-    p.C(w * 0.012, h * 0.815, 0, h * 0.74, 0, ay);   /* left wall, flaring out */
-    tipSegment(p, s, w, h, ay);                       /* the tip */
-    p.C(w, h * 0.74, w * 0.988, h * 0.815, crx, cy);  /* right wall */
-    p.C(w * 0.86, h * 1.04, w * 0.14, h * 1.04, clx, cy); /* the cuticle arc */
+    /* left cuticle corner rolling out to the widest point */
+    p.C(w * 0.045, cy - dip * 0.12, 0, h * 0.865, 0, yW);
+    tipSegment(p, s, w, h, yW);
+    /* right widest point rolling back into the cuticle corner */
+    p.C(w, h * 0.865, w - w * 0.045, cy - dip * 0.12, crx, cy);
+    /* the cuticle: a shallow, wide arc — never a dome */
+    p.C(crx - (crx - clx) * 0.27, ccy, clx + (crx - clx) * 0.27, ccy, clx, cy);
     p.Z();
     return p.d();
   }
@@ -953,15 +1027,20 @@
   FINISHES.gloss = function (g, x) {
     var blob = radGrad(x.defs, [[0, '#FFFFFF', 0.9], [0.5, '#FFFFFF', 0.42], [1, '#FFFFFF', 0]]);
     var spark = radGrad(x.defs, [[0, '#FFFFFF', 0.75], [1, '#FFFFFF', 0]]);
+    /* the highlight is a light source, not a stretched copy of the plate:
+       cap its height against the WIDTH so a long stiletto does not grow a
+       highlight the whole length of the nail */
+    var by = Math.min(x.h * 0.31, x.w * 0.42);
+    var br = Math.min(x.h * 0.19, x.w * 0.27);
     add(g, E('ellipse', {
-      cx: f(x.w * 0.33), cy: f(x.h * 0.31),
-      rx: f(x.w * 0.19), ry: f(x.h * 0.19), fill: blob,
-      transform: 'rotate(-18 ' + f(x.w * 0.33) + ' ' + f(x.h * 0.31) + ')'
+      cx: f(x.w * 0.33), cy: f(by),
+      rx: f(x.w * 0.19), ry: f(br), fill: blob,
+      transform: 'rotate(-18 ' + f(x.w * 0.33) + ' ' + f(by) + ')'
     }));
     add(g, E('ellipse', {
-      cx: f(x.w * 0.63), cy: f(x.h * 0.13),
-      rx: f(x.w * 0.12), ry: f(x.h * 0.05), fill: spark, opacity: 0.7,
-      transform: 'rotate(-24 ' + f(x.w * 0.63) + ' ' + f(x.h * 0.13) + ')'
+      cx: f(x.w * 0.63), cy: f(Math.min(x.h * 0.13, x.w * 0.18)),
+      rx: f(x.w * 0.12), ry: f(Math.min(x.h * 0.05, x.w * 0.07)), fill: spark, opacity: 0.7,
+      transform: 'rotate(-24 ' + f(x.w * 0.63) + ' ' + f(Math.min(x.h * 0.13, x.w * 0.18)) + ')'
     }));
     add(g, rect(-1, x.h * 0.5, x.w + 2, x.h * 0.55, {
       fill: linGrad(x.defs, [[0, '#2B171F', 0], [1, '#2B171F', 0.14]], { x1: 0, y1: 0, x2: 0, y2: 1 })
@@ -1054,10 +1133,10 @@
       d: x.d, fill: 'none', stroke: darken(x.color, 0.22), 'stroke-width': f(x.u * 1), opacity: 0.35
     }));
     add(g, E('ellipse', {
-      cx: f(x.w * 0.32), cy: f(x.h * 0.26),
-      rx: f(x.w * 0.16), ry: f(x.h * 0.14),
+      cx: f(x.w * 0.32), cy: f(Math.min(x.h * 0.26, x.w * 0.36)),
+      rx: f(x.w * 0.16), ry: f(Math.min(x.h * 0.14, x.w * 0.20)),
       fill: radGrad(x.defs, [[0, '#FFFFFF', 0.8], [1, '#FFFFFF', 0]]),
-      transform: 'rotate(-18 ' + f(x.w * 0.32) + ' ' + f(x.h * 0.26) + ')'
+      transform: 'rotate(-18 ' + f(x.w * 0.32) + ' ' + f(Math.min(x.h * 0.26, x.w * 0.36)) + ')'
     }));
   };
 
@@ -1208,15 +1287,25 @@
       g.setAttribute('aria-pressed', sel ? 'true' : 'false');
       g.setAttribute('style', 'cursor:pointer;outline:none');
 
+      /* The ring is drawn in plate units, but a plate on a hand is only ~30
+         units wide, so a purely proportional stroke lands under one device
+         pixel and the selection reads as nothing at all. Floor it. */
       hover = add(g, E('path', {
-        d: d, fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(u * 3.2),
+        d: d, fill: 'none', stroke: '#FFFFFF',
+        'stroke-width': f(Math.max(u * 3.2, 1.6)),
         opacity: 0, 'pointer-events': 'none', 'data-sn-ui': 'hover'
       }));
       ring = add(g, E('g', {
         'pointer-events': 'none', 'data-sn-ui': 'ring', opacity: sel ? 1 : 0
       }, [
-        E('path', { d: d, fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(u * 6), opacity: 0.9 }),
-        E('path', { d: d, fill: 'none', stroke: '#C97B92', 'stroke-width': f(u * 2.8) })
+        E('path', {
+          d: d, fill: 'none', stroke: '#FFFFFF',
+          'stroke-width': f(Math.max(u * 6, 3)), opacity: 0.9
+        }),
+        E('path', {
+          d: d, fill: 'none', stroke: '#C97B92',
+          'stroke-width': f(Math.max(u * 2.8, 1.5))
+        })
       ]));
 
       g.addEventListener('click', function (ev) { if (onPick) onPick(key, ev); });
@@ -1232,7 +1321,8 @@
       g.addEventListener('focus', function () {
         hover.setAttribute('opacity', '0.85');
         hover.setAttribute('stroke', '#C97B92');
-        hover.setAttribute('stroke-dasharray', f(u * 5) + ' ' + f(u * 4));
+        hover.setAttribute('stroke-dasharray',
+          f(Math.max(u * 5, 2.5)) + ' ' + f(Math.max(u * 4, 2)));
       });
       g.addEventListener('blur', function () {
         hover.setAttribute('opacity', '0');
@@ -1252,18 +1342,35 @@
     return 'translate(' + f(gm.x) + ' ' + f(gm.y) + ') rotate(' + f(gm.angle) + ')';
   }
 
-  /* fresh copies every call — the same silhouette is needed 3 times over */
+  /* One finger, in its own local frame: the base centre is (0,0) and the tip
+     is at (0,-length). Wider at the base than at the tip, rounded cap, and a
+     root that runs back into the palm so the two shapes fuse. */
+  function fingerPath(gm) {
+    var hb = gm.width / 2;
+    var ht = hb * FINGER_TAPER;
+    var root = gm.width * FINGER_ROOT;
+    var yTip = -(gm.length - ht);
+    var span = root - yTip;
+    var p = pb();
+    p.M(-hb, root);
+    p.C(-hb, root - span * 0.42, -ht - (hb - ht) * 0.40, yTip + span * 0.30, -ht, yTip);
+    p.A(ht, ht, 0, 0, 1, ht, yTip);
+    p.C(ht + (hb - ht) * 0.40, yTip + span * 0.30, hb, root - span * 0.42, hb, root);
+    p.Z();
+    return p.d();
+  }
+
+  /* fresh copies every call — the same silhouette is needed several times */
   function skinShapes(attrs) {
     var out = [], i, gm, a = attrs || {};
+    out.push(E('rect', mergeAttrs({
+      x: f(WRIST.x), y: f(WRIST.y), width: f(WRIST.w), height: f(WRIST.h),
+      rx: f(WRIST.r), ry: f(WRIST.r)
+    }, a)));
     out.push(E('path', mergeAttrs({ d: PALM_D }, a)));
     for (i = 0; i < FINGERS.length; i++) {
       gm = HAND_GEOM[FINGERS[i].key];
-      out.push(E('rect', mergeAttrs({
-        x: f(-gm.width / 2), y: f(-gm.length),
-        width: f(gm.width), height: f(gm.length + 44),
-        rx: f(gm.width / 2), ry: f(gm.width / 2),
-        transform: fingerTF(gm)
-      }, a)));
+      out.push(E('path', mergeAttrs({ d: fingerPath(gm), transform: fingerTF(gm) }, a)));
     }
     return out;
   }
@@ -1278,48 +1385,64 @@
     var mirror = side === 'left';
     var skin = design.skin;
     var sh = skinShadow(skin);
+    var W = HAND_VIEW.w, H = HAND_VIEW.h;
     var g = E('g', { 'class': 'sn-hand-body' });
     var defs = add(g, E('defs'));
     var clipId = uid('hand');
-    var i, gm, fk, key, nw, nh, dist, px, py, factor, aspect, shape, kn, el;
+    var i, gm, fk, key, nw, nh, dist, px, py, factor, aspect, shape, kn, el, vol;
 
     add(defs, E('clipPath', { id: clipId, clipPathUnits: 'userSpaceOnUse' }, skinShapes()));
 
-    /* 1. the flat silhouette */
+    /* 1. one soft darker edge around the WHOLE silhouette. Stroking each
+       shape underneath the fills means the interior strokes get painted over
+       and only the outline of the union survives — no wireframe of finger
+       outlines running across the palm. */
+    add(g, E('g', {
+      fill: sh, stroke: sh, 'stroke-width': 5.5,
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: 0.55
+    }, skinShapes()));
+
+    /* 2. the flat silhouette */
     add(g, E('g', { fill: skin }, skinShapes()));
 
-    /* 2. a soft inner shadow along the lower / outer edge */
+    /* 3. a soft shadow banked along the lower / outer edge */
     add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }, [
-      rect(0, 0, HAND_VIEW.w, HAND_VIEW.h, { fill: sh }),
-      E('g', {
-        fill: skin, transform: 'translate(-6 -7)', filter: blurF(defs, 7)
-      }, skinShapes())
+      rect(0, 0, W, H, { fill: sh }),
+      E('g', { fill: skin, transform: 'translate(-7 -9)', filter: blurF(defs, 8) }, skinShapes())
     ]));
 
-    /* 3. volume: light on one wall, shade on the other, per finger + palm */
-    var vol = linGrad(defs, [
-      [0, '#FFFFFF', 0.24], [0.3, '#FFFFFF', 0], [0.66, sh, 0], [1, sh, 0.38]
-    ], { x1: 0, y1: 0, x2: 1, y2: 0 });
-    add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }, skinShapes({ fill: vol })));
+    /* 4. volume. ONE gradient in user space over the whole hand — a per-shape
+       gradient would seam visibly wherever a finger crosses the palm. */
+    vol = grad(defs, 'linearGradient', [
+      [0, '#FFFFFF', 0.30], [0.26, '#FFFFFF', 0.05], [0.58, sh, 0], [1, sh, 0.30]
+    ], { x1: 44, y1: 0, x2: 264, y2: 0, gradientUnits: 'userSpaceOnUse' });
+    add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }, [rect(0, 0, W, H, { fill: vol })]));
 
-    /* 4. knuckle hints */
-    kn = add(g, E('g', { 'clip-path': 'url(#' + clipId + ')', filter: blurF(defs, 2.4) }));
+    /* 5. knuckle + joint hints */
+    kn = add(g, E('g', { 'clip-path': 'url(#' + clipId + ')', filter: blurF(defs, 2.6) }));
     for (i = 0; i < FINGERS.length; i++) {
       gm = HAND_GEOM[FINGERS[i].key];
       add(kn, E('ellipse', {
-        cx: 0, cy: f(-gm.length * 0.45), rx: f(gm.width * 0.33), ry: 2.6,
-        fill: sh, opacity: 0.16, transform: fingerTF(gm)
+        cx: 0, cy: f(-gm.length * 0.50), rx: f(gm.width * 0.30), ry: 2.4,
+        fill: sh, opacity: 0.20, transform: fingerTF(gm)
       }));
       add(kn, E('ellipse', {
-        cx: 0, cy: -4, rx: f(gm.width * 0.38), ry: 3.2,
-        fill: sh, opacity: 0.13, transform: fingerTF(gm)
+        cx: 0, cy: f(-gm.length * 0.16), rx: f(gm.width * 0.34), ry: 2.8,
+        fill: sh, opacity: 0.16, transform: fingerTF(gm)
       }));
     }
+    /* the soft dome on the back of the hand */
     add(kn, E('ellipse', {
-      cx: 150, cy: 300, rx: 62, ry: 44, fill: '#FFFFFF', opacity: 0.12
+      cx: 146, cy: 284, rx: 56, ry: 44, fill: '#FFFFFF', opacity: 0.12
+    }));
+    /* the wrist reads as sitting behind the hand */
+    add(kn, E('ellipse', {
+      cx: f(WRIST.x + WRIST.w / 2), cy: 386, rx: f(WRIST.w * 0.66), ry: 34,
+      fill: sh, opacity: 0.3
     }));
 
-    /* 5. the nails */
+    /* 6. the nails — sized from their own finger, so the pinky's plate is the
+       smallest and the thumb's the widest */
     shape = shapeId(design.shape);
     aspect = ASPECT[shape];
     factor = lenFactor(design.length);
@@ -1550,40 +1673,52 @@
   function thumb(design, px) {
     var d = normDesign(design);
     var size = num(px, 0);
-    var vw = 120, vh = 120;
+    var vw = 120, vh = 120, pad = 3;
     var svg = newSvg({});
-    var defs, shape, aspect, factor, nw, nh, i, el;
+    var defs, shape, A, nw, nh, i, el, spread, cy, ca, sa, top, bot, lift;
     var keys = ['rightRing', 'rightMiddle', 'rightIndex'];
-    var order = [0, 2, 1];          /* outer nails first, centre one on top */
-    var anchors = [[34, 0], [60, 0], [86, 0]];
-    var angles = [-17, 0, 17];
-    var cy;
+    var order = [0, 2, 1];          /* outer plates first, centre one on top */
+    var tilt = 16;                  /* how far the outer plates fan out */
+    var over = 0.66;                /* centre spacing / plate width (< 1 = overlap) */
 
     svg.setAttribute('class', 'sn-svg sn-thumb');
     defs = add(svg, E('defs'));
     add(svg, E('ellipse', {
-      cx: 60, cy: 74, rx: 56, ry: 46,
+      cx: 60, cy: 62, rx: 59, ry: 52,
       fill: radGrad(defs, [[0, '#C97B92', 0.16], [1, '#C97B92', 0]])
     }));
 
     shape = shapeId(d.shape);
-    aspect = ASPECT[shape];
-    factor = lenFactor(d.length);
-    nw = Math.min(36, 84 / (aspect * factor));
-    nh = nw * aspect * factor;
-    /* park the fan so it is vertically centred whatever the length */
-    cy = clamp(vh / 2 + nh / 2, nh + 6, vh - 4);
-    anchors[0][1] = cy - 5;
-    anchors[1][1] = cy;
-    anchors[2][1] = cy - 5;
+    A = ASPECT[shape] * lenFactor(d.length);      /* plate height / width */
+    ca = Math.cos(rad(tilt));
+    sa = Math.sin(rad(tilt));
+
+    /* Pick the largest plate width that still lets the whole fan sit inside
+       the box, whatever the shape and length are: solve both the horizontal
+       and the vertical constraint for nw and take the tighter one. */
+    nw = Math.min(
+      46,
+      (vw / 2 - pad) / (over + 0.5 * ca + A * sa),
+      (vh - 2 * pad) / (A * ca + 0.5 * sa + 0.16)
+    );
+    nw = Math.max(nw, 8);
+    nh = nw * A;
+    spread = nw * over;
+    lift = nw * 0.16;
+
+    /* park the fan vertically centred whatever the length */
+    top = nh * ca + (nw / 2) * sa;
+    bot = (nw / 2) * sa;
+    cy = (vh - (top + lift + bot)) / 2 + lift + top;
 
     for (i = 0; i < order.length; i++) {
       el = nailSVG(d.nails[keys[order[i]]], {
-        shape: shape, w: nw, h: nh, key: keys[order[i]]
+        shape: shape, w: nw, h: nh, key: keys[order[i]], shadow: '#7A4B58'
       });
       el.setAttribute('transform',
-        'translate(' + f(anchors[order[i]][0]) + ' ' + f(anchors[order[i]][1]) + ') ' +
-        'rotate(' + f(angles[order[i]]) + ') ' +
+        'translate(' + f(vw / 2 + (order[i] - 1) * spread) + ' ' +
+                       f(cy - (order[i] === 1 ? 0 : lift)) + ') ' +
+        'rotate(' + f((order[i] - 1) * tilt) + ') ' +
         'translate(' + f(-nw / 2) + ' ' + f(-nh) + ')');
       add(svg, el);
     }

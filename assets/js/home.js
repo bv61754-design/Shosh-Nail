@@ -403,12 +403,25 @@
     return node;
   }
 
+  /* Stop watching everything the previous pass marked. `reveal()` only arms
+     nodes on the first pass, so a re-render (language flip, admin edit) never
+     re-arms them — anything still waiting for `.is-in` would be stranded at
+     opacity 0 forever. Strip the reveal class here so those nodes fall back to
+     their plain visible state; nodes that already faded in lose nothing. */
   function dropObserved() {
-    var i;
-    if (!observer) { watched.length = 0; return; }
+    var i, node;
     for (i = 0; i < watched.length; i++) {
-      try { observer.unobserve(watched[i]); }
-      catch (e) { /* ignore */ }
+      node = watched[i];
+      if (observer) {
+        try { observer.unobserve(node); }
+        catch (e) { /* ignore */ }
+      }
+      if (!node || !node.classList) continue;
+      try {
+        node.classList.remove('home-rv');
+        node.classList.remove('is-in');
+        node.style.transitionDelay = '';
+      } catch (e2) { /* ignore */ }
     }
     watched.length = 0;
   }

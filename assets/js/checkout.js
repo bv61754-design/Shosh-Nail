@@ -392,8 +392,14 @@
     return isObj(n) ? n : {};
   }
 
+  /* Canonical form of a colour so the distinct-colour count cannot be fooled
+     by case or by the 3-digit shorthand: '#fff' and '#FFFFFF' are one colour. */
   function hexKey(v) {
-    return trim(v).toUpperCase();
+    var s = trim(v).toUpperCase();
+    if (/^#[0-9A-F]{3}$/.test(s)) {
+      s = '#' + s.charAt(1) + s.charAt(1) + s.charAt(2) + s.charAt(2) + s.charAt(3) + s.charAt(3);
+    }
+    return s;
   }
 
   /* ====================================================================== */
@@ -426,12 +432,17 @@
     var free = P.freeShippingOver > 0 && sub >= P.freeShippingOver;
     var ship = (free || P.shipping <= 0) ? 0 : r2(P.shipping);
     var vat = P.vat > 0 ? r2(P.vat * sub) : 0;
+    var total = r2(sub + ship + vat);
     return {
       lines: lines,
       subtotal: sub,
       shipping: ship,
       vat: vat,
-      total: r2(sub + ship + vat),
+      total: total,
+      /* Informational only: the slice of `total` the owner asks for up front.
+         It is NOT a line and never touches subtotal/shipping/vat/total, so the
+         lines still sum to the subtotal exactly as before. 0 = disabled. */
+      deposit: P.depositPct > 0 ? r2(Math.min(1, P.depositPct) * total) : 0,
       currency: currencyOf(lang)
     };
   }
@@ -455,12 +466,14 @@
     var i, j, key, nail, hex, fid, pat, kind, charms, ch, cid;
     var list, it, perSet, qty;
 
-    /* 1 — base (a full set of 10; a single-hand order carries half the plates) */
+    /* 1 — base. One set, charged once: `qty` on a line is the multiplier that
+       produced `amount` (5 matte nails × 4 = 20), so the base line must carry
+       qty 1 or the breakdown reads as ten sets at 120 and stops adding up. */
     lines.push({
       key: 'base',
       label: tl('co.line.base', L),
       amount: r2(P.base),
-      qty: keys.length
+      qty: 1
     });
 
     /* 2 — shape + length surcharges */
@@ -650,6 +663,7 @@
         shipping: r2(p.shipping),
         vat: r2(p.vat),
         total: r2(p.total),
+        deposit: r2(p.deposit),
         currency: currencyOf(L)
       };
     }
@@ -713,6 +727,18 @@
     var want = hexKey(hex), list, i;
     if (!want) return '';
     list = slist('colors');
+    for (i = 0; i < list.length; i++) {
+      if (isObj(list[i]) && hexKey(list[i].hex) === want) {
+        return pickL(list[i].name, lang) || want;
+      }
+    }
+    return want;
+  }
+
+  function skinName(hex, lang) {
+    var want = hexKey(hex), list, i;
+    if (!want) return '';
+    list = slist('skinTones');
     for (i = 0; i < list.length; i++) {
       if (isObj(list[i]) && hexKey(list[i].hex) === want) {
         return pickL(list[i].name, lang) || want;
@@ -787,7 +813,7 @@
     name = findItem('lengths', d.length);
     out.push(tl('co.f.length', L) + ': ' + (name ? (pickL(name.name, L) || str(d.length)) : str(d.length)));
     out.push(tl('co.f.hand', L) + ': ' + tl('co.hand.' + handOf(d), L));
-    if (d.skin) out.push(tl('co.f.skin', L) + ': ' + str(d.skin));
+    if (d.skin) out.push(tl('co.f.skin', L) + ': ' + (skinName(d.skin, L) || str(d.skin)));
 
     for (i = 0; i < sides.length; i++) {
       out.push(tl('co.f.sizes', L) + ' — ' + tl('co.hand.' + sides[i], L) + ': ' +
@@ -882,6 +908,7 @@
         (p.shipping > 0 ? moneyL(p.shipping, L) : tl('common.free', L)));
       if (p.vat > 0) out.push(tl('order.vat', L) + ': ' + moneyL(p.vat, L));
       out.push(tl('order.total', L) + ': ' + moneyL(p.total, L));
+      if (p.deposit > 0) out.push(tl('order.deposit', L) + ': ' + moneyL(p.deposit, L));
     } catch (e) {
       console.warn('[SN.Checkout] summary failed', e);
       if (!out.length) out.push(tl('co.s.newOrder', L));
@@ -1152,6 +1179,12 @@
       ]);
     }
 
+    /* The step + total bar sticks to the top of the scrolling modal body.
+       It carries the body's top padding itself (see flushBody below) instead
+       of pulling itself up with a negative margin: a sticky box is clamped
+       inside its containing block, so the negative margin was ignored while
+       the box still painted 24px lower than the space it reserved — which is
+       exactly how much of the first heading it used to cover. */
     function buildBar() {
       var bar = U.el('div', {
         'class': 'stack',
@@ -1161,7 +1194,6 @@
           zIndex: '4',
           gap: '10px',
           background: 'var(--bg-2)',
-          marginBlockStart: 'calc(-1 * clamp(16px,3vw,24px))',
           paddingBlockStart: 'clamp(16px,3vw,24px)',
           paddingBlockEnd: '12px',
           borderBlockEnd: '1px solid var(--line)'
@@ -1540,6 +1572,10 @@
       }
       body.appendChild(row([U.el('span', { text: T('order.total') })],
         moneyL(p.total, curLang()), null, true));
+      if (p.deposit > 0) {
+        body.appendChild(row([U.el('span', { 'class': 'muted', text: T('order.deposit') })],
+          moneyL(p.deposit, curLang())));
+      }
 
       return U.el('div', { 'class': 'table-wrap' }, U.el('table', { 'class': 'table table-sum' }, body));
     }
@@ -1745,6 +1781,7 @@
       st.order = order;
       clear(m.body);
       clear(foot);
+      flushBody(false);            /* no sticky bar on this panel */
       m.body.appendChild(successPanel(order));
       foot.appendChild(U.el('button', {
         'class': 'btn btn-ghost', type: 'button', text: T('common.close'),
@@ -1904,6 +1941,19 @@
 
     /* -------------------------------------------------------------- mount */
 
+    /* While the wizard is on screen the sticky bar owns the modal body's top
+       padding, so the bar covers the full width of the scrollport and nothing
+       can slip past it. The success panel carries no bar, so it gets the
+       normal padding back. */
+    function flushBody(on) {
+      var v = on ? '0px' : '';
+      if (!m || !m.body || !m.body.style) return;
+      try { m.body.style.paddingBlockStart = v; }
+      catch (e) {
+        try { m.body.style.paddingTop = v; } catch (e2) { /* ignore */ }
+      }
+    }
+
     var bodyRoot = U.el('div', { 'class': 'stack', style: { gap: '16px' } });
     stepHost = U.el('div');
     bodyRoot.appendChild(buildBar());
@@ -1924,6 +1974,8 @@
     });
 
     if (!m || !m.dialog) return null;
+
+    flushBody(true);
 
     foot = U.el('div', { 'class': 'modal-foot' });
     m.dialog.appendChild(foot);

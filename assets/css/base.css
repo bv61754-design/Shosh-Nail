@@ -128,11 +128,15 @@ body{
   overflow-wrap:break-word;
   transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-/* stray-wide content must never scroll the page sideways. `clip` is used
-   instead of `hidden` on purpose: `hidden` would turn <body> into a scroll
-   container and break the sticky header. Older engines simply skip this. */
+/* Belt and braces: stray-wide content must never scroll the page sideways.
+   `clip` is used instead of `hidden` on purpose: `hidden` would turn the
+   element into a scroll container and break `position:sticky` (header,
+   studio preview). `clip` clips without scrolling, so sticky still works.
+   The root needs it too — an absolutely positioned decoration that escapes
+   <body> is otherwise still counted in documentElement.scrollWidth.
+   This is the safety net only; every real overflow is fixed at its source. */
 @supports (overflow:clip){
-  body{ overflow-x:clip; }
+  html,body{ overflow-x:clip; }
 }
 
 h1,h2,h3,h4,h5,h6,p,figure,blockquote,dl,dd{ margin:0; }
@@ -140,6 +144,14 @@ ul,ol{ margin:0; padding:0; }
 ul[class],ol[class]{ list-style:none; }
 img,picture,video,canvas,svg{ display:block; max-inline-size:100%; }
 img,video{ block-size:auto; }
+/* Inline SVG stays inside its own box: `max-inline-size` above keeps it from
+   stretching the layout, and this keeps it from painting past its viewBox.
+   The nail/hand art is exempt on purpose — it deliberately lets fingertips
+   and wrists spill out of the viewBox, and clipping it visibly chops the
+   wrists off. Measured: that spill is paint overflow only, it adds nothing to
+   documentElement.scrollWidth, so it is not what makes a page scroll
+   sideways (that was the ::before glows — see .sec-head/.glow below). */
+svg:not([class*="sn-"]){ overflow:hidden; }
 /* SN.UI.icon() output — safe both as a flex item and inside a text run */
 .ico{ display:inline-block; vertical-align:middle; flex:0 0 auto; }
 button,input,select,textarea{ font:inherit; color:inherit; margin:0; }
@@ -283,7 +295,11 @@ html[lang="en"] .eyebrow{ text-transform:uppercase; letter-spacing:.16em; }
   inset-inline:0;
   inset-block-start:-46%;
   margin-inline:auto;
-  inline-size:min(620px,130%);
+  /* never wider than the head itself: a decoration that overhangs its
+     containing block is real scrollable overflow, and on a phone it dragged
+     the whole document ~91px sideways. The gradient fades out well before
+     its own edge, so capping at 100% is invisible. */
+  inline-size:min(620px,100%);
   block-size:260px;
   border-radius:50%;
   background:radial-gradient(closest-side,var(--glow),transparent 72%);
@@ -302,7 +318,8 @@ html[lang="en"] .eyebrow{ text-transform:uppercase; letter-spacing:.16em; }
   inset-inline:0;
   inset-block-start:-8%;
   margin-inline:auto;
-  inline-size:min(780px,116%);
+  /* same rule as .sec-head::before — the glow may not overhang its box */
+  inline-size:min(780px,100%);
   block-size:min(560px,96%);
   border-radius:50%;
   background:
@@ -558,7 +575,10 @@ body.is-scrolled #sn-header{ box-shadow:var(--sh-1); }
   .nav ~ .hdr-actions{ margin-inline-start:auto; }
 }
 @media (max-width:430px){
-  .hdr-cta{ display:none; }
+  /* the descendant selector is required: plain `.hdr-cta` ties with `.btn`
+     on specificity and `.btn{display:inline-flex}` is declared later, so the
+     CTA used to stay on screen and push the header row past the viewport */
+  .hdr-actions .hdr-cta{ display:none; }
   .brand-mark{ inline-size:34px; block-size:34px; }
   .hdr-actions{ gap:2px; }
 }
@@ -1036,6 +1056,7 @@ input[type="checkbox"],input[type="radio"]{
   display:inline-flex;
   align-items:center;
   gap:6px;
+  max-inline-size:100%;            /* a long label may never widen its row */
   min-block-size:36px;
   padding-block:7px;
   padding-inline:14px;
@@ -1231,15 +1252,26 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
 /* =========================================================================
    10  TABS
    ========================================================================= */
+/* The strip is a horizontal scroller in its own right: however many tabs it
+   holds, it scrolls inside its own box and never widens the page. That needs
+   three things together — `min-inline-size:0` so it may shrink below its
+   max-content size inside a flex/grid parent, `max-inline-size:100%` so it
+   may not outgrow the parent, and `flex-wrap:nowrap` so the buttons queue up
+   instead of stacking. The tabs themselves stay unshrinkable (.tab below). */
 .tabs{
   display:flex;
+  flex-wrap:nowrap;
   align-items:center;
   gap:8px;
+  min-inline-size:0;
+  max-inline-size:100%;
   overflow-x:auto;
   overflow-y:hidden;
+  overscroll-behavior-inline:contain;
   scrollbar-width:none;
   -ms-overflow-style:none;
   -webkit-overflow-scrolling:touch;
+  scroll-snap-type:inline proximity;
   padding-block:6px;               /* room for the focus ring, not clipped */
   margin-block-end:18px;
   scroll-padding-inline:16px;
@@ -1252,7 +1284,8 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   display:inline-flex;
   align-items:center;
   gap:6px;
-  flex:0 0 auto;
+  flex:0 0 auto;                   /* never squeezed — the strip scrolls instead */
+  scroll-snap-align:start;
   min-block-size:40px;
   padding-block:9px;
   padding-inline:16px;

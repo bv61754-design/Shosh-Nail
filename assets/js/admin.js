@@ -2073,6 +2073,12 @@
       el('td', { text: t('order.total') }),
       el('td', { 'class': 'num', text: money(numOf(p && p.total, 0)) })
     ]));
+    if (numOf(p && p.deposit, 0) > 0) {
+      body.appendChild(el('tr', {}, [
+        el('td', { 'class': 'muted', text: t('order.deposit') }),
+        el('td', { 'class': 'num', text: money(p.deposit) })
+      ]));
+    }
     return el('div', { 'class': 'table-wrap' }, el('table', { 'class': 'table table-sum' }, body));
   }
 
