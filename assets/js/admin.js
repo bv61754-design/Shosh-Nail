@@ -322,15 +322,39 @@
           resetAsk2: 'تأكيد أخير: كل الألوان والتصاميم والنصوص اللي عدّلتيها بتروح. نكمّل؟',
           resetOk: 'تمت إعادة الضبط',
           passHead: 'كلمة مرور اللوحة',
-          passX: 'كلمة المرور محفوظة داخل متصفحك مع بقية بيانات الموقع، فاحفظيها في مكان آمن.',
-          passOld: 'كلمة المرور الحالية',
+          passX: 'خطوتين بس: تكتبين كلمة المرور الجديدة، ثم تنسخين نص جاهز وتلصقينه في ملف واحد على GitHub.',
+          passS1: 'الخطوة 1 — اختاري كلمة المرور الجديدة',
+          passS1X: 'اكتبيها مرتين عشان نتأكد ما فيه غلط طباعة. 6 خانات على الأقل.',
           passNew: 'كلمة المرور الجديدة',
-          passNew2: 'تأكيد كلمة المرور الجديدة',
-          passSave: 'حفظ كلمة المرور',
+          passNew2: 'اكتبيها مرة ثانية',
+          passShow: 'إظهار كلمة المرور',
+          passHide: 'إخفاء كلمة المرور',
+          passSave: 'حفظ ومتابعة للخطوة 2',
           passShort: 'كلمة المرور لازم تكون 6 خانات على الأقل.',
-          passWrong: 'كلمة المرور الحالية غير صحيحة.',
-          passMismatch: 'كلمتا المرور ما تطابقن.',
-          passOk: 'تم تغيير كلمة المرور',
+          passEmpty: 'اكتبي كلمة المرور الجديدة أولاً.',
+          passMismatch: 'الكلمتان ما تطابقن. راجعي الكتابة في الخانتين.',
+          passOk: 'تم الحفظ على هذا الجهاز مؤقتاً — باقي الخطوة 2 عشان تثبت',
+          passLocalFail: 'ما قدرنا نحفظها على هذا الجهاز، بس أكملي الخطوة 2 وبتشتغل على كل الأجهزة.',
+          passS2: 'الخطوة 2 — عشان تشتغل على كل الأجهزة',
+          passS2X: 'كلمة المرور الجديدة شغّالة الحين على هذا الجهاز وفي هذي الجلسة بس. الخطوة 2 هي اللي تثبّتها فعلياً: بدونها، أي جهاز ثاني — وحتى هذا الجهاز بعد ما تسكّرين الصفحة — يرجع يقبل الكلمة القديمة.',
+          passFileLbl: 'محتوى ملف password.js — انسخيه كامل',
+          passCopy: 'انسخي المحتوى',
+          passCopyOk: 'تم نسخ المحتوى — افتحي الرابط والصقيه',
+          passOpen: 'افتحي ملف كلمة المرور في GitHub',
+          passOpenNo: 'ما نقدر نفتح الرابط تلقائياً. افتحي مستودع الموقع في GitHub، وادخلي على الملف password.js.',
+          passHowHead: 'وش تسوين بالضبط بعد ما تنسخين:',
+          passH1: '1) اضغطي زر «افتحي ملف كلمة المرور في GitHub» فوق. لو طلب منك تسجيل الدخول، ادخلي بحسابك.',
+          passH2: '2) فوق الملف بتلقين أيقونة قلم رصاص ✏️ (اسمها Edit). اضغطيها عشان يصير الملف قابل للتعديل.',
+          passH3: '3) اضغطي مطوّلاً داخل نص الملف واختاري «تحديد الكل / Select all»، وامسحي كل الموجود.',
+          passH4: '4) اضغطي مطوّلاً مرة ثانية واختاري «لصق / Paste». المفروض يصير في الملف نفس النص اللي نسختيه، ولا شيء غيره.',
+          passH5: '5) اضغطي الزر الأخضر «Commit changes...» فوق، ثم في المربع اللي يطلع اضغطي «Commit changes» مرة ثانية.',
+          passH6: '6) انتظري دقيقة إلى دقيقتين، وبعدها افتحي الموقع من أي جهاز — كلمة المرور الجديدة صارت شغّالة.',
+          passSafe: 'النص اللي نسختيه ما فيه كلمة المرور نفسها، فيه «بصمة» مشفّرة لها. يعني لو شافه أحد ما يقدر يعرف كلمتك، وآمن إنه ينحفظ في GitHub.',
+          passSafePlain: 'هذي النسخة فيها كلمة المرور نفسها مكتوبة، وملفات GitHub يقدر يشوفها أي أحد. اختاري كلمة مرور تخص هذا الموقع فقط.',
+          passReuse: 'لا تستخدمين كلمة مرور تستخدمينها في الإيميل أو البنك أو أي حساب ثاني. خصّصي كلمة مرور لهذا الموقع لحالها.',
+          passGuard: 'ملاحظة مهمة: هذي الكلمة تحمي لوحة التحكم فقط. اللوحة تعدّل نسخة المحتوى داخل المتصفح اللي فُتحت منه، وما تقدر تغيّر اللي يشوفه زوار الموقع. المحتوى المنشور ما يتغيّر إلا لما ترفعينه من حسابك على GitHub.',
+          passRedo: 'أعيدي فتح الخطوة 2',
+          passRedoX: 'محتوى الملف محفوظ لك في هذي الجلسة، ما يحتاج تكتبين كلمة المرور من جديد.',
           storeHead: 'مساحة التخزين',
           storeX: 'كل شيء محفوظ داخل متصفح هذا الجهاز. الصور الكبيرة هي أكثر شيء يستهلك المساحة.',
           storeUsed: 'المستخدم حالياً: {n} كيلوبايت',
@@ -645,15 +669,39 @@
           resetAsk2: 'Final check: every colour, design and text you changed will be lost. Continue?',
           resetOk: 'Everything was reset',
           passHead: 'Panel password',
-          passX: 'The password is stored inside this browser along with the rest of your content, so keep a copy somewhere safe.',
-          passOld: 'Current password',
+          passX: 'Two steps only: pick the new password, then copy a ready-made text and paste it into one file on GitHub.',
+          passS1: 'Step 1 — choose the new password',
+          passS1X: 'Type it twice so a typo cannot slip through. At least 6 characters.',
           passNew: 'New password',
-          passNew2: 'Repeat the new password',
-          passSave: 'Save password',
+          passNew2: 'Type it again',
+          passShow: 'Show the password',
+          passHide: 'Hide the password',
+          passSave: 'Save and go to step 2',
           passShort: 'The password needs at least 6 characters.',
-          passWrong: 'The current password is not correct.',
-          passMismatch: 'The two passwords do not match.',
-          passOk: 'Password changed',
+          passEmpty: 'Type the new password first.',
+          passMismatch: 'The two entries do not match. Check what you typed in both boxes.',
+          passOk: 'Saved on this device for now — step 2 makes it stick',
+          passLocalFail: 'We could not save it on this device, but finish step 2 and it will work everywhere.',
+          passS2: 'Step 2 — so it works on every device',
+          passS2X: 'The new password works on this device, in this session only. Step 2 is what makes it real: without it, any other device — and this one too, once you close the page — goes back to accepting the old password.',
+          passFileLbl: 'The contents of password.js — copy all of it',
+          passCopy: 'Copy the contents',
+          passCopyOk: 'Copied — now open the link and paste it',
+          passOpen: 'Open the password file on GitHub',
+          passOpenNo: 'We cannot open the link automatically. Open your site repository on GitHub and go to the file password.js.',
+          passHowHead: 'Exactly what to do after you copy:',
+          passH1: '1) Tap “Open the password file on GitHub” above. If it asks you to sign in, sign in with your account.',
+          passH2: '2) Above the file there is a pencil icon ✏️ (its name is Edit). Tap it so the file becomes editable.',
+          passH3: '3) Press and hold inside the file text, choose “Select all”, and delete everything that is there.',
+          passH4: '4) Press and hold again and choose “Paste”. The file should now hold exactly the text you copied and nothing else.',
+          passH5: '5) Tap the green “Commit changes...” button at the top, then in the box that appears tap “Commit changes” once more.',
+          passH6: '6) Wait one or two minutes, then open the site on any device — the new password is live.',
+          passSafe: 'The text you copied does not contain the password itself, only a scrambled fingerprint of it. Nobody can read your password from it, so it is safe to keep in GitHub.',
+          passSafePlain: 'This version contains the password itself, and files on GitHub can be read by anyone. Use a password you use only for this site.',
+          passReuse: 'Never use a password you also use for your email, your bank, or any other account. Give this site a password of its own.',
+          passGuard: 'Worth knowing: this password protects the control panel only. The panel edits a copy of your content inside whichever browser it is opened in; it cannot change what visitors see. The published content only changes when you push it to GitHub from your account.',
+          passRedo: 'Open step 2 again',
+          passRedoX: 'The file contents are kept for you during this session — no need to type the password again.',
           storeHead: 'Storage usage',
           storeX: 'Everything lives inside this browser. Large images are by far the biggest consumer of space.',
           storeUsed: 'Currently used: {n} KB',
@@ -793,7 +841,7 @@
     booted: false
   };
 
-  var refs = { root: null, body: null, side: null, title: null };
+  var refs = { root: null, body: null, side: null, title: null, warn: null };
 
   function validTab(id) {
     var i;
@@ -2621,38 +2669,8 @@
       ])
     ]));
 
-    /* ---- password ---- */
-    (function () {
-      var oldIn = el('input', { 'class': 'input', type: 'password', autocomplete: 'current-password' });
-      var n1 = el('input', { 'class': 'input', type: 'password', autocomplete: 'new-password' });
-      var n2 = el('input', { 'class': 'input', type: 'password', autocomplete: 'new-password' });
-      var err = el('p', { 'class': 'field-err' });
-      var form = el('form', { 'class': 'adm-passform', novalidate: 'novalidate' }, [
-        el('div', { 'class': 'adm-fields' }, [
-          el('div', { 'class': 'field adm-f' }, [el('span', { 'class': 'label', text: t('admin.b.passOld') }), oldIn]),
-          el('div', { 'class': 'field adm-f' }, [el('span', { 'class': 'label', text: t('admin.b.passNew') }), n1]),
-          el('div', { 'class': 'field adm-f' }, [el('span', { 'class': 'label', text: t('admin.b.passNew2') }), n2])
-        ]),
-        err,
-        el('button', { 'class': 'btn btn-pri btn-sm', type: 'submit', text: t('admin.b.passSave') })
-      ]);
-      form.addEventListener('submit', function (ev) {
-        ev.preventDefault();
-        err.textContent = '';
-        if (!SN.Store.login(oldIn.value)) { err.textContent = t('admin.b.passWrong'); oldIn.focus(); return; }
-        if (str(n1.value).length < 6) { err.textContent = t('admin.b.passShort'); n1.focus(); return; }
-        if (n1.value !== n2.value) { err.textContent = t('admin.b.passMismatch'); n2.focus(); return; }
-        sSet('settings.adminPass', n1.value);
-        oldIn.value = ''; n1.value = ''; n2.value = '';
-        toast(t('admin.b.passOk'), 'ok');
-        renderPanel();
-      }, false);
-
-      box.appendChild(card([
-        sectionHead(t('admin.b.passHead'), t('admin.b.passX')),
-        form
-      ]));
-    }());
+    /* ---- password (two-step flow, see section 16b) ---- */
+    box.appendChild(passwordCard());
 
     /* ---- storage ---- */
     box.appendChild(card([
@@ -2685,6 +2703,250 @@
     ]));
 
     return box;
+  }
+
+  /* ====================================================================== */
+  /* 16b. The password flow                                                  */
+  /*                                                                         */
+  /*  Changing settings.adminPass only ever affects THIS browser, so the      */
+  /*  panel walks the owner through the second half as well: it hands her     */
+  /*  the complete text of password.js (the one file she edits) and a direct  */
+  /*  link to it on GitHub. Everything degrades gracefully when store.js has  */
+  /*  not shipped the helpers yet.                                            */
+  /* ====================================================================== */
+
+  var PASS_KEY = 'shosh-admin-pwfile';
+  var passFileMem = '';        /* used when sessionStorage is unavailable */
+  var wantPassFocus = false;   /* set by the default-password banner */
+
+  function passFileRemember(text) {
+    passFileMem = str(text);
+    try { window.sessionStorage.setItem(PASS_KEY, passFileMem); }
+    catch (e) { /* private mode: the in-memory copy still carries re-renders */ }
+  }
+
+  function passFileRecall() {
+    if (passFileMem) return passFileMem;
+    try { passFileMem = str(window.sessionStorage.getItem(PASS_KEY)); }
+    catch (e) { passFileMem = ''; }
+    return passFileMem;
+  }
+
+  function passFileWrap(value) {
+    return '/* كلمة مرور لوحة التحكم — Shosh Nail admin password.\n' +
+           '   غيّريها من لوحة التحكم ← تبويب «النسخ الاحتياطي» ← زر «انسخي السطر». */\n' +
+           'window.SN_ADMIN = ' + JSON.stringify(str(value)) + ';\n';
+  }
+
+  /* the full text of password.js for `pass` — hashed whenever store.js can */
+  function passFileFor(pass) {
+    var St = SN.Store, text = '', hash = '';
+    if (St && typeof St.passwordFile === 'function') {
+      try { text = str(St.passwordFile(pass)); } catch (e) { text = ''; }
+    }
+    if (!text && St && typeof St.hashPass === 'function') {
+      try { hash = str(St.hashPass(pass)); } catch (e) { hash = ''; }
+      if (hash) text = passFileWrap(hash);
+    }
+    return text || passFileWrap(pass);
+  }
+
+  function passFileHashed(text) { return /sha256:[0-9a-f]{64}/.test(str(text)); }
+
+  function repoFileURL(path) {
+    var St = SN.Store, url = '', repo, branch;
+    if (St && typeof St.repoEditURL === 'function') {
+      try { url = str(St.repoEditURL(path)); } catch (e) { url = ''; }
+      if (url) return url;
+    }
+    repo = trim(sGet('settings.repo', ''));
+    branch = trim(sGet('settings.repoBranch', ''));
+    if (!repo || !branch) return '';
+    return 'https://github.com/' + repo + '/edit/' + branch + '/' + str(path);
+  }
+
+  function isDefaultPass() {
+    var St = SN.Store;
+    if (St && typeof St.isDefaultPass === 'function') {
+      try { return !!St.isDefaultPass(); } catch (e) { /* fall back below */ }
+    }
+    return str(sGet('settings.adminPass', '')) === 'shosh1234';
+  }
+
+  function passCanLogin(pass) {
+    if (!SN.Store || typeof SN.Store.login !== 'function') return false;
+    try { return !!SN.Store.login(pass); } catch (e) { return false; }
+  }
+
+  /* remember the new password for THIS browser, hashed when store.js allows */
+  function passSaveLocal(pass) {
+    var hash = '';
+    if (SN.Store && typeof SN.Store.hashPass === 'function') {
+      try { hash = str(SN.Store.hashPass(pass)); } catch (e) { hash = ''; }
+    }
+    if (hash) {
+      sSet('settings.adminPass', hash);
+      if (passCanLogin(pass)) return true;
+    }
+    sSet('settings.adminPass', str(pass));
+    return passCanLogin(pass);
+  }
+
+  /* the default-password banner disappears as soon as it is no longer true */
+  function dropWarnBanner() {
+    var w = refs.warn;
+    if (!w || isDefaultPass()) return;
+    if (w.parentNode) w.parentNode.removeChild(w);
+    refs.warn = null;
+  }
+
+  function passwordCard() {
+    var url    = repoFileURL('password.js');
+    var id1    = fid(), id2 = fid();
+    var n1     = el('input', { 'class': 'input', type: 'password', id: id1, autocomplete: 'new-password' });
+    var n2     = el('input', { 'class': 'input', type: 'password', id: id2, autocomplete: 'new-password' });
+    var err    = el('p', { 'class': 'field-err', role: 'alert' });
+    var pre    = el('pre', {
+      'class': 'adm-pre', dir: 'ltr', tabindex: '0',
+      'aria-label': t('admin.b.passFileLbl')
+    });
+    var safe   = el('span');
+    var head2  = el('h4', { 'class': 'h4 display', tabindex: '-1', text: t('admin.b.passS2') });
+    var step2  = el('div', { 'class': 'adm-tabbody adm-hide' });
+    var showBtn, form, saved;
+
+    /* --- step 1 --------------------------------------------------------- */
+    showBtn = el('button', {
+      'class': 'btn btn-ghost btn-sm', type: 'button',
+      'aria-pressed': 'false', text: t('admin.b.passShow'),
+      on: { click: function (ev) {
+        var on = n1.type === 'password';
+        n1.type = n2.type = on ? 'text' : 'password';
+        ev.currentTarget.setAttribute('aria-pressed', on ? 'true' : 'false');
+        ev.currentTarget.textContent = t(on ? 'admin.b.passHide' : 'admin.b.passShow');
+      } }
+    });
+
+    form = el('form', { 'class': 'adm-passform', novalidate: 'novalidate' }, [
+      el('div', { 'class': 'adm-fields' }, [
+        el('div', { 'class': 'field adm-f' }, [
+          el('label', { 'class': 'label', 'for': id1, text: t('admin.b.passNew') }), n1
+        ]),
+        el('div', { 'class': 'field adm-f' }, [
+          el('label', { 'class': 'label', 'for': id2, text: t('admin.b.passNew2') }), n2
+        ])
+      ]),
+      err,
+      el('div', { 'class': 'adm-btnrow' }, [
+        el('button', { 'class': 'btn btn-pri', type: 'submit', text: t('admin.b.passSave') }),
+        showBtn
+      ])
+    ]);
+
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      err.textContent = '';
+      if (!str(n1.value)) { err.textContent = t('admin.b.passEmpty'); n1.focus(); return; }
+      if (str(n1.value).length < 6) { err.textContent = t('admin.b.passShort'); n1.focus(); return; }
+      if (n1.value !== n2.value) { err.textContent = t('admin.b.passMismatch'); n2.select(); return; }
+
+      saved = passSaveLocal(n1.value);
+      showStep2(passFileFor(n1.value), true);
+      n1.value = ''; n2.value = '';
+      toast(t(saved ? 'admin.b.passOk' : 'admin.b.passLocalFail'), saved ? 'ok' : 'err');
+      dropWarnBanner();
+    }, false);
+
+    /* --- step 2 --------------------------------------------------------- */
+    step2.appendChild(el('div', { 'class': 'divider', 'aria-hidden': 'true' }));
+    step2.appendChild(el('div', { 'class': 'adm-sechead' }, [
+      head2,
+      el('p', { 'class': 'hint', text: t('admin.b.passS2X') })
+    ]));
+    step2.appendChild(el('div', { 'class': 'adm-osum' }, [
+      el('h5', { 'class': 'label', text: t('admin.b.passFileLbl') }),
+      pre
+    ]));
+    step2.appendChild(el('div', { 'class': 'adm-btnrow' }, [
+      el('button', {
+        'class': 'btn btn-pri btn-lg', type: 'button', text: t('admin.b.passCopy'),
+        /* long labels must wrap inside the pill on a phone, not spill out of it */
+        style: { whiteSpace: 'normal' },
+        on: { click: function () {
+          SN.UI.copy(pre.textContent).then(function (ok) {
+            toast(t(ok ? 'admin.b.passCopyOk' : 'common.error'), ok ? 'ok' : 'err');
+          });
+        } }
+      }),
+      url ? el('a', {
+        'class': 'btn btn-line btn-lg', href: url, target: '_blank', rel: 'noopener',
+        style: { whiteSpace: 'normal' },
+        text: t('admin.b.passOpen')
+      }) : null
+    ]));
+    if (!url) {
+      step2.appendChild(el('div', { 'class': 'note note-warn' }, [
+        el('span', { 'class': 'ico', html: icon('shield', 16), 'aria-hidden': 'true' }),
+        el('span', { text: t('admin.b.passOpenNo') })
+      ]));
+    }
+    step2.appendChild(el('p', { 'class': 'strong', text: t('admin.b.passHowHead') }));
+    step2.appendChild(el('ol', { 'class': 'adm-steps' }, [
+      el('li', { text: t('admin.b.passH1') }),
+      el('li', { text: t('admin.b.passH2') }),
+      el('li', { text: t('admin.b.passH3') }),
+      el('li', { text: t('admin.b.passH4') }),
+      el('li', { text: t('admin.b.passH5') }),
+      el('li', { text: t('admin.b.passH6') })
+    ]));
+    step2.appendChild(el('div', { 'class': 'note note-ok' }, [
+      el('span', { 'class': 'ico', html: icon('shield', 16), 'aria-hidden': 'true' }),
+      safe
+    ]));
+    step2.appendChild(el('div', { 'class': 'note note-warn' }, [
+      el('span', { 'class': 'ico', html: icon('lock', 16), 'aria-hidden': 'true' }),
+      el('span', { text: t('admin.b.passReuse') })
+    ]));
+    step2.appendChild(el('div', { 'class': 'note' }, [
+      el('span', { 'class': 'ico', html: icon('shield', 16), 'aria-hidden': 'true' }),
+      el('span', { text: t('admin.b.passGuard') })
+    ]));
+
+    function showStep2(text, move) {
+      pre.textContent = str(text);
+      safe.textContent = t(passFileHashed(text) ? 'admin.b.passSafe' : 'admin.b.passSafePlain');
+      step2.classList.remove('adm-hide');
+      passFileRemember(text);
+      if (!move) return;
+      try { head2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      catch (e) { /* older browsers just stay put */ }
+      try { head2.focus({ preventScroll: true }); }
+      catch (e2) { try { head2.focus(); } catch (e3) { /* ignore */ } }
+    }
+
+    /* she can always come back to step 2 without retyping anything */
+    if (passFileRecall()) showStep2(passFileRecall(), false);
+
+    return card([
+      sectionHead(t('admin.b.passHead'), t('admin.b.passX')),
+      el('div', { 'class': 'adm-sechead' }, [
+        el('h4', { 'class': 'h4 display', id: 'adm-pass-step1', tabindex: '-1', text: t('admin.b.passS1') }),
+        el('p', { 'class': 'hint', text: t('admin.b.passS1X') })
+      ]),
+      form,
+      passFileRecall() ? el('p', { 'class': 'hint', text: t('admin.b.passRedoX') }) : null,
+      step2
+    ], 'adm-passcard');
+  }
+
+  /* jump from the warning banner straight into step 1 */
+  function focusPasswordCard() {
+    var node = D.getElementById('adm-pass-step1');
+    if (!node) return;
+    try { node.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    catch (e) { /* ignore */ }
+    try { node.focus({ preventScroll: true }); }
+    catch (e2) { try { node.focus(); } catch (e3) { /* ignore */ } }
   }
 
   function testNotify(btn, out) {
@@ -2921,6 +3183,7 @@
     }
     sideCounts();
     if (SN.I18n && SN.I18n.apply) SN.I18n.apply(host);
+    if (wantPassFocus && S.tab === 'backup') { wantPassFocus = false; focusPasswordCard(); }
   }
 
   function renderPanel(focusIn) {
@@ -2955,16 +3218,22 @@
       ])
     ]));
 
-    if (str(sGet('settings.adminPass', '')) === 'shosh1234') {
+    refs.warn = null;
+    if (isDefaultPass()) {
       warn = el('div', { 'class': 'note note-warn adm-warn' }, [
         el('span', { 'class': 'ico', html: icon('shield', 18), 'aria-hidden': 'true' }),
         el('span', { text: t('admin.defaultPass') }),
-        el('a', {
-          'class': 'btn btn-sm btn-line adm-warn-cta', href: '#tab=backup',
+        el('button', {
+          'class': 'btn btn-sm btn-line adm-warn-cta', type: 'button',
           text: t('admin.defaultPassCta'),
-          on: { click: function () { setNav(false); } }
+          on: { click: function () {
+            setNav(false);
+            wantPassFocus = true;
+            goTab('backup');
+          } }
         })
       ]);
+      refs.warn = warn;
       root.appendChild(warn);
     }
 

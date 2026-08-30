@@ -32,6 +32,7 @@ no npm, no server, no database.
 | `faq.html` | الأسئلة والتواصل | الأسئلة الشائعة + دليل التركيب + بطاقة التواصل |
 | `admin.html` | لوحة التحكم | إدارة كل محتوى الموقع (بكلمة مرور) |
 | `404.html` | صفحة غير موجودة | تظهر تلقائيًا لأي رابط خاطئ |
+| `password.js` | كلمة مرور اللوحة | ثلاثة أسطر فقط — **الملف الوحيد اللي بتعدّلينه بيدك** |
 
 الملفات المساعدة كلها داخل `assets/`:
 `assets/css/` للتنسيقات، و`assets/js/` للأكواد، و`assets/js/data.js` للمحتوى الأساسي.
@@ -74,19 +75,64 @@ python3 -m http.server 8000
 
 **كلمة المرور الافتراضية: `shosh1234`**
 
-### ⚠️ غيّريها من أول يوم
+### ملف واحد بس تعدّلينه بيدك: `password.js`
 
-هذي كلمة المرور مكتوبة داخل ملفات الموقع، ويقدر أي شخص يشوفها. غيّريها فورًا:
+في جذر المشروع فيه ملف صغير اسمه `password.js`، **ثلاثة أسطر لا غير**، وهذا شكله:
 
-1. ادخلي `admin.html` بكلمة المرور الافتراضية.
-2. من القائمة الجانبية اختاري **النسخ الاحتياطي (backup)**.
-3. اكتبي كلمة المرور الجديدة في خانة «تغيير كلمة مرور اللوحة» واحفظي.
-4. **مهم جدًا:** بعدها اعملي **تصدير** للنسخة الاحتياطية وحدّثي ملف `assets/js/data.js`
-   (الشرح في القسم اللي بعده) — وإلا كلمة المرور الجديدة راح تكون على متصفحك أنتِ فقط،
-   وأي شخص يفتح الموقع من جهاز ثاني بيقدر يدخل بالكلمة القديمة.
+```js
+/* كلمة مرور لوحة التحكم — Shosh Nail admin password.
+   غيّريها من لوحة التحكم ← تبويب «النسخ الاحتياطي» ← زر «انسخي السطر». */
+window.SN_ADMIN = "shosh1234";
+```
 
-> وحتى بعد التغيير: لوحة التحكم حماية بسيطة تمنع الفضول، مو حماية بنكية. لا تحطين فيها
-> أي معلومات حساسة (أرقام بطاقات، كلمات مرور ثانية… إلخ).
+هذا هو **الملف الوحيد** اللي بتفتحينه وتعدّلينه بنفسك في كل الموقع. كل شي ثاني تسوّينه من
+لوحة التحكم بالضغط، بدون ما تكتبين أي كود.
+
+### ⚠️ غيّريها من أول يوم (خطوتين، من جوالك)
+
+الكلمة الافتراضية مكتوبة في الملف ويقدر أي أحد يشوفها. تغييرها ما ياخذ دقيقتين، ولوحة
+التحكم تمشّيك خطوة خطوة وتجهّز لك النص جاهز — أنتِ بس تنسخين وتلصقين:
+
+1. ادخلي `admin.html` بالكلمة الافتراضية.
+2. من القائمة الجانبية اختاري **النسخ الاحتياطي**، وانزلي لبطاقة **«كلمة مرور اللوحة»**.
+3. **الخطوة 1:** اكتبي كلمة المرور الجديدة مرتين واضغطي **«حفظ ومتابعة للخطوة 2»**.
+   من هذي اللحظة الكلمة الجديدة تشتغل على هذا الجهاز — بس مؤقتاً، لين تخلّصين الخطوة 2.
+4. **الخطوة 2** تفتح لك لحالها، وفيها:
+   - مربع فيه **نص `password.js` كامل وجاهز**؛
+   - زر **«انسخي المحتوى»** — اضغطيه، ينتسخ النص كله؛
+   - زر **«افتحي ملف كلمة المرور في GitHub»** — يفتح لك الملف الصحيح مباشرة.
+5. في صفحة GitHub اللي فتحت: اضغطي **أيقونة القلم ✏️ (Edit)** فوق الملف، بعدها اضغطي مطوّلاً
+   داخل النص واختاري **«تحديد الكل / Select all»** وامسحي كل الموجود، ثم اضغطي مطوّلاً
+   واختاري **«لصق / Paste»**.
+6. اضغطي الزر الأخضر **«Commit changes...»**، وبعدها في المربع اللي يطلع اضغطي
+   **«Commit changes»** مرة ثانية. خلاص.
+7. بعد دقيقة أو دقيقتين، كلمة المرور الجديدة تشتغل **على كل الأجهزة**.
+
+> **النص اللي تنسخينه ما فيه كلمة مرورك نفسها.** فيه «بصمة» مشفّرة لها (تبدأ بـ `sha256:`)،
+> واللوحة تعرف تقارن عليها بدون ما تعرف الكلمة. يعني آمن تمامًا إنه ينحفظ في GitHub وأي أحد
+> يشوفه — ما راح يقدر يستخرج كلمتك منه.
+
+> **لا تستخدمين كلمة مرور تستخدمينها في مكان ثاني** (الإيميل، البنك، إنستغرام…). خصّصي
+> كلمة مرور لهذا الموقع لحاله.
+
+> لو ما خلّصتي الخطوة 2، الكلمة الجديدة ما تثبت: أي جهاز ثاني — وحتى جهازك بعد ما تسكّرين
+> الصفحة — يرجع يقبل الكلمة القديمة. اللوحة تنبّهك بهذا بشريط أصفر فوق، وتخليك ترجعين
+> للخطوة 2 بدون ما تكتبين كلمة المرور من جديد.
+
+### وش تحمي هذي الكلمة بالضبط؟ (اقرأيها مرة وارتاحي)
+
+مهم تعرفين الصورة كاملة، وهي مطمئنة أكثر مما تتوقعين:
+
+- كلمة المرور تحمي **الدخول للوحة التحكم**، يعني تمنع الفضول من العبث في شاشة التحكم.
+- **لوحة التحكم ما تعدّل الموقع المنشور.** أي تعديل تسوّينه فيها يُحفظ في **نسخة داخل
+  المتصفح اللي فُتحت منه** لا غير. حتى لو شخص دخل اللوحة، **ما يقدر يغيّر شي يشوفه زوار
+  موقعك** — تعديله يبقى حبيس متصفحه هو.
+- **المحتوى اللي يشوفه الزوار ما يتغيّر إلا بشي واحد:** رفع الملفات (push) على GitHub من
+  حسابك أنتِ. وهذا محمي بحساب GitHub وكلمة مروره، مو بكلمة مرور اللوحة.
+
+يعني: غيّري كلمة المرور عشان النظام يكون مرتّب، لكن لا تقلقين — موقعك مو في خطر.
+واللي يحمي موقعك فعليًا هو **حساب GitHub تبعك**: خلّي كلمة مروره قوية وفعّلي فيه
+التحقق بخطوتين (Two-factor authentication).
 
 ## كيف يشتغل المحتوى؟ (اقرأي هذا القسم كامل — هو أهم شي في الملف)
 
@@ -124,8 +170,10 @@ python3 -m http.server 8000
 - **امسحي الطلبات:** ملف النسخة الاحتياطية يحتوي على طلبات العميلات (أسماء وجوالات وعناوين).
   قبل ما تلصقينه في `data.js`، دوّري على السطر `"orders": [ ... ]` في آخر الملف وخلّيه
   فاضيًا كذا: `"orders": []`. **لا ترفعين بيانات عميلاتك على مستودع عام.**
-- **كلمة المرور:** كلمة مرور اللوحة موجودة داخل الملف في `"adminPass"`. أي شخص يقدر يفتح
-  `assets/js/data.js` ويقراها. هذا طبيعي في موقع بدون سيرفر — فقط كوني على علم فيه.
+- **كلمة المرور:** ملف النسخة الاحتياطية فيه خانة `"adminPass"` — هذي مجرد نسخة محليّة
+  على جهازك. كلمة المرور الحقيقية اللي يعتمد عليها الموقع موجودة في `password.js` كبصمة
+  مشفّرة، والأفضل تخلّين `"adminPass"` فاضية كذا: `"adminPass": ""` قبل ما تلصقين المحتوى
+  في `data.js`، عشان ما تنشرين أي شي زيادة.
 
 ### استيراد نسخة احتياطية
 
@@ -176,9 +224,13 @@ python3 -m http.server 8000
 ## أسئلة سريعة
 
 **نسيت كلمة مرور اللوحة؟**
-افتحي `assets/js/data.js` وشوفي قيمة `adminPass`. لو غيّرتيها من اللوحة ولا صدّرتيها، امسحي
-بيانات الموقع من إعدادات المتصفح — بيرجع لكلمة المرور اللي في الملف (وبتفقدين تعديلاتك
-غير المصدّرة، فصدّري أول).
+ما فيه طريقة تسترجعين فيها الكلمة نفسها — الملف يحفظ بصمتها مو نصّها. بس ترجعين تدخلين
+بسهولة: افتحي `password.js` في GitHub (نفس خطوات التغيير فوق)، واستبدلي السطر الأخير بـ
+`window.SN_ADMIN = "shosh1234";` واعملي **Commit changes**. بعدها ادخلي اللوحة بالكلمة
+الافتراضية وسوّي الخطوتين من جديد بكلمة تحفظينها.
+لو كنتِ غيّرتيها على جهازك بس (ما خلّصتي الخطوة 2)، امسحي بيانات الموقع من إعدادات
+المتصفح وبيرجع يقبل الكلمة اللي في `password.js` — وبتفقدين تعديلاتك غير المصدّرة،
+فصدّري نسخة احتياطية أول.
 
 **التعديلات ما ظهرت للزوار؟**
 أكيد ما صدّرتي وحدّثتي `assets/js/data.js`. راجعي قسم «الحل: صدّري وحدّثي الملف».
@@ -219,6 +271,7 @@ free on GitHub Pages.
 | `faq.html` | Help & contact | FAQ, a step-by-step application guide, contact card |
 | `admin.html` | Control panel | Manage all site content (password protected) |
 | `404.html` | Not found | Shown automatically for any bad link |
+| `password.js` | Panel password | Three lines — **the only file you ever edit by hand** |
 
 Everything else lives in `assets/`: `assets/css/` for styles, `assets/js/` for scripts, and
 `assets/js/data.js` for the site's content.
@@ -258,19 +311,70 @@ link at the bottom of any page).
 
 **Default password: `shosh1234`**
 
-### ⚠️ Change it on day one
+### One file you ever edit by hand: `password.js`
 
-This password is written inside the site's files, so anyone can read it. Change it immediately:
+At the root of the project there is a small file called `password.js`. It is **three lines
+long**, and this is all of it:
+
+```js
+/* كلمة مرور لوحة التحكم — Shosh Nail admin password.
+   غيّريها من لوحة التحكم ← تبويب «النسخ الاحتياطي» ← زر «انسخي السطر». */
+window.SN_ADMIN = "shosh1234";
+```
+
+This is the **only** file you ever open and edit yourself. Everything else on the site is
+changed by tapping around the control panel — you never write code.
+
+### ⚠️ Change it on day one (two steps, from your phone)
+
+The default password sits in the file where anyone can read it. Changing it takes two
+minutes, and the panel walks you through it and prepares the exact text for you — all you do
+is copy and paste:
 
 1. Log in to `admin.html` with the default password.
-2. Open the **backup** tab in the sidebar.
-3. Type a new password in the "change admin password" field and save.
-4. **Crucially:** then **export** a backup and update `assets/js/data.js` (next section) —
-   otherwise the new password only exists in *your* browser, and anyone opening the site on
-   another device can still log in with the old one.
+2. Open the **Backup** tab in the sidebar and scroll to the **"Panel password"** card.
+3. **Step 1:** type the new password twice and press **"Save and go to step 2"**. From that
+   moment the new password works on this device — but only for now, until step 2 is done.
+4. **Step 2** opens by itself and contains:
+   - a box holding the **complete, ready-made contents of `password.js`**;
+   - a **"Copy the contents"** button that copies all of it;
+   - an **"Open the password file on GitHub"** button that takes you straight to the file.
+5. On the GitHub page that opens: tap the **pencil icon ✏️ (Edit)** above the file, then
+   press and hold inside the text, choose **"Select all"** and delete everything, then press
+   and hold again and choose **"Paste"**.
+6. Tap the green **"Commit changes..."** button, and in the box that appears tap
+   **"Commit changes"** once more. That's it.
+7. A minute or two later the new password works **on every device**.
 
-> Even after changing it, this is a "keep honest people out" lock, not bank-grade security.
-> Never store anything genuinely sensitive in the panel.
+> **The text you paste does not contain your password.** It contains a scrambled fingerprint
+> of it (it starts with `sha256:`), and the panel can check a password against that
+> fingerprint without ever knowing it. So it is perfectly safe to keep in GitHub where
+> anyone can see it — your password cannot be recovered from it.
+
+> **Never reuse a password you use anywhere else** (email, bank, Instagram…). Give this site
+> a password of its own.
+
+> If you stop before step 2, the new password never sticks: any other device — and your own,
+> once you close the page — goes back to accepting the old one. The panel keeps a yellow
+> warning strip at the top for this, and lets you reopen step 2 without retyping anything.
+
+### What this password does and does not protect
+
+It is worth knowing the whole picture — and it is more reassuring than you might expect:
+
+- The password protects **access to the control panel**, i.e. it keeps curious people out of
+  your editing screen.
+- **The control panel does not edit the published site.** Every change you make there is
+  saved into a copy of the content held **inside whichever browser it was opened in**. Even
+  if someone did get in, **they could not change anything your visitors see** — their edit
+  would stay stuck in their own browser.
+- **The content visitors see changes in exactly one way:** by pushing files to GitHub from
+  your account. That is protected by your GitHub account and its password, not by the panel
+  password.
+
+So: change the password to keep things tidy, but do not lose sleep over it. The thing that
+genuinely protects your site is **your GitHub account** — give it a strong password and turn
+on two-factor authentication.
 
 ## How content works (please read this whole section)
 
@@ -308,8 +412,10 @@ Save it, push it to GitHub, and every visitor now sees your changes. ✅
 - **Clear the orders.** The backup contains customer orders (names, phone numbers, addresses).
   Before pasting it into `data.js`, find `"orders": [ ... ]` near the end and empty it:
   `"orders": []`. **Never push customer data to a public repository.**
-- **The password.** The admin password sits in the file as `"adminPass"`. Anyone can open
-  `assets/js/data.js` and read it. That is inherent to a site with no server — just know it.
+- **The password.** The backup file has an `"adminPass"` field — that is only the local copy
+  kept on your device. The password the site actually relies on lives in `password.js` as a
+  fingerprint. Best to blank the field out — `"adminPass": ""` — before pasting the backup
+  into `data.js`, so you publish nothing you did not mean to.
 
 ### Importing a backup
 
@@ -361,9 +467,13 @@ two free services work out of the box.
 ## Quick answers
 
 **Forgot the admin password?**
-Look at `adminPass` in `assets/js/data.js`. If you changed it in the panel and never exported,
-clear this site's data in your browser settings to fall back to the password in the file (you
-will lose unexported edits, so export first).
+There is no way to recover the password itself — the file stores its fingerprint, not its
+text. Getting back in is easy though: open `password.js` on GitHub (same steps as above),
+replace the last line with `window.SN_ADMIN = "shosh1234";` and **Commit changes**. Then log
+in with the default password and run the two steps again with something you will remember.
+If you only ever changed it on your own device (you never finished step 2), clearing this
+site's data in your browser settings falls back to whatever is in `password.js` — you will
+lose unexported edits, so export a backup first.
 
 **Visitors are not seeing my changes.**
 You have not exported and updated `assets/js/data.js`. See "The fix: export, then update the file".

@@ -121,6 +121,12 @@
       },
       currency: { ar: 'ر.س', en: 'SAR' },
       adminPass: 'shosh1234',
+      /* مستودع الموقع على GitHub — تستخدمه لوحة التحكم لفتح صفحة تعديل
+         ملف كلمة المرور (password.js) مباشرة من الجوال بضغطة واحدة.
+         The GitHub repo + branch this site is published from; the admin panel
+         uses them to build a one-tap "edit password.js" link. */
+      repo: 'bv61754-design/Shosh-Nail',
+      repoBranch: 'claude/custom-nails-design-site-yc2op1',
       notifyEndpoint: '',
       notifyKey: '',
       notifyEmail: '',
