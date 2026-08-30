@@ -39,7 +39,7 @@ from scipy import ndimage as nd
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TARGET = ROOT / 'assets' / 'js' / 'nail-gloss.js'
-OUT_W, OUT_H = 128, 192          # what ships
+OUT_W, OUT_H = 192, 288          # what ships
 UV_W, UV_H = 192, 288            # working resolution before the final resize
 
 
@@ -130,18 +130,69 @@ def to_uv(m, d, s, G):
 
 
 def finish(M):
+    """Keep the material, replace the room.
+
+    THE MISTAKE THIS FIXES. The first version of this faded the cuticle end of
+    the map to a flat 1.0. That removed the room, but it also left a third of
+    every nail with literally no variation in it, and a flat mid-tone is the
+    single loudest thing that says "drawn". Measured: 47% of that map had zero
+    gradient, against 3.5% for the photograph it came from and 0% for a nail
+    shot in a studio.
+
+    So the split is by FREQUENCY, not by position. The low frequencies are the
+    room — which window, which angle, which cloth — and only those get
+    replaced past the middle of the nail. The high frequencies are the gel
+    itself: its lengthwise striations, its milky depth, the grain of the
+    surface. Those are the same in any room, and they now run the whole length
+    of the plate.
+    """
     v = np.linspace(0, 1, UV_H)[:, None]
-    # a nail is a section of a cylinder: it smears what it reflects along its
-    # own length, and the photograph's own curvature already started the job
-    M = nd.gaussian_filter(M, (UV_H * 0.014, UV_W * 0.008), mode='nearest')
-    # the cuticle end of a nail lying on cloth tips toward the window; a worn
-    # nail has nothing there, so it fades out
-    fade = np.clip((v - 0.58) / 0.22, 0, 1)
-    M = M * (1 - fade) + fade
+    # a light pass first: at this resolution a pixel of noise is not detail
+    M = nd.gaussian_filter(M, (UV_H * 0.006, UV_W * 0.005), mode='nearest')
+
+    # THE BAND THAT MATTERS. Split at 2% of the nail's width. Below that is
+    # grain: the lengthwise striations of the gel, its milky depth, the
+    # micro-texture of the topcoat. That band is the MATERIAL and it is the
+    # same in any room. Above it is form and reflection, which is the room.
+    # (A split at 7% was tried first and failed: the reflection in this
+    # photograph is a window with a hard edge down the middle of it, so its
+    # edges survive into the "material" band and reappear as a black wedge
+    # across every nail. 2% is small enough that nothing shaped like a window
+    # can hide in it.)
+    fine = M - nd.gaussian_filter(M, (UV_H * 0.020, UV_W * 0.020), mode='nearest')
+    form = M - fine
+
+    # the nail was lying on cloth, which tips its cuticle end toward the
+    # window and catches a bright wedge there with a dark one under it. Past
+    # the middle, carry the cross-section from the last honest row down
+    # instead, shading gently into the cuticle the way a worn nail does — but
+    # the grain runs the whole length, because a plate with a flat patch in it
+    # is the loudest thing in this whole file that says "drawn".
+    cut = int(UV_H * 0.54)
+    ref = form[cut - int(UV_H * 0.08):cut].mean(0)
+    grain = fine.copy()
+    for j in range(cut, UV_H):
+        w = min(1.0, (j - cut) / (UV_H * 0.13))
+        t = (j - cut) / float(UV_H - cut)
+        form[j] = form[j] * (1 - w) + (ref * (1.0 - 0.085 * t)) * w
+        # and the grain is MIRRORED about the cut rather than filtered: the
+        # reflection down there is a window with a hard edge, and a hard edge
+        # has every frequency in it, so no filter removes it without removing
+        # the material too. Folding the clean half of the nail's own grain
+        # back down leaves real texture and no window.
+        grain[j] = fine[max(0, 2 * cut - j)]
+    M = form + grain
+
     # the free edge is drawn by SN.Nail as its own translucent layer
     tf = np.clip((0.035 - v) / 0.035, 0, 1)
     M = M * (1 - tf) + tf
     M = np.clip(M / float(np.percentile(M, 99.5)), 0, 1)
+    M = M / M.mean() * 0.905          # hold the average where it was
+    # BITE. Measured against the photograph it came from, the map that ships
+    # varies about a quarter less than the real surface does — some of that is
+    # resolution, the rest is the two blurs above. Give it back, around the
+    # middle so the colour the customer picked does not move.
+    M = np.clip(1.0 + (M - 1.0) * 1.12, 0, 1)
     M = np.clip(1 - (1 - M) * 1.18, 0, 1)     # a little more bite in the form
     # the colour the customer picked is the one she must see: re-centre on the
     # middle, not the brightest point, or every shade quietly loses 7%

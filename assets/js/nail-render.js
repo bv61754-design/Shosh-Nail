@@ -2803,6 +2803,73 @@
   }
 
   /* ====================================================================== */
+  /* 8c. THE RIM REFLECTS THE ROOM                                           */
+  /*                                                                         */
+  /*  Measured, and it is the biggest single thing between this render and a */
+  /*  photograph. Inside ONE nail, a real press-on photographed under window  */
+  /*  light runs from luminance 0.245 to 0.884 — 1.85 stops. The plate as it  */
+  /*  was drawn ran 0.482 to 0.840 — 0.80 stops. It was missing a whole stop, */
+  /*  all of it at the BOTTOM: nothing in it was ever dark.                   */
+  /*                                                                         */
+  /*  The reason is Fresnel. A polished surface reflects almost nothing when  */
+  /*  you look straight down it and almost EVERYTHING at a grazing angle, and */
+  /*  the rim of a nail seen from above is exactly grazing. So the rim is not */
+  /*  the polish shaded down — it IS whatever is beside the hand, which here  */
+  /*  is dark cloth at luminance 0.2. That is where a real nail's blacks come */
+  /*  from, and no amount of darkening the polish's own colour produces them: */
+  /*  a dark red nail shaded darker is still red, while a real one goes       */
+  /*  cloth-coloured at the edge and red again a millimetre in.               */
+  /*                                                                         */
+  /*  Falloff read off the real nail: the outermost pixel is 0.62x the        */
+  /*  interior and it is back to 0.91x by 6% of the width, which inverts to   */
+  /*  roughly 0.85 reflectance at the silhouette, 0.2 at 6% in, gone by 30%.  */
+  /*  Two gradients do it — across and along — with transparent middles so    */
+  /*  the two environment colours never interpolate through each other.       */
+  /*                                                                         */
+  /*  env: { l, r, t, b } — what is out there to the left, to the right, past */
+  /*  the free edge and behind the cuticle. Photo hands measure it off the    */
+  /*  photograph (baked into the anchors); the drawn hand knows its own       */
+  /*  background. Missing = skip, and nothing else changes.                   */
+  /* ====================================================================== */
+
+  var RIM = [
+    [0.000, 0.86], [0.014, 0.62], [0.035, 0.40],
+    [0.065, 0.20], [0.120, 0.09], [0.300, 0.00]
+  ];
+
+  function rimStops(c, flip) {
+    var out = [], i, t;
+    for (i = 0; i < RIM.length; i++) {
+      t = flip ? 1 - RIM[i][0] : RIM[i][0];
+      out.push([f(t), c, f(RIM[i][1])]);
+    }
+    if (flip) out.reverse();
+    return out;
+  }
+
+  function envRim(host, x) {
+    var e = x.env, k = clamp(num(x.k, 1), 0, 1), st;
+    if (!e || k <= 0.02) return;
+    /* across the nail: left wall then right wall, transparent in between */
+    st = rimStops(col(e.l, '#2E3338'), false)
+      .concat(rimStops(col(e.r, '#2E3338'), true));
+    add(host, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, st), opacity: f(k)
+    }));
+    /* along it: the free edge is over whatever is behind the hand, the
+       cuticle end is over the customer's own finger — so this one is much
+       gentler at the bottom, where the two surfaces nearly touch and there is
+       no grazing view of anything at all */
+    st = rimStops(col(e.t, '#2E3338'), false)
+      .concat(rimStops(col(e.b, '#8A6154'), true).map(function (p) {
+        return [p[0], p[1], f(num(p[2], 0) * 0.55)];
+      }));
+    add(host, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: vGrad(x.defs, st), opacity: f(k * 0.85)
+    }));
+  }
+
+  /* ====================================================================== */
   /* 9. One nail plate — a curved, glossy, slightly translucent object       */
   /*                                                                         */
   /*  Bottom to top, and every layer obeys the one light:                     */
@@ -3024,6 +3091,15 @@
       if (fg.parentNode) fg.parentNode.removeChild(fg);
       console.warn('[SN.Nail] finish "' + kind + '" failed', e2);
     }
+
+    /* --- 5b. the rim reflects the room ------------------------------------ */
+    /* After the finish: a reflection happens at the surface, on top of every
+       layer of colour under it. Before the contour, which is the wall itself
+       and has to stay readable over it. */
+    envRim(clipG, {
+      w: w, h: h, defs: defs, env: opts.env,
+      k: kind === 'matte' ? 0.22 : (kind === 'velvet' ? 0.16 : (kind === 'chrome' ? 0.5 : 1))
+    });
 
     /* --- 6. the contour --------------------------------------------------- */
     /* A press-on has no outline. Draw one — a light keyline all the way round
@@ -4253,6 +4329,13 @@
    *           thumb is the one digit lit from the other side, and a single  *
    *           global light vector rotated into each plate got that one      *
    *           backwards, which is why its highlight sat on the wrong wall.  *
+   *   env     WHAT THE PLATE'S RIM REFLECTS: the mean colour of the         *
+   *           photograph an inch and a half out to the left, to the right    *
+   *           and past the fingertip. On this hand that is dark cloth at     *
+   *           luminance 0.17-0.30 on all three sides. The fourth side, the   *
+   *           cuticle, is the customer's own skin and is derived at runtime. *
+   *           See envRim(): this is the one thing that was making the        *
+   *           plates read as drawings.                                       *
    *   fore    OPTIONAL foreshortening, default 1: how much of the plate's   *
    *           length survives projection. Only a digit whose nail tilts     *
    *           away from the camera needs it. See photoContent.             *
@@ -4267,11 +4350,11 @@
     /* the thumb's cuticle was a third of a finger-width too far back and its
        plate was sized off the whole thumb, so it sat across the knuckle and
        hung off into the cloth. Re-read off the straightened thumb. */
-    thumb:  { x: 0.5197, y: 0.1489, angle: -56.1, width: 0.0777, bed: 0.0364, tip: 0.0637, lx: -0.94, ly: -0.34 },
-    index:  { x: 0.2340, y: 0.2849, angle: -81.2, width: 0.0718, bed: 0.0474, tip: 0.0541, lx:  1.00, ly: -0.01 },
-    middle: { x: 0.1624, y: 0.4464, angle: -84.8, width: 0.0728, bed: 0.0472, tip: 0.0546, lx: 1, ly: -0.06 },
-    ring:   { x: 0.199, y: 0.6037, angle: -82.4, width: 0.0659, bed: 0.0435, tip: 0.0546, lx: 1, ly: -0.07 },
-    pinky:  { x: 0.2971, y: 0.7889, angle: -88.5, width: 0.058, bed: 0.0387, tip: 0.0398, lx: 0.87, ly: 0.48 }
+    thumb:  { x: 0.5197, y: 0.1489, angle: -56.1, width: 0.0777, bed: 0.0364, tip: 0.0637, lx: -0.94, ly: -0.34, env: ['#2A2C31', '#41474C', '#4C555A'] },
+    index:  { x: 0.2340, y: 0.2849, angle: -81.2, width: 0.0718, bed: 0.0474, tip: 0.0541, lx:  1.00, ly: -0.01, env: ['#3A3B3F', '#3F464D', '#363E44'] },
+    middle: { x: 0.1624, y: 0.4464, angle: -84.8, width: 0.0728, bed: 0.0472, tip: 0.0546, lx: 1, ly: -0.06, env: ['#292E34', '#3D4349', '#41484E'] },
+    ring:   { x: 0.199, y: 0.6037, angle: -82.4, width: 0.0659, bed: 0.0435, tip: 0.0546, lx: 1, ly: -0.07, env: ['#292F35', '#5C3F38', '#373E43'] },
+    pinky:  { x: 0.2971, y: 0.7889, angle: -88.5, width: 0.058, bed: 0.0387, tip: 0.0398, lx: 0.87, ly: 0.48, env: ['#30373B', '#1A1A1B', '#33393D'] }
   };
 
   /* The right hand, in hand-real-right.jpg. Its thumb is at the BOTTOM of
@@ -4284,11 +4367,11 @@
      and the thumb went in by eye, because it lies flatter than the left one
      and its nail tilts away — which is what `fore` is for. */
   var PHOTO_ANCHOR_RIGHT = {
-    thumb:  { x: 0.5031, y: 0.8209, angle: -121.3, width: 0.07, bed: 0.0364, tip: 0.0567, lx: 0.99, ly: 0.11, fore: 0.85 },
-    index:  { x: 0.2699, y: 0.6059, angle: -88.1, width: 0.0674, bed: 0.0445, tip: 0.0560, lx: 1.00, ly: -0.03 },
-    middle: { x: 0.23, y: 0.4455, angle: -84.8, width: 0.0694, bed: 0.0458, tip: 0.055, lx: 1, ly: 0.07 },
-    ring:   { x: 0.2951, y: 0.3157, angle: -81.4, width: 0.0656, bed: 0.0433, tip: 0.0527, lx: 1, ly: -0.07 },
-    pinky:  { x: 0.4105, y: 0.1905, angle: -74.3, width: 0.0573, bed: 0.0361, tip: 0.0384, lx: 1, ly: 0.08 }
+    thumb:  { x: 0.5031, y: 0.8209, angle: -121.3, width: 0.07, bed: 0.0364, tip: 0.0567, lx: 0.99, ly: 0.11, fore: 0.85, env: ['#16191D', '#25282D', '#2B3237'] },
+    index:  { x: 0.2699, y: 0.6059, angle: -88.1, width: 0.0674, bed: 0.0445, tip: 0.0560, lx: 1.00, ly: -0.03, env: ['#313A3F', '#1B1917', '#353B42'] },
+    middle: { x: 0.23, y: 0.4455, angle: -84.8, width: 0.0694, bed: 0.0458, tip: 0.055, lx: 1, ly: 0.07, env: ['#31353B', '#3F444B', '#434951'] },
+    ring:   { x: 0.2951, y: 0.3157, angle: -81.4, width: 0.0656, bed: 0.0433, tip: 0.0527, lx: 1, ly: -0.07, env: ['#3B3A3D', '#394047', '#40484F'] },
+    pinky:  { x: 0.4105, y: 0.1905, angle: -74.3, width: 0.0573, bed: 0.0361, tip: 0.0384, lx: 1, ly: 0.08, env: ['#40464C', '#424D53', '#464E55'] }
   };
 
   var PHOTO_ANCHORS = { left: PHOTO_ANCHOR, right: PHOTO_ANCHOR_RIGHT };
@@ -4849,6 +4932,7 @@
       a = set[k];
       out.push({
         finger: k,
+        env: a.env || null,
         x: m ? ax - a.x * def.w : a.x * def.w,
         y: a.y * def.h,
         angle: m ? -a.angle : a.angle,
@@ -4970,6 +5054,11 @@
         shape: shape, w: nw, h: nh, key: key, mirror: false,
         /* measured off the photograph, not derived from a global light */
         lightVec: lv,
+        env: an.env ? {
+          l: an.env[0], r: an.env[1], t: an.env[2],
+          /* behind the cuticle is the customer's own finger, in its own shade */
+          b: darken(mix(design.skin, '#C08872', 0.35), 0.30)
+        } : null,
         detail: q,
         finishId: design.nails[key] ? design.nails[key].finish : null,
         interactive: !!opts.interactive,
