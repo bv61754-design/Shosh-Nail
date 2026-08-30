@@ -2177,7 +2177,7 @@
     var w = num(opts.w, NAIL_BOX.w);
     var h = num(opts.h, 0);
     var key, u, kind, d, g, defs, clipId, plate, pg, fg, fn, i, ring, hover, sel, cls, onPick;
-    var L, q, peak, ybright, tipD, body, jelly, clipG;
+    var L, q, peak, ybright, tipD, body, jelly, clipG, glow, wallLit, wallDark;
 
     if (!(w > 0)) w = NAIL_BOX.w;
     if (!(h > 0)) h = w * ASPECT[s] * lenFactor(opts.length);
@@ -2288,16 +2288,22 @@
       ])
     }));
 
-    /* 3. the free edge: a press-on tip is thin, so light comes through it.
+    /* 3. the free edge: a press-on tip is thin, so light comes through it —
+       but only as much as the pigment lets through. A pale polish is nearly
+       translucent at the tip; a saturated black one absorbs instead of
+       scattering, and a bright band across the tip of a black nail is half of
+       what makes a render read as a printed sticker. `glow` is that, and it
+       is the only thing here that knows the difference.
        Painted straight onto the plate path — a clipped overlay would cost
        another clip application, and clipping is the most expensive thing on
        the page once ten nails are on screen. */
+    glow = 0.42 + 0.58 * lum(n.color);
     add(plate, E('path', {
       d: d,
       fill: vGrad(defs, [
-        [0, cTip(n.color), 0.95],
-        [f(tipD * 0.35), cTip(n.color), 0.52],
-        [f(tipD * 0.72), cTip(n.color), 0.18],
+        [0, cTip(n.color), f(0.95 * glow)],
+        [f(tipD * 0.35), cTip(n.color), f(0.52 * glow)],
+        [f(tipD * 0.72), cTip(n.color), f(0.18 * glow)],
         [f(tipD), cTip(n.color), 0]
       ])
     }));
@@ -2342,39 +2348,55 @@
     }
 
     /* --- 6. the contour --------------------------------------------------- */
-    /* absorption all round: at a grazing angle you are looking through a lot
-       more polish, so every edge goes deeper than the face of the nail */
-    /* Both edge treatments share one clipped group: half a stroke sitting
-       outside the silhouette is a halo, and a halo is what makes a render
-       look like a sticker. */
+    /* A press-on has no outline. Draw one — a light keyline all the way round
+       — and over black, oxblood or deep purple the plate stops being a nail
+       and becomes a cut-out sticker lying on the finger. What a real one has
+       is three things, none of them a line of constant colour:
+         · polish absorbing at a grazing angle, all round
+         · a THIN wall of acrylic that passes light, so it lights up in the
+           nail's OWN colour washed pale, and only where the source actually
+           reaches it — a couple of millimetres of rim, then nothing
+         · the opposite wall pressed into the skin, which is DARKER than the
+           plate, never brighter: that is the contact, and it is what sits the
+           nail on the finger instead of on top of the photograph
+       All three come from n.color and L, so a black nail gets a graphite rim
+       and a nude one a pale one, and neither gets a white pen line.
+       They share one clipped group: half a stroke sitting outside the
+       silhouette is a halo, and a halo is the other half of the sticker. */
+    wallLit = cTip(n.color);
+    wallDark = darken(n.color, 0.46 + lum(n.color) * 0.24);
     add(clipG, E('g', null, [
       E('path', {
         d: d, fill: 'none', stroke: cEdge(n.color),
         'stroke-width': f(u * 3.4), opacity: jelly ? 0.3 : 0.5
       }),
-      /* the fine bright line along the free edge itself — a vertical fade on
-         the stroke keeps it to the tip, which is the only part of a press-on
-         thin enough to glow */
+      /* the free edge itself: the one part of a press-on thin enough to pass
+         light along its whole length, so this one is not steered by L — but
+         it is the nail's own colour, and it fades out by the first third */
       E('path', {
         d: d, fill: 'none',
         stroke: vGrad(defs, [
-          [0, '#FFFFFF', 0.8], [f(tipD * 0.8), '#FFFFFF', 0.5],
-          [f(tipD * 1.9), '#FFFFFF', 0], [1, '#FFFFFF', 0]
+          [0, wallLit, 0.78], [f(tipD * 0.8), wallLit, 0.46],
+          [f(tipD * 1.9), wallLit, 0], [1, wallLit, 0]
         ]),
-        'stroke-width': f(Math.max(u * 2.4, 0.7)),
-        opacity: kind === 'matte' ? 0.3 : 0.85,
+        'stroke-width': f(Math.max(u * 2.2, 0.6)),
+        opacity: f((kind === 'matte' ? 0.34 : 0.9) * glow),
         transform: 'translate(0 ' + f(u * 1.1) + ')'
       }),
-      /* the rim light, on the side facing the source, dying out on the other */
-      kind === 'matte' ? null : E('path', {
+      /* the two walls in one pass: lit rim into nothing into contact. The
+         middle stops are transparent, so the gradient never interpolates the
+         pale colour into the dark one — it just stops being there. */
+      E('path', {
         d: d, fill: 'none',
         stroke: dGrad(defs, [
-          [0, '#FFFFFF', kind === 'chrome' ? 0.95 : 0.72],
-          [0.30, '#FFFFFF', 0.20],
-          [0.60, '#FFFFFF', 0],
-          [1, '#150C10', 0.18]
+          [0, kind === 'chrome' ? lighten(wallLit, 0.4) : wallLit,
+            f(kind === 'matte' ? 0.3 : 0.8)],
+          [0.24, wallLit, f(kind === 'matte' ? 0.12 : 0.3)],
+          [0.5, wallLit, 0],
+          [0.68, wallDark, 0],
+          [1, wallDark, jelly ? 0.3 : 0.55]
         ], f(0.5 + L.x * 0.5), f(0.5 + L.y * 0.5), f(0.5 - L.x * 0.5), f(0.5 - L.y * 0.5)),
-        'stroke-width': f(Math.max(u * 2.6, 0.8))
+        'stroke-width': f(Math.max(u * 2.8, 0.9))
       })
     ]));
 
@@ -3430,9 +3452,13 @@
   /*  assets/img/hand-real.jpg is ONE photograph: a left hand, back up,      */
   /*  fingers pointing to the image's left, thumb toward the top, flat on    */
   /*  dark charcoal linen. It is the LEFT hand as shot; the right hand is    */
-  /*  the same frame mirrored, which puts its fingers to the right — so in   */
-  /*  a two hand preview the wrists meet in the middle and the fingers fan   */
-  /*  outwards, the way a pair of hands is actually photographed.            */
+  /*  the same frame mirrored.                                              */
+  /*                                                                         */
+  /*  Every nail photograph ever taken is FINGERS UP, so the composition     */
+  /*  takes a quarter turn on its way to the screen (see photoTurn), and a   */
+  /*  pair stands side by side with the wrists at the bottom and the thumbs  */
+  /*  facing each other. Nothing else knows about the turn: the mask, the    */
+  /*  anchors, the crop and the mirror all stay in the photo's own frame.    */
   /*                                                                         */
   /*  The one photograph carries every skin tone: the linen and the skin     */
   /*  separate cleanly on r-g (the fabric is NEGATIVE, skin is strongly      */
@@ -3448,16 +3474,21 @@
     w: 1017, h: 681,
     /* a point that is certainly inside the back of the hand */
     seedX: 0.62, seedY: 0.45,
-    /* The frame carries a lot of forearm that says nothing about the nails.
-       Every preview is cut to this window instead, which is what makes a two
-       hand preview 2.4:1 rather than 3:1 — the difference between usable and
-       postage stamp sized on a phone. The window reaches slightly OUTSIDE the
-       photograph on the left and the top, because an extra long stiletto on
-       the middle finger ends 25px past the frame's edge and on the thumb 10px
-       above it; that margin is filled by mirroring the photo about its own
-       edges, and since everything out there is plain linen the joins are
-       invisible. */
-    cx: -46, cy: -22, cw: 860, ch: 703,
+    /* The window every preview is cut to, in the photo's own frame. It is
+       quoted here the way it was measured — cx/cw run along the fingers,
+       cy/ch across them — but on screen the turn swaps them, so cw is the
+       composition's HEIGHT and ch is one hand's WIDTH.
+       The window reaches slightly OUTSIDE the photograph on the left and the
+       top, because an extra long stiletto on the middle finger ends 25px past
+       the frame's edge and on the thumb 10px above it; that margin is filled
+       by mirroring the photo about its own edges, and since everything out
+       there is plain linen the joins are invisible.
+       ch stops 57px past the little finger rather than at the frame's bottom
+       edge: the strip below it is pure linen, and carrying it would push a
+       pair of hands to 1.6:1 — too wide to fill a phone. As cut, one hand is
+       0.73:1 and the pair 1.46:1, which is the shape of a real two hand shot
+       and works from 390px to 1400px without either hand being cropped. */
+    cx: -46, cy: -22, cw: 900, ch: 656,
     /* mean luminance over the mask, measured on this exact file */
     smean: 0.6214
   };
@@ -3494,6 +3525,34 @@
   /* mirroring happens about the centre of the crop window, not the centre of
      the frame, so the right hand lands inside the same window as the left */
   function mirrorAxis() { return PHOTO.cx * 2 + PHOTO.cw; }
+
+  /* ---------------------------------------------------------------------- *
+   * THE QUARTER TURN.                                                       *
+   *                                                                         *
+   * The shot is landscape with the fingers pointing to the image's left, so  *
+   * turning it a quarter turn clockwise stands the fingers up. Doing that    *
+   * on the way OUT means the anchors, the mask, the tiles and the crop all   *
+   * stay in the photograph's own frame — and so does the light, which is     *
+   * the point: the plates' highlights are computed against the photograph's  *
+   * light, and rotating the picture rotates that light with it.              *
+   *                                                                         *
+   * The mirrored hand turns the other way. Mirroring the frame in x and      *
+   * then turning both hands the same way would stand the second one on its   *
+   * head; turning it anticlockwise instead makes it the first hand reflected *
+   * in a VERTICAL line, which is what a pair of hands is. The reflection     *
+   * axis is the join between the two windows, so the two hands meet on the   *
+   * same column of pixels and the seam disappears.                           *
+   * ---------------------------------------------------------------------- */
+  function photoTurn(side) {
+    if (side !== 'right') return 'rotate(90)';
+    return 'translate(' + f(-(PHOTO.cy * 2 + PHOTO.ch)) + ' ' + f(mirrorAxis()) + ') rotate(-90)';
+  }
+
+  /* the crop window as the screen sees it, after the turn: what was measured
+     across the fingers is now the width, and what ran along them the height */
+  function turnedView() {
+    return { x: -(PHOTO.cy + PHOTO.ch), y: PHOTO.cx, w: PHOTO.ch, h: PHOTO.cw };
+  }
 
   /* A press-on is not as wide as the finger: its side walls stop just inside
      the skin folds, or it looks like a sticker laid over the knuckle. */
@@ -3727,8 +3786,8 @@
    *  lum    = 0.2126r + 0.7152g + 0.0722b                                    *
    *  ratio  = clamp(lum / smean, 0, 3) ^ 0.92   (the gamma stops highlights  *
    *           blowing out on a deep tone)                                    *
-   *  out    = target * ratio + (rgb - lum) * 0.45   (the residue is what     *
-   *           keeps knuckle redness, veins and the nail beds alive)          *
+   *  out    = curve[lum] + (rgb - lum) * res    (the residue is what keeps   *
+   *           knuckle redness, veins and the nail beds alive)                *
    *  final  = mix(original, out, mask)                                       *
    *  Validated against all six store tones — the linen deliberately does     *
    *  NOT change: the surface is the same, only the person is different.      */
@@ -3743,13 +3802,60 @@
     return t;
   }
 
+  /* ---------------------------------------------------------------------- *
+   * THE TONE CURVE — one channel LUT per target, built once per tone.        *
+   *                                                                         *
+   * Scaling the target by the ratio alone (target * ratio) keeps the SAME    *
+   * chroma no matter how bright the pixel, so on a deep tone every specular  *
+   * highlight came back as a saturated orange and the hand read terracotta   *
+   * instead of brown. It is the wrong physics: a highlight is light bounced  *
+   * off the surface film before any pigment touches it, so it carries the    *
+   * colour of the LAMP, not of the skin. The darker the skin, the bigger     *
+   * the gap between the two and the more obvious the mistake.                *
+   *                                                                         *
+   * So chroma is scaled separately from luminance. `c` is how much of the    *
+   * target's own colour survives at a given brightness:                      *
+   *   above mid   c falls off as the pixel brightens, fastest on the deepest *
+   *               tones, so highlights wash toward neutral without losing    *
+   *               one step of luminance                                      *
+   *   below mid   c rises a little, because skin in shadow gains saturation  *
+   *               rather than losing it — the warmth stays at the bottom     *
+   * `dark` deliberately reaches zero by the time the target is as light as   *
+   * the store's Fair, so the two palest tones come out bit for bit as they   *
+   * did before and only the tones that were wrong move.                      *
+   * ---------------------------------------------------------------------- */
+  var TONE_DESAT = 3.2;    /* how hard highlights neutralise on a deep tone  */
+  var TONE_WARM = 0.20;    /* how much chroma the shadow end gains           */
+
+  function toneCurve(p) {
+    var lut = photo.ratio || ratioLUT(photo.smean);
+    var tl = 0.2126 * p.r + 0.7152 * p.g + 0.0722 * p.b;
+    var dark = clamp((1 - tl / 255 - 0.18) / 0.62, 0, 1);
+    var k = TONE_DESAT * dark, sh = TONE_WARM * dark;
+    var R = new Float32Array(256), G = new Float32Array(256), B = new Float32Array(256);
+    var i, rr, c;
+    for (i = 0; i < 256; i++) {
+      rr = lut[i];
+      c = rr > 1 ? 1 / (1 + (rr - 1) * k) : 1 + (1 - rr) * sh;
+      c = clamp(c, 0.25, 1.25);
+      R[i] = rr * (c * p.r + (1 - c) * tl);
+      G[i] = rr * (c * p.g + (1 - c) * tl);
+      B[i] = rr * (c * p.b + (1 - c) * tl);
+    }
+    /* the residue is the ORIGINAL hand's chroma, in absolute levels, so on a
+       deep tone it is proportionally far too strong — dialling it back with
+       the same `dark` is what stops the veins reading as orange piping */
+    return { r: R, g: G, b: B, res: 0.45 * (1 - 0.88 * dark * dark) };
+  }
+
   function paintTone(hex) {
     var p = parseHex(hex) || { r: 235, g: 192, b: 160 };
     var w = photo.w, h = photo.h, n = w * h;
-    var src = photo.base, mask = photo.mask, lut = photo.ratio;
+    var src = photo.base, mask = photo.mask, cur = toneCurve(p);
+    var cr = cur.r, cg = cur.g, cb = cur.b, res = cur.res;
     var out = photo.work.ctx.createImageData(w, h);
     var d = out.data;
-    var i, i4, r, g, b, l, k, rr, or_, og, ob;
+    var i, i4, r, g, b, l, li, k, or_, og, ob;
 
     for (i = 0; i < n; i++) {
       i4 = i << 2;
@@ -3758,10 +3864,10 @@
       d[i4 + 3] = 255;
       if (k === 0) { d[i4] = r; d[i4 + 1] = g; d[i4 + 2] = b; continue; }
       l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      rr = lut[l < 0 ? 0 : (l > 255 ? 255 : l | 0)];
-      or_ = p.r * rr + (r - l) * 0.45;
-      og = p.g * rr + (g - l) * 0.45;
-      ob = p.b * rr + (b - l) * 0.45;
+      li = l < 0 ? 0 : (l > 255 ? 255 : l | 0);
+      or_ = cr[li] + (r - l) * res;
+      og = cg[li] + (g - l) * res;
+      ob = cb[li] + (b - l) * res;
       if (or_ < 0) or_ = 0; else if (or_ > 255) or_ = 255;
       if (og < 0) og = 0; else if (og > 255) og = 255;
       if (ob < 0) ob = 0; else if (ob > 255) ob = 255;
@@ -3843,9 +3949,12 @@
   function photoContent(side, design, opts, onFail) {
     var outer = E('g', { 'class': 'sn-photo-body sn-photo-' + side });
     var defs = add(outer, E('defs'));
+    /* the quarter turn wraps everything; inside it the photograph's own frame
+       is untouched, which is why the anchors below need no adjustment */
+    var turn = add(outer, E('g', { 'class': 'sn-photo-turn', transform: photoTurn(side) }));
     /* two hands sit side by side, and each frame is wider than the window it
        is cut to, so without this the second one paints over the first */
-    var g = add(outer, E('g', { 'clip-path': photoClip(defs) }));
+    var g = add(turn, E('g', { 'clip-path': photoClip(defs) }));
     var mirror = side === 'right';
     var shape = shapeId(design.shape);
     var aspect = ASPECT[shape];
@@ -3984,10 +4093,10 @@
     return sizeCrop(svg, opts.w, 1);
   }
 
-  /* the viewBox is the crop window, repeated `n` times across for two hands */
+  /* the viewBox is the turned crop window, repeated `n` times across */
   function sizeCrop(svg, w, n) {
-    var nw = num(w, 0), vw = PHOTO.cw * n, vh = PHOTO.ch;
-    svg.setAttribute('viewBox', f(PHOTO.cx) + ' ' + f(PHOTO.cy) + ' ' + f(vw) + ' ' + f(vh));
+    var v = turnedView(), nw = num(w, 0), vw = v.w * n, vh = v.h;
+    svg.setAttribute('viewBox', f(v.x) + ' ' + f(v.y) + ' ' + f(vw) + ' ' + f(vh));
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     if (nw > 0) {
       svg.setAttribute('width', f(nw));
@@ -4006,11 +4115,11 @@
     return photoOK ? 'photo' : 'vector';
   }
 
-  /* Two hands are laid wrist to wrist: the frame is a left hand with its
-     fingers to the left, so its mirror puts its fingers to the right and the
-     two forearms meet on the crop's own edge — the same column of pixels on
-     both sides of the join, so the seam disappears and the pair reads as one
-     photograph of two hands. */
+  /* Two hands stand side by side, fingers up, wrists at the bottom, thumbs
+     facing each other — the pose every nail photograph uses. The left hand
+     as shot goes on the left, where its thumb points inward; the right hand
+     is that frame reflected in the join between the two windows, so the two
+     halves meet on the same column of pixels and the seam disappears. */
   function photoPreview(d, opts) {
     var svg = newSvg(opts);
     function fail() { degrade(svg, function () { return vectorPreview(d, opts); }); }
@@ -4018,7 +4127,7 @@
       svg.setAttribute('class', 'sn-svg sn-preview sn-photo-preview sn-preview-both');
       inCtx(svg, function () {
         add(svg, photoContent('left', d, opts, fail));
-        add(svg, E('g', { transform: 'translate(' + f(PHOTO.cw) + ' 0)' },
+        add(svg, E('g', { transform: 'translate(' + f(turnedView().w) + ' 0)' },
           [photoContent('right', d, opts, fail)]));
       });
       return sizeCrop(svg, opts.w, 2);
