@@ -316,6 +316,82 @@
   .studio-pane-note{ font-size:.82rem; }
 }
 
+/* ---- photo / illustration switch --------------------------------------- *
+ * One choice with two answers, so it is one radio group: two .sr-only radios
+ * with the paint on their <label>s. It rides in the top corner of the preview
+ * card itself — the picture is what she is judging, so the way of drawing it
+ * belongs on the picture and not down among the step's settings — and it is
+ * deliberately quiet: card surface, one hairline, no fill until it is the
+ * chosen side. `overflow:hidden` on the card keeps it inside the rounded
+ * corner. Hidden outright (never disabled) when the photographs cannot load.
+ */
+.studio-pane-in{ position:relative; }
+
+.studio-view{
+  position:absolute;
+  z-index:2;
+  inset-block-start:9px;
+  inset-inline-end:9px;
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  padding:3px;
+  border-radius:var(--r-full);
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  box-shadow:var(--sh-1);
+}
+.studio-view[hidden]{ display:none !important; }
+
+.studio-view-opt{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding-inline:10px;
+  padding-block:6px;
+  border-radius:var(--r-full);
+  font-size:.72rem;
+  font-weight:800;
+  line-height:1;
+  white-space:nowrap;
+  color:var(--ink-2);
+  cursor:pointer;
+  transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+/* the tap target a thumb actually needs, without moving anything */
+.studio-view-opt::before{
+  content:"";
+  position:absolute;
+  inset:-7px -2px;
+  pointer-events:auto;
+}
+.studio-view-ico{ display:inline-flex; opacity:.7; }
+.studio-view-opt:hover{ color:var(--ink); }
+.studio-view-in:checked + .studio-view-opt{
+  background:var(--rose-soft);
+  color:var(--rose-3);
+}
+.studio-view-in:checked + .studio-view-opt .studio-view-ico{ opacity:1; }
+.studio-view-in:focus-visible + .studio-view-opt{
+  outline:2px solid var(--focus);
+  outline-offset:2px;
+}
+[data-theme="dark"] .studio-view-in:focus-visible + .studio-view-opt{
+  outline-color:var(--rose-3);
+}
+/* On a phone the preview is small and the drawn pair fills its box to the
+   very top, so the switch is given a band of its own instead of sitting on
+   the fingertips: it still rides in the card's corner, the render simply
+   starts below it. English needs the room more than Arabic does — "Photo /
+   Illustration" is the widest this control ever gets. */
+@media (max-width:900px){
+  .studio-view{ inset-block-start:6px; inset-inline-end:6px; padding:2px; }
+  .studio-view-opt{ padding-inline:8px; padding-block:5px; font-size:.68rem; }
+  .studio-stage{ padding-block-start:36px; }
+  .studio-view[hidden] ~ .studio-stage{ padding-block-start:0; }
+}
+
 .studio-body{ min-inline-size:0; }
 .studio-step-host{ display:flex; flex-direction:column; gap:16px; }
 
@@ -1291,6 +1367,7 @@ body[data-page="studio"] #sn-footer{
   .studio-stage,
   .studio-stage svg,
   .studio-skin-dot,
+  .studio-view-opt,
   .studio-opt,
   .studio-charm,
   .studio-progress > i{

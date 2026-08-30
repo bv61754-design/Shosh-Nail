@@ -40,6 +40,15 @@
         stepOf: 'الخطوة {n} من {total}',
         estimate: 'السعر التقديري',
 
+        /* the two ways of drawing her hands (SPEC 9: SN.Nail.preview modes) */
+        viewGroup: 'طريقة العرض',
+        viewPhoto: 'واقعية',
+        viewDrawn: 'مرسومة',
+        viewPhotoFull: 'معاينة واقعية',
+        viewDrawnFull: 'معاينة مرسومة',
+        viewPhotoTip: 'معاينة واقعية — طقمك على يد حقيقية.',
+        viewDrawnTip: 'معاينة مرسومة — تبيّن درجة بشرتك بلونها الصحيح.',
+
         s1: 'البشرة واليد',
         s2: 'الشكل والطول',
         s3: 'المقاسات',
@@ -50,6 +59,8 @@
         /* step 1 */
         skinTitle: 'لون البشرة',
         skinText: 'اختاري الأقرب للون يدك عشان تشوفين التصميم على طبيعته.',
+        skinViewAuto: 'عرضناها لك بالمعاينة المرسومة عشان تطلع الدرجات بلونها الصحيح — وأول ما تختارين درجتك، بتشوفينها على اليد الحقيقية.',
+        skinViewPhoto: 'إضاءة الصورة تغيّر شوي في درجة البشرة؛ لو تبين تشوفينها بلونها الصحيح، حوّلي المعاينة على «مرسومة».',
         handTitle: 'تبين الطقم لأي يد؟',
         handText: 'الطقم الكامل عشرة أظافر لليدين. تقدرين تطلبين يد وحدة لو تبين.',
         handBoth: 'اليدين',
@@ -247,6 +258,14 @@
         stepOf: 'Step {n} of {total}',
         estimate: 'Estimated price',
 
+        viewGroup: 'Preview style',
+        viewPhoto: 'Photo',
+        viewDrawn: 'Illustration',
+        viewPhotoFull: 'Photo preview',
+        viewDrawnFull: 'Illustration preview',
+        viewPhotoTip: 'Photo preview — your set on a real hand.',
+        viewDrawnTip: 'Illustration preview — shows your skin tone in its true colour.',
+
         s1: 'Skin & hand',
         s2: 'Shape & length',
         s3: 'Sizes',
@@ -256,6 +275,8 @@
 
         skinTitle: 'Skin tone',
         skinText: 'Pick the closest match to your hand so the preview looks like the real thing.',
+        skinViewAuto: 'We are showing the illustration here so the tones appear in their true colour — as soon as you pick yours, you will see it on the real hand.',
+        skinViewPhoto: 'Photo lighting shifts the tones a little; switch the preview to Illustration to see them in their true colour.',
         handTitle: 'Which hand is this set for?',
         handText: 'A full set is ten nails for both hands. You can order a single hand instead.',
         handBoth: 'Both hands',
@@ -440,6 +461,7 @@
   var STEP_COUNT = 6;
   var DRAFT_KEY = 'shosh-draft';
   var RECENT_KEY = 'shosh-studio-recent';
+  var VIEW_KEY = 'shosh-studio-view';
   var HIST_MAX = 40;
   var CHARM_MAX = 8;
   var MM_MIN = 7;
@@ -936,6 +958,9 @@
     colorGroup: 'all',
     charmGroup: 'all',
     activeCharm: -1,
+    /* her explicit preview choice ('photo' | 'vector'), or null while she has
+       not said — see section 8b. Never derived from it: read viewMode(). */
+    view: null,
     paneOpen: false,
     clip: null,
     booted: false,
@@ -1278,11 +1303,12 @@
     empty(host);
     live = state.step === 4;
     try {
-      host.appendChild(SN.Nail.preview(state.design, {
+      currentStageMode = viewMode();
+      host.appendChild(SN.Nail.preview(state.design, viewOpts({
         interactive: live,
         selected: live ? state.sel : null,
         onPick: onPickNail
-      }));
+      })));
     } catch (e) {
       console.warn('[SN.Studio] preview failed', e);
     }
@@ -1366,6 +1392,159 @@
       }
     }));
   }
+
+  /* ====================================================================== */
+  /* 8b. Photo or drawing — how the hands are pictured                      */
+  /* ====================================================================== */
+  /* `SN.Nail.preview` can draw the design two ways and they are good at
+     different things:
+       photo   real hands, recoloured towards her tone. It is what sells.
+       vector  the drawn hand. It BUILDS each of the six tones from the tone
+               colour itself instead of pushing a photograph towards it, so on
+               step 1 it is the honest one — and it always works.
+     Photo is the default everywhere except step 1, where she is choosing the
+     tone and needs to see it truthfully. That is a nudge, not a rule: the
+     moment she picks a side herself, `state.view` is set and it wins on every
+     step and every visit. */
+
+  var VIEWS = ['photo', 'vector'];
+
+  /* optimistic exactly like the renderer: true until a photograph fails */
+  function photoUsable() { return !!(SN.Nail && SN.Nail.PHOTO_OK); }
+
+  function viewMode() {
+    if (!photoUsable()) return 'vector';        /* never offer what cannot run */
+    if (state.view) return state.view;
+    return state.step === 1 ? 'vector' : 'photo';
+  }
+
+  /* the options passed to every SN.Nail.preview() in this file */
+  function viewOpts(extra) {
+    var o = extra || {};
+    o.mode = viewMode();
+    return o;
+  }
+
+  function readViewPref() {
+    var v = lsGet(VIEW_KEY);
+    return (v === 'photo' || v === 'vector') ? v : null;
+  }
+
+  /* ---- the control ------------------------------------------------------ *
+   * A two-option radio group, because that is exactly what it is: one choice
+   * with two answers, not two buttons that happen to sit together. Native
+   * <input type=radio> gives us arrow-key roving, the pressed state and the
+   * group semantics for free; the inputs are .sr-only and the <label>s carry
+   * the paint. Built ONCE and only re-labelled afterwards, so switching
+   * language — or switching view — never pulls the focused control out from
+   * under the keyboard.                                                      */
+
+  function buildViewCtl() {
+    var group = el('div', {
+      'class': 'studio-view',
+      role: 'radiogroup',
+      'data-fk': 'view'
+    });
+    var i, id, def;
+    refs.viewInputs = {};
+    refs.viewLabels = {};
+    for (i = 0; i < VIEWS.length; i++) {
+      def = VIEWS[i];
+      id = 'studio-view-' + def;
+      (function (mode, inputId) {
+        var input = el('input', {
+          'class': 'sr-only studio-view-in',
+          type: 'radio',
+          name: 'studio-view',
+          id: inputId,
+          on: {
+            change: function () { if (this.checked) pickView(mode); }
+          }
+        });
+        var label = el('label', { 'class': 'studio-view-opt', 'for': inputId }, [
+          el('span', {
+            'class': 'studio-view-ico',
+            html: icon(mode === 'photo' ? 'image' : 'brush', 15),
+            'aria-hidden': 'true'
+          }),
+          el('span', { 'class': 'studio-view-txt' })
+        ]);
+        refs.viewInputs[mode] = input;
+        refs.viewLabels[mode] = label;
+        group.appendChild(input);
+        group.appendChild(label);
+      }(def, id));
+    }
+    return group;
+  }
+
+  function mountViewCtl() {
+    var host = refs.paneIn;
+    if (!host || refs.view) return;
+    refs.view = buildViewCtl();
+    /* first child: it reads before the picture it describes, and it lets the
+       stage reserve its band with a plain sibling rule when the phone layout
+       stops it floating */
+    host.insertBefore(refs.view, host.firstChild);
+    syncViewCtl();
+  }
+
+  /* labels, tooltips and the checked option, refreshed in place */
+  function syncViewCtl() {
+    var live = viewMode(), on = photoUsable(), i, mode, input, label, full, tip;
+    if (!refs.view) return;
+    refs.view.hidden = !on;                      /* rule 3: gone, not disabled */
+    refs.view.setAttribute('aria-label', t('studio.viewGroup'));
+    if (!on) return;
+    for (i = 0; i < VIEWS.length; i++) {
+      mode = VIEWS[i];
+      input = refs.viewInputs[mode];
+      label = refs.viewLabels[mode];
+      if (!input || !label) continue;
+      full = t(mode === 'photo' ? 'studio.viewPhotoFull' : 'studio.viewDrawnFull');
+      tip = t(mode === 'photo' ? 'studio.viewPhotoTip' : 'studio.viewDrawnTip');
+      input.checked = (mode === live);
+      input.setAttribute('aria-label', full);
+      label.setAttribute('title', tip);
+      label.querySelector('.studio-view-txt').textContent =
+        t(mode === 'photo' ? 'studio.viewPhoto' : 'studio.viewDrawn');
+    }
+  }
+
+  /* Her choice. This is a *view* preference, so it deliberately touches
+     nothing that belongs to the design: no mutate(), no history entry, no
+     draft write, no hash write, no setStep, no scroll. Only the pictures are
+     rebuilt — the stage always, and the review art on step 6 because that
+     <svg> is the one the PNG and the share card are rasterised from. */
+  function pickView(mode) {
+    if (mode !== 'photo' && mode !== 'vector') return;
+    if (state.view === mode) return;
+    state.view = mode;
+    lsSet(VIEW_KEY, mode);
+    renderStage();
+    /* the only two steps whose own content depends on the view: step 1 carries
+       the tone hint, step 6 carries the <svg> the PNG is rasterised from */
+    if (state.step === 1 || state.step === 6) renderStep();
+    syncViewCtl();
+  }
+
+  /* the photographs are fetched and recoloured lazily; if none of them can be
+     had, the control has nothing to offer and takes itself away */
+  function confirmPhotos() {
+    var p;
+    if (!SN.Nail || typeof SN.Nail.preloadPhoto !== 'function') return;
+    try { p = SN.Nail.preloadPhoto(); } catch (e) { p = null; }
+    if (!p || typeof p.then !== 'function') return;
+    p.then(function () {
+      if (photoUsable()) { syncViewCtl(); return; }
+      syncViewCtl();
+      /* she may have been sitting on a view that no longer exists */
+      if (viewMode() !== currentStageMode) renderStage();
+    }, function () { /* the renderer has already fallen back */ });
+  }
+
+  /* what the stage is actually showing, so a late failure can be spotted */
+  var currentStageMode = null;
 
   /* ====================================================================== */
   /* 9. Shared little builders                                              */
@@ -1490,6 +1669,20 @@
   /* 10. Step 1 — skin & hand                                               */
   /* ====================================================================== */
 
+  /* One line beside the tones. The six tones are BUILT from their colour in
+     the drawn view and only approached in the photograph, so this is the one
+     step where the drawing is the truthful one — say so plainly, in whichever
+     direction she currently needs. Silent when there is no choice to make. */
+  function skinViewHint() {
+    if (!photoUsable()) return null;
+    return el('p', { 'class': 'studio-hint studio-view-hint' }, [
+      el('span', { 'class': 'ico', html: icon('sparkle', 16), 'aria-hidden': 'true' }),
+      el('span', {
+        text: t(viewMode() === 'vector' ? 'studio.skinViewAuto' : 'studio.skinViewPhoto')
+      })
+    ]);
+  }
+
   function buildStep1(host) {
     var tones = list('skinTones');
     var nudge = defaultsNote(1);
@@ -1519,7 +1712,7 @@
     }
     if (!tones.length) skins.appendChild(el('p', { 'class': 'muted', text: t('common.empty') }));
 
-    host.appendChild(section('studio.skinTitle', 'studio.skinText', [skins]));
+    host.appendChild(section('studio.skinTitle', 'studio.skinText', [skins, skinViewHint()]));
 
     var hands = el('div', { 'class': 'studio-hands' });
     var opts = [
@@ -3315,7 +3508,9 @@
 
     reviewSvg = null;
     try {
-      reviewSvg = SN.Nail.preview(state.design, { interactive: false });
+      /* the same view she is looking at, so the PNG and the share card show
+         her the picture she chose (rule 6) */
+      reviewSvg = SN.Nail.preview(state.design, viewOpts({ interactive: false }));
       art.appendChild(reviewSvg);
     } catch (e) { /* ignore */ }
 
@@ -3654,6 +3849,7 @@
   function renderAll() {
     renderSteps();
     renderStage();
+    syncViewCtl();
     renderStep();
     renderBar();
   }
@@ -3818,6 +4014,7 @@
     refs.stage = D.getElementById('studio-stage');
     refs.paneFoot = D.getElementById('studio-pane-foot');
     refs.pane = D.getElementById('studio-pane');
+    refs.paneIn = refs.pane ? refs.pane.querySelector('.studio-pane-in') : null;
     refs.step = D.getElementById('studio-step');
     refs.bar = D.getElementById('studio-bar');
     refs.eyebrow = D.getElementById('studio-eyebrow');
@@ -3856,6 +4053,7 @@
 
     state.design = sanitize(blank());
     state.sel = activeKeys(state.design);
+    state.view = readViewPref();
 
     h = parseHash();
     loaded = applyHashDesign(h);
@@ -3881,7 +4079,9 @@
 
     primeProgress();
     mountProgress();
+    mountViewCtl();
     renderAll();
+    confirmPhotos();
 
     if (SN.I18n && SN.I18n.apply) SN.I18n.apply(D);
     if (SN.I18n && SN.I18n.onChange) {
