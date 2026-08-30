@@ -988,6 +988,17 @@
   /* the plate's own light direction, in the plate's local coordinates
      (x across the nail, y from tip to cuticle) */
   function localLight(opts) {
+    /* The drawn hand has one light and every plate borrows it, rotated into
+       the plate's own frame. A PHOTOGRAPH does not work that way — its light
+       is whatever fell on it, and a finger lying at its own angle can end up
+       lit from the other side entirely (the left thumb does). So a caller
+       that has MEASURED the light off the photograph passes it straight in,
+       and the derivation below is only for hands we draw ourselves. */
+    var v = opts && opts.lightVec, n;
+    if (v && (num(v.x, 0) || num(v.y, 0))) {
+      n = Math.sqrt(num(v.x, 0) * num(v.x, 0) + num(v.y, 0) * num(v.y, 0)) || 1;
+      return { x: num(v.x, 0) / n, y: num(v.y, 0) / n };
+    }
     var a = rad(num(opts && opts.light, 0));
     var mx = (opts && opts.mirror) ? -LIGHT.x : LIGHT.x;
     var my = LIGHT.y;
@@ -4225,8 +4236,23 @@
    *           HAND_GEOM uses, so the placement transform is identical to    *
    *           the one the drawn hand uses for its plates.                   *
    *   width   the finger's width at the nail bed (fraction of photo width)  *
+   *   bed     the NATURAL NAIL's width at its widest, same unit. This, not  *
+   *           `width`, is what sizes the plate — a press-on is fitted to    *
+   *           the nail, not to the finger, and sizing it off the finger is  *
+   *           what made the plates hang over the sides into the background. *
+   *           Measured off each photograph by straightening every fingertip *
+   *           along its own axis and reading the nail's lateral folds:      *
+   *           two thirds of the finger's width on the four fingers, and     *
+   *           much less on the thumbs, which are seen obliquely.            *
    *   tip     cuticle -> the very end of the fingertip. A press-on always   *
    *           clears the flesh, so this is the floor under a short plate.   *
+   *   lx, ly  the PHOTOGRAPH'S OWN LIGHT, in this plate's frame: +x across  *
+   *           the nail toward the right wall, +y from the free edge toward  *
+   *           the cuticle. Fitted as the luminance gradient over each real  *
+   *           nail bed. Every finger is lit from its +x side; the LEFT      *
+   *           thumb is the one digit lit from the other side, and a single  *
+   *           global light vector rotated into each plate got that one      *
+   *           backwards, which is why its highlight sat on the wrong wall.  *
    *   fore    OPTIONAL foreshortening, default 1: how much of the plate's   *
    *           length survives projection. Only a digit whose nail tilts     *
    *           away from the camera needs it. See photoContent.             *
@@ -4238,11 +4264,14 @@
    * pair reading as one picture and its reflection.                         *
    * ---------------------------------------------------------------------- */
   var PHOTO_ANCHOR = {
-    thumb:  { x: 0.5451, y: 0.1636, angle: -53.5, width: 0.0777, tip: 0.0850 },
-    index:  { x: 0.2340, y: 0.2849, angle: -81.2, width: 0.0718, tip: 0.0541 },
-    middle: { x: 0.1622, y: 0.4501, angle: -84.8, width: 0.0728, tip: 0.0546 },
-    ring:   { x: 0.1986, y: 0.6079, angle: -82.4, width: 0.0659, tip: 0.0546 },
-    pinky:  { x: 0.2970, y: 0.7942, angle: -88.5, width: 0.0580, tip: 0.0398 }
+    /* the thumb's cuticle was a third of a finger-width too far back and its
+       plate was sized off the whole thumb, so it sat across the knuckle and
+       hung off into the cloth. Re-read off the straightened thumb. */
+    thumb:  { x: 0.5197, y: 0.1489, angle: -56.1, width: 0.0777, bed: 0.0364, tip: 0.0637, lx: -0.94, ly: -0.34 },
+    index:  { x: 0.2340, y: 0.2849, angle: -81.2, width: 0.0718, bed: 0.0474, tip: 0.0541, lx:  1.00, ly: -0.01 },
+    middle: { x: 0.1624, y: 0.4464, angle: -84.8, width: 0.0728, bed: 0.0472, tip: 0.0546, lx: 1, ly: -0.06 },
+    ring:   { x: 0.199, y: 0.6037, angle: -82.4, width: 0.0659, bed: 0.0435, tip: 0.0546, lx: 1, ly: -0.07 },
+    pinky:  { x: 0.2971, y: 0.7889, angle: -88.5, width: 0.058, bed: 0.0387, tip: 0.0398, lx: 0.87, ly: 0.48 }
   };
 
   /* The right hand, in hand-real-right.jpg. Its thumb is at the BOTTOM of
@@ -4255,11 +4284,11 @@
      and the thumb went in by eye, because it lies flatter than the left one
      and its nail tilts away — which is what `fore` is for. */
   var PHOTO_ANCHOR_RIGHT = {
-    thumb:  { x: 0.5255, y: 0.8230, angle: -124.0, width: 0.0700, tip: 0.0697, fore: 0.85 },
-    index:  { x: 0.2699, y: 0.6059, angle: -88.1, width: 0.0674, tip: 0.0560 },
-    middle: { x: 0.2298, y: 0.4485, angle: -84.8, width: 0.0694, tip: 0.0550 },
-    ring:   { x: 0.2947, y: 0.3189, angle: -81.4, width: 0.0656, tip: 0.0527 },
-    pinky:  { x: 0.4098, y: 0.1936, angle: -74.3, width: 0.0573, tip: 0.0384 }
+    thumb:  { x: 0.5031, y: 0.8209, angle: -121.3, width: 0.07, bed: 0.0364, tip: 0.0567, lx: 0.99, ly: 0.11, fore: 0.85 },
+    index:  { x: 0.2699, y: 0.6059, angle: -88.1, width: 0.0674, bed: 0.0445, tip: 0.0560, lx: 1.00, ly: -0.03 },
+    middle: { x: 0.23, y: 0.4455, angle: -84.8, width: 0.0694, bed: 0.0458, tip: 0.055, lx: 1, ly: 0.07 },
+    ring:   { x: 0.2951, y: 0.3157, angle: -81.4, width: 0.0656, bed: 0.0433, tip: 0.0527, lx: 1, ly: -0.07 },
+    pinky:  { x: 0.4105, y: 0.1905, angle: -74.3, width: 0.0573, bed: 0.0361, tip: 0.0384, lx: 1, ly: 0.08 }
   };
 
   var PHOTO_ANCHORS = { left: PHOTO_ANCHOR, right: PHOTO_ANCHOR_RIGHT };
@@ -4315,9 +4344,12 @@
            'translate(' + f(def.cy + def.ch) + ' ' + f(-def.cx) + ')';
   }
 
-  /* A press-on is not as wide as the finger: its side walls stop just inside
-     the skin folds, or it looks like a sticker laid over the knuckle. */
-  var PHOTO_PLATE_W = 0.82;
+  /* A press-on is fitted to the NAIL, not to the finger. It covers the nail
+     plate edge to edge and a whisker of the fold — that whisker is this
+     number, and everything else about its width comes from anchor.bed. Sized
+     off the finger instead, as this used to be, the plate reaches the skin's
+     own silhouette and the eye reads a sticker lying on a photograph. */
+  var PHOTO_PRESS_OVER = 1.06;
   /* the tip of a plate always clears the flesh by this much */
   var PHOTO_TIP_CLEAR = 1.03;
 
@@ -4821,35 +4853,54 @@
         y: a.y * def.h,
         angle: m ? -a.angle : a.angle,
         width: a.width * def.w,
+        bed: a.bed * def.w,
         tip: a.tip * def.w,
+        /* a mirrored stand-in reflects the light with the hand */
+        lx: (m ? -1 : 1) * num(a.lx, 0),
+        ly: num(a.ly, 0),
         fore: num(a.fore, 1)
       });
     }
     return out;
   }
 
-  /* A press-on does not float: it casts a hairline seam where its walls meet
-     the skin and a soft drop under the free edge, which overhangs the flesh
-     entirely. Both are drawn in the plate's own frame, with the photo's key
-     light (up and to the left) rotated into it. */
-  function contactShadow(defs, d, w, h, ang, mirror, q) {
-    var s = w * 0.085;
-    var ox = (mirror ? LIGHT.x : -LIGHT.x) * s;   /* world, away from the light */
-    var oy = -LIGHT.y * s;
-    var c = Math.cos(rad(ang)), sn = Math.sin(rad(ang));
-    var lx = c * ox + sn * oy;
-    var ly = -sn * ox + c * oy;
+  /* A press-on does not float. Two things stop it, and neither is a drop
+     shadow in the graphic-design sense:
+
+       THE SEAM. The wall of the shell meets the skin at a hard angle, and
+       along the wall facing away from the light that join is a dark HAIRLINE
+       — tight, no more than a couple of percent of the plate's width, and
+       darker than any part of the plate. It is small and it does almost all
+       of the work: it is the only thing in the picture that says the plate
+       has a thickness and that the skin is underneath it rather than behind.
+
+       THE DROP. Past the fingertip the plate overhangs into thin air, and
+       whatever is behind the hand catches its shadow. Same silhouette, softer,
+       further out. Over the finger this same shadow lands on skin, which is
+       correct — it is one object and one light.
+
+     Both are drawn in the plate's own frame with the light the caller
+     measured, so the left thumb — the one digit in either photograph lit from
+     its other side — throws its seam the other way like it should. */
+  function contactShadow(defs, d, w, h, L, q) {
+    var s = w * 0.055;
+    var ox = -L.x * s, oy = -L.y * s;
     var g = E('g', { 'class': 'sn-plate-shadow', 'pointer-events': 'none' });
+    /* The drop. Barely bigger than the plate — the size is in the OFFSET, not
+       in a scale-up. Grown instead of moved it becomes a halo all the way
+       round, and a halo is a sticker's outline, which is the opposite of what
+       this is for. */
     add(g, E('g', {
-      transform: 'translate(' + f(lx * 1.7) + ' ' + f(ly * 1.7) + ') ' +
-                 'translate(' + f(w / 2) + ' ' + f(h / 2) + ') scale(1.045) ' +
+      transform: 'translate(' + f(ox * 2.6) + ' ' + f(oy * 2.6) + ') ' +
+                 'translate(' + f(w / 2) + ' ' + f(h / 2) + ') scale(1.018) ' +
                  'translate(' + f(-w / 2) + ' ' + f(-h / 2) + ')',
-      filter: blurF(defs, Math.max(1.2, w * 0.055 * q))
-    }, [E('path', { d: d, fill: '#20130F', opacity: 0.42 })]));
+      filter: blurF(defs, Math.max(1.0, w * 0.07 * q))
+    }, [E('path', { d: d, fill: '#1B0F0C', opacity: 0.34 })]));
+    /* The seam. Offset far enough that it only ever shows on ONE side. */
     add(g, E('g', {
-      transform: 'translate(' + f(lx * 0.45) + ' ' + f(ly * 0.45) + ')',
-      filter: blurF(defs, Math.max(0.6, w * 0.018))
-    }, [E('path', { d: d, fill: '#2C1A16', opacity: 0.34 })]));
+      transform: 'translate(' + f(ox * 1.05) + ' ' + f(oy * 1.05) + ')',
+      filter: blurF(defs, Math.max(0.4, w * 0.022))
+    }, [E('path', { d: d, fill: '#23120E', opacity: 0.4 })]));
     return g;
   }
 
@@ -4879,7 +4930,7 @@
     var frame = E('g', { 'class': 'sn-photo-frame' });
     var tiles = photos[plan.src].tiles ||
                 (photos[plan.src].tiles = photoTiles(def));
-    var i, an, nw, nh, key, el, wrap, t;
+    var i, an, nw, nh, key, el, wrap, t, lv;
 
     /* the photograph, plus itself mirrored about whichever of its own edges
        the window reaches past, so the crop never shows a hole */
@@ -4897,7 +4948,7 @@
     for (i = 0; i < anchors.length; i++) {
       an = anchors[i];
       key = plan.side + an.finger.charAt(0).toUpperCase() + an.finger.slice(1);
-      nw = an.width * PHOTO_PLATE_W;
+      nw = an.bed * PHOTO_PRESS_OVER;
       /* `fore` is foreshortening, and only the thumbs ever need it: a digit
          lying with its nail tilted away from the camera keeps its full width
          but loses length, so the same press-on projects shorter on it. Without
@@ -4913,10 +4964,12 @@
         transform: 'translate(' + f(an.x) + ' ' + f(an.y) + ') rotate(' + f(an.angle) + ') ' +
                    'translate(' + f(-nw / 2) + ' ' + f(-nh) + ')'
       });
-      add(wrap, contactShadow(defs, path(shape, nw, nh), nw, nh, an.angle, plan.mirror, q));
+      lv = { x: an.lx, y: an.ly };
+      add(wrap, contactShadow(defs, path(shape, nw, nh), nw, nh, localLight({ lightVec: lv }), q));
       el = nailSVG(design.nails[key], {
         shape: shape, w: nw, h: nh, key: key, mirror: false,
-        light: an.angle,
+        /* measured off the photograph, not derived from a global light */
+        lightVec: lv,
         detail: q,
         finishId: design.nails[key] ? design.nails[key].finish : null,
         interactive: !!opts.interactive,
