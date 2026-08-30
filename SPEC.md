@@ -46,6 +46,7 @@ assets/js/store.js  state+storage     (owner: CORE)
 assets/js/i18n.js   language          (owner: CORE)
 assets/js/ui.js     shell+widgets     (owner: CORE)
 assets/js/nail-art.js     nail-art decorations (owner: ART)
+assets/js/nail-gloss.js   measured nail surface (owner: RENDER)
 assets/js/nail-render.js  SVG engine  (owner: RENDER)
 assets/js/checkout.js  price+order    (owner: CHECKOUT)
 assets/js/home.js                     (owner: HOME)
@@ -62,6 +63,7 @@ assets/js/admin.js                    (owner: ADMIN)
 <script defer src="assets/js/store.js"></script>
 <script defer src="assets/js/i18n.js"></script>
 <script defer src="assets/js/nail-art.js"></script>
+<script defer src="assets/js/nail-gloss.js"></script>
 <script defer src="assets/js/nail-render.js"></script>
 <script defer src="assets/js/ui.js"></script>
 <script defer src="assets/js/checkout.js"></script>
@@ -262,7 +264,10 @@ SN.Nail.SHAPES = ['almond','coffin','stiletto','square','squoval','round','oval'
 SN.Nail.KEYS   = [...10 keys...];
 SN.Nail.FINGERS= [...];
 SN.Nail.path(shapeId, w, h)                 // -> 'd' string, box (0,0)-(w,h), tip at y=0, cuticle at y=h
-SN.Nail.nailSVG(nailState, opts)            // opts:{shape,length,w,h,finishId,id} -> <g> element
+SN.Nail.nailSVG(nailState, opts)            // opts:{shape,length,w,h,finishId,id,gloss} -> <g> element
+                                            //  gloss: lay the measured surface (SN.Gloss) over the
+                                            //  plate. Defaults to detail >= 0.62; pass false on
+                                            //  anything under ~60px, it is 8 KB of data URI.
 SN.Nail.hand(opts)                          // {side:'right'|'left', design, w, interactive:bool,
                                             //  selected:[keys], onPick(key,ev)} -> <svg>
 SN.Nail.preview(design, opts)               // {w, interactive, selected, onPick} -> <svg> of chosen hand(s)
@@ -281,6 +286,14 @@ Requirements:
   `tabindex="0"`, `role="button"`, `aria-label`, `cursor:pointer`, plus `.is-selected` styling hook
   (a stroke drawn by RENDER itself, not CSS, so PNG export keeps/drops it — export must pass
   `interactive:false`).
+- The measured surface (`SN.Gloss`, nail-gloss.js) is the diffuse shading of one real press-on from
+  the shop, separated from its own colour so `out = colour x shade` works for every colour. It is laid
+  over the plate as ONE `<image>` per `<svg>` root, referenced by a `<use>` per nail with
+  `mix-blend-mode:multiply`, seeded-nudged per nail so ten fingers are not ten identical surfaces.
+  The clipped plate group carries `isolation:isolate` so the blend never reaches the finger under it.
+  The drawn specular's size, brightness and edge hardness are measured off the same photograph;
+  its POSITION stays with the light, because a photograph of one nail in one pose cannot know
+  where a finger is pointing.
 - Finishes: `gloss` = white highlight blob + soft rim; `matte` = no highlight, slight noise-free flat;
   `glitter` = many tiny circles with varying opacity seeded deterministically from the nail key
   (NO Math.random — use a small seeded PRNG so re-render is stable);

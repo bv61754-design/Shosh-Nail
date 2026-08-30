@@ -2338,22 +2338,38 @@
 
   /* the hot spot + the broad reflection, both placed by the light vector and
      both squeezed toward the bright line of the C-curve */
+  /* SIZE, BRIGHTNESS AND EDGE ARE MEASURED. The reflection on the shop's own
+     nail (see nail-gloss.js) covers about a third of the width and a fifth of
+     the length, peaks at three quarters of pure white, and climbs from nothing
+     to two thirds of that peak across two per cent of the nail. That last
+     number is the whole difference between "wet" and "airbrushed": a drawn
+     highlight is nearly always too big and too soft, and a soft-edged white
+     cloud on a nail reads as fog, not as glass. Where it goes is still the
+     light's business — a photograph of one nail in one pose cannot know where
+     a finger is pointing. */
   function specular(g, x, strength) {
     var peak = clamp(0.5 + x.L.x * 0.18, 0.22, 0.78);
     var hy = clamp(0.34 + x.L.y * 0.09, 0.12, 0.52);
     var bx = peak * x.w, by = hy * x.h;
-    var rw = x.w * 0.20, rh = Math.min(x.h * 0.22, x.w * 0.36);
-    /* the broad, soft reflection — long, because the nail is a cylinder */
+    var rw = x.w * 0.125, rh = Math.min(x.h * 0.123, x.w * 0.22);
+    /* The wet band. A nail is a section of a CYLINDER, so it smears whatever
+       it reflects ALONG its own length — which is why this is taller than it
+       is wide even though the measurement, taken at the flat cuticle end of a
+       nail lying on cloth, came out the other way round. Area and brightness
+       are the measured ones; the elongation is the geometry. */
     add(g, E('ellipse', {
       cx: f(bx), cy: f(by + rh * 0.35), rx: f(rw), ry: f(rh * 1.5),
       fill: radGrad(x.defs, [
-        [0, '#FFFFFF', f(0.62 * strength)], [0.5, '#FFFFFF', f(0.24 * strength)], [1, '#FFFFFF', 0]
+        [0, '#FFFFFF', f(0.70 * strength)],
+        [0.42, '#FFFFFF', f(0.52 * strength)],
+        [0.72, '#FFFFFF', f(0.17 * strength)],
+        [1, '#FFFFFF', 0]
       ]),
       transform: 'rotate(' + f(x.L.x * 14) + ' ' + f(bx) + ' ' + f(by + rh * 0.35) + ')'
     }));
     /* the hot spot: small and hard, this is what says "wet" */
     add(g, E('ellipse', {
-      cx: f(bx - x.w * 0.028), cy: f(by - rh * 0.34), rx: f(x.w * 0.055), ry: f(rh * 0.28),
+      cx: f(bx - x.w * 0.026), cy: f(by - rh * 0.42), rx: f(x.w * 0.042), ry: f(rh * 0.30),
       fill: radGrad(x.defs, [
         [0, '#FFFFFF', f(1 * strength)], [0.5, '#FFFFFF', f(0.9 * strength)],
         [0.8, '#FFFFFF', f(0.28 * strength)], [1, '#FFFFFF', 0]
@@ -2695,6 +2711,87 @@
   }
 
   /* ====================================================================== */
+  /* 8b. The measured surface                                               */
+  /*                                                                         */
+  /*  Every other layer in this file is drawn. This one is measured. SN.Gloss */
+  /*  (nail-gloss.js) is the diffuse shading of one real press-on from the    */
+  /*  shop, photographed and separated from its own pink, so that             */
+  /*  out = colour x shade puts a real surface under whichever colour the     */
+  /*  customer picked. Its striations, its milky depth and the bright band    */
+  /*  down its length are things no gradient was going to invent.             */
+  /*                                                                         */
+  /*  It is stretched over the plate box and clipped to the real outline. It  */
+  /*  was warped row by row out of the photographed nail's silhouette into a  */
+  /*  plain rectangle first, so "across the nail" means the same thing on a   */
+  /*  stiletto as on a square.                                                */
+  /*                                                                         */
+  /*  Strength is per finish, and it is not a dimmer on one effect: a matte   */
+  /*  nail keeps ALL of the form the photograph measured and loses only the   */
+  /*  highlight, which is drawn separately — that is what matte is.           */
+  /* ====================================================================== */
+
+  var GLOSS_MIX = {
+    gloss: 0.95, jelly: 0.78, glitter: 0.72, chrome: 0.45, matte: 0.62, velvet: 0.5
+  };
+  function glossMix(kind) {
+    var v = GLOSS_MIX[kind];
+    return typeof v === 'number' ? v : GLOSS_MIX.gloss;
+  }
+
+  /* One <image> per SVG root, referenced by every nail on it. The maps are
+     data: URIs about 18 KB together, and ten copies of that in the markup was
+     the whole reason this goes through shared()/<use> instead of ten <image>
+     elements. */
+  function glossImg(defs, which) {
+    var G = SN.Gloss, uri = G && G[which];
+    if (typeof uri !== 'string' || !uri) return null;
+    return shared(defs, 'glossimg|' + which, function (dd) {
+      var id = uid('gl');
+      add(dd, E('image', {
+        id: id, x: 0, y: 0, width: 1, height: 1,
+        preserveAspectRatio: 'none', href: uri, 'xlink:href': uri
+      }));
+      return id;
+    });
+  }
+
+  /* Returns how much of the photographic specular actually landed, so the
+     vector highlight downstream can get out of its way instead of adding a
+     second, drawn hot spot next to the measured one. */
+  function photoGloss(host, x, kind) {
+    var id, tf, r = x.rnd, sc, dx, dy, a;
+    if (!x.on) return;
+    id = glossImg(x.defs, 'shade');
+    if (!id) return;
+
+    /* ONE measurement on ten fingers would put the same surface at the same
+       angle on every nail of the hand, and ten identical anythings is the
+       single most artificial thing a render can do — real fingers each sit at
+       their own small angle. So each nail gets its own seeded nudge: a little
+       scale, a little offset, a degree or two of tilt. Seeded, so the same
+       nail is the same nail on every repaint.
+       The map is laid down oversized (1.09) on purpose: after the nudge it
+       still covers the whole plate, and a multiply layer that stops short
+       leaves a seam exactly where the silhouette is. */
+    sc = 1.09 + r() * 0.07;
+    dx = (r() - 0.5) * x.w * 0.07;
+    dy = (r() - 0.5) * x.h * 0.05;
+    a  = (r() - 0.5) * 5;
+    /* The photograph was lit from the upper left. When the finger's own
+       rotation puts this nail's light on the other side, the measurement has
+       to turn round with it or half the hand is lit from the wrong way. */
+    tf = 'translate(' + f(x.w / 2 + dx) + ' ' + f(x.h / 2 + dy) + ') ' +
+         'rotate(' + f(a) + ') ' +
+         'scale(' + f((x.L.x > 0 ? -1 : 1) * x.w * sc) + ' ' + f(x.h * sc) + ') ' +
+         'translate(-0.5 -0.5)';
+
+    add(host, E('use', {
+      href: '#' + id, 'xlink:href': '#' + id, transform: tf,
+      opacity: f(x.mix * (0.94 + r() * 0.12)), style: 'mix-blend-mode:multiply'
+    }));
+  }
+
+  /* ====================================================================== */
   /* 9. One nail plate — a curved, glossy, slightly translucent object       */
   /*                                                                         */
   /*  Bottom to top, and every layer obeys the one light:                     */
@@ -2724,6 +2821,7 @@
     var h = num(opts.h, 0);
     var key, u, kind, d, g, defs, clipId, plate, pg, fg, fn, i, ring, hover, sel, cls, onPick;
     var L, q, peak, ybright, tipD, body, jelly, clipG, glow, wallLit, wallDark;
+    var gDamp, gd, gOn;
 
     if (!(w > 0)) w = NAIL_BOX.w;
     if (!(h > 0)) h = w * ASPECT[s] * lenFactor(opts.length);
@@ -2795,13 +2893,26 @@
     /* --- 1..3. the plate body -------------------------------------------- */
     peak = clamp(0.5 + L.x * 0.20, 0.22, 0.78);
     ybright = clamp(0.28 + L.y * 0.12, 0.10, 0.52);
+    /* how much of the plate's form the photograph is about to supply */
+    /* The three-nail fan on a shop card is 30 px across; there the maps are
+       18 KB of data URI per card and not one visible pixel, so the callers
+       that want them say so. Everything that draws a nail big enough to look
+       at does. */
+    gOn = (opts.gloss === undefined || opts.gloss === null ? q >= 0.62 : !!opts.gloss)
+      && !!(SN.Gloss && typeof SN.Gloss.shade === 'string');
+    gDamp = gOn ? glossMix(kind) : 0;
     tipD = clamp(0.055 + 0.035 * (w * 1.55 / h), 0.04, 0.13);
 
     /* One clip application for the whole plate. Clipping turned out to be the
        most expensive thing on the page at ten nails — far more than the
        filters — so every layer that needs the silhouette shares a single
        clipped group instead of asking for its own. */
-    clipG = add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }));
+    /* isolation: the multiply/screen layers of the measured topcoat must
+       blend against the plate and nothing else — without this they would
+       reach through to the finger photograph underneath. */
+    clipG = add(g, E('g', {
+      'clip-path': 'url(#' + clipId + ')', style: 'isolation:isolate'
+    }));
     body = add(clipG, E('g', jelly ? { opacity: 0.87 } : null));
     plate = body;
 
@@ -2821,16 +2932,20 @@
       ])
     }));
 
-    /* 2. lengthwise form */
+    /* 2. lengthwise form. When the measured topcoat is coming (photoGloss,
+       below) it already carries this — it was photographed off a nail that
+       had it — so the drawn version steps down instead of shading twice and
+       turning the middle of the plate to mud. */
+    gd = 1 - 0.40 * gDamp;
     add(plate, E('path', {
       d: d,
       fill: vGrad(defs, [
-        [0, '#FFFFFF', 0.10],
+        [0, '#FFFFFF', f(0.10 * gd)],
         [f(Math.max(0.03, ybright - 0.12)), '#FFFFFF', 0],
-        [f(ybright), '#FFFFFF', 0.13],
+        [f(ybright), '#FFFFFF', f(0.13 * gd)],
         [f(Math.min(0.72, ybright + 0.28)), '#FFFFFF', 0],
-        [0.82, '#150C10', 0.06],
-        [1, '#150C10', 0.20]
+        [0.82, '#150C10', f(0.06 * gd)],
+        [1, '#150C10', f(0.20 * gd)]
       ])
     }));
 
@@ -2879,6 +2994,12 @@
         ])
       }));
     }
+
+    /* --- 4b. the measured topcoat, over the colour and over the art ------- */
+    photoGloss(clipG, {
+      w: w, h: h, on: gOn, L: L, defs: defs, mix: gDamp,
+      rnd: seeded(key + '|gloss|' + s)
+    }, kind);
 
     /* --- 5. finish -------------------------------------------------------- */
     fn = FINISHES[kind] || FINISHES.gloss;
@@ -3618,6 +3739,7 @@
            where it now is — and on the mirrored hand, told again */
         light: mirror ? -gm.angle : gm.angle,
         detail: q,
+        gloss: true,
         finishId: design.nails[key] ? design.nails[key].finish : null,
         shadow: darken(sh, 0.22),
         interactive: !!opts.interactive,
@@ -3871,6 +3993,12 @@
         shape: shape, w: bw, h: bh, key: key,
         finishId: opts.finishId,
         detail: clamp(num(opts.detail, 1), 0.25, 1),
+        /* The studio's option grids are full of 64px samples — a shape picker,
+           a length picker, forty-odd colour chips. Each one carrying its own
+           copy of the measured map is half a megabyte of data URI for detail
+           nobody can see at that size, so the map starts at the size where it
+           starts to show. */
+        gloss: (opts.gloss === undefined || opts.gloss === null) ? (bh >= 110) : !!opts.gloss,
         shadow: finger ? darken(skinShadow(d.skin), 0.22) : null,
         bed: finger ? mix(d.skin, '#E1898C', 0.30) : null,
         interactive: !!opts.interactive,
