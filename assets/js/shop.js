@@ -33,7 +33,8 @@
         /* hero pills */
         countN: '{n} تصميم معروض',
         fromPrice: 'الأسعار تبدأ من {p}',
-        madeN: 'أكثر من {n} طلب منفّذ',
+        topOne: 'الأكثر طلباً: {name} · {n} طلب',
+        quizCta: 'ما تدرين وش يناسبك؟ سوّي اختبار الستايل',
 
         /* rail */
         topEyebrow: 'اختيارات العميلات',
@@ -72,10 +73,12 @@
 
         /* cards */
         ordersN: '{n} طلب',
+        hotBadge: 'الأكثر طلباً',
         order: 'اطلبيه',
         orderNow: 'اطلبيه الآن',
         customize: 'خصّصيه',
-        customizeLong: 'خصّصي هذا التصميم',
+        customizeLong: 'افتحيه وغيّري فيه',
+        customizeHint: 'كل شي في هذا الطقم يتغيّر — اللون والشكل والطول والزخرفة — وتشوفين كل تعديل قدّامك على طول.',
         openDetails: 'افتحي تفاصيل «{name}»',
 
         /* empty states */
@@ -91,6 +94,21 @@
         qvTotal: 'الإجمالي',
         qvNote: 'السعر شامل الشحن والضريبة إن وجدت، ويتحدث مع كل تغيير.',
         qvPreviewAlt: 'معاينة تصميم «{name}»',
+
+        /* what she actually gets — every line read off the design itself */
+        qvIncludes: 'وش يجيك في هذا الطقم؟',
+        incNails: '{n} أظافر مجهّزة بمقاسك',
+        incShape: 'شكل {name}',
+        incLength: 'طول {name}',
+        incFinish: 'لمسة {name}',
+        incNails1: 'ظفر واحد مجهّز بمقاسك',
+        incPattern1: 'نقشة مرسومة يدويًا على ظفر واحد',
+        incPattern2: 'نقشة مرسومة يدويًا على ظفرين',
+        incPattern: 'نقشة مرسومة يدويًا على {n} أظافر',
+        incCharms1: 'زخرفة وحدة مركّبة باليد',
+        incCharms2: 'زخرفتين مركّبتين باليد',
+        incCharms: '{n} زخرفة مركّبة وحدة وحدة',
+        incPlain: 'لون سادة على كل الأظافر',
 
         /* tags */
         tag: {
@@ -126,7 +144,8 @@
 
         countN: '{n} designs on show',
         fromPrice: 'Prices from {p}',
-        madeN: 'Over {n} sets made',
+        topOne: 'Most ordered: {name} · {n} orders',
+        quizCta: 'Not sure what suits you? Take the style quiz',
 
         topEyebrow: 'Customer favourites',
         topTitle: 'Most ordered',
@@ -162,10 +181,12 @@
         resultsN: 'Showing {n} of {total} designs',
 
         ordersN: '{n} orders',
+        hotBadge: 'Most ordered',
         order: 'Order it',
         orderNow: 'Order it now',
         customize: 'Customise',
-        customizeLong: 'Customise this design',
+        customizeLong: 'Open it and change it',
+        customizeHint: 'Everything in this set can change — colour, shape, length, decoration — and you see every change the moment you make it.',
         openDetails: 'Open the details for “{name}”',
 
         emptyTitle: 'Nothing matches that yet',
@@ -179,6 +200,20 @@
         qvTotal: 'Total',
         qvNote: 'The total includes shipping and VAT where they apply, and updates with every change.',
         qvPreviewAlt: 'Preview of the “{name}” design',
+
+        qvIncludes: 'What comes in this set',
+        incNails: '{n} nails made to your own sizes',
+        incShape: '{name} shape',
+        incLength: '{name} length',
+        incFinish: '{name} finish',
+        incNails1: 'One nail made to your own size',
+        incPattern1: 'A hand-painted pattern on one nail',
+        incPattern2: 'A hand-painted pattern on two nails',
+        incPattern: 'Hand-painted pattern on {n} nails',
+        incCharms1: 'One charm placed by hand',
+        incCharms2: 'Two charms placed by hand',
+        incCharms: '{n} charms placed one by one',
+        incPlain: 'One solid colour across every nail',
 
         tag: {
           bridal: 'Bridal',
@@ -743,6 +778,13 @@
       if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
       nowOn = favToggle(id);
       toast(t(nowOn ? 'shop.favOn' : 'shop.favOff'), 'ok');
+      /* a small win, felt where she tapped — base.css clears .sn-pulse
+         itself, so re-arm it by taking the class off and putting it back */
+      if (nowOn && btn.classList) {
+        btn.classList.remove('sn-pulse');
+        /* reading offsetWidth forces the removal to land before the re-add */
+        if (btn.offsetWidth >= 0) btn.classList.add('sn-pulse');
+      }
       /* a favourites-only view must drop the card it just lost */
       if (st.fav) render();
       else {
@@ -778,16 +820,27 @@
   }
 
   /* The catalogue card. HOME renders the same tree for its "most ordered"
-     strip — keep the class list and the node order in step. */
-  function designCard(item) {
+     strip — keep the class list and the node order in step.
+     `hot` is true for the three designs with the highest real order count;
+     nothing on this page invents scarcity or a deadline. */
+  function designCard(item, hot) {
     var id = String(item.id || '');
     var name = pick(item.name);
     var orders = Math.max(0, Math.round(numOf(item.orders, 0)));
     var media = mediaBox(item, THUMB_PX);
     var foot = [];
-    var nameLink;
+    var nameLink, badge = null;
 
     media.addEventListener('click', openFromEvent(id), false);
+
+    /* the badge is a child of .card, not of .card-media: base.css gives
+       `.card-media > *` position:relative, which would cancel .badge-float */
+    if (hot) {
+      badge = el('span', { 'class': 'badge badge-hot badge-float' }, [
+        el('span', { html: icon('star', 13), 'aria-hidden': 'true' }),
+        el('span', { text: t('shop.hotBadge') })
+      ]);
+    }
 
     foot.push(el('span', { 'class': 'card-price price', text: money(numOf(item.price, 0)) }));
     if (orders > 0) {
@@ -802,8 +855,9 @@
     });
     nameLink.addEventListener('click', openFromEvent(id), false);
 
-    return el('article', { 'class': 'card shop-card shop-in', 'data-id': id }, [
+    return el('article', { 'class': 'card shop-card', 'data-id': id }, [
       media,
+      badge,
       favButton(item),
       el('div', { 'class': 'card-b' }, [
         el('h3', { 'class': 'card-t' }, [nameLink]),
@@ -817,11 +871,15 @@
             text: t('shop.order'),
             on: { click: function () { orderReady(item); } }
           }),
+          /* the brush says what the word cannot in three characters: this
+             one is not a fixed product, it is a starting point */
           el('a', {
             'class': 'btn btn-ghost btn-sm',
-            href: 'design.html#load=' + encodeURIComponent(id),
-            text: t('shop.customize')
-          })
+            href: 'design.html#load=' + encodeURIComponent(id)
+          }, [
+            el('span', { html: icon('brush', 15), 'aria-hidden': 'true' }),
+            el('span', { text: t('shop.customize') })
+          ])
         ])
       ])
     ]);
@@ -888,6 +946,93 @@
     if (svg) box.appendChild(svg);
     else box.appendChild(el('span', { 'class': 'muted small', text: t('common.empty') }));
     return box;
+  }
+
+  /* ── what is in the box ────────────────────────────────────────────────
+     Read off the design object itself, so it can never over-promise: if the
+     owner edits a set down to a plain single colour, this list says so. */
+
+  function nameOfItem(coll, id, fb) {
+    var it = SN.Store && typeof SN.Store.find === 'function' ? SN.Store.find(coll, id) : null;
+    if (!it) {
+      /* Store.find is the fast path; fall back to a scan for a partial store */
+      var arr = list(coll), i;
+      for (i = 0; i < arr.length; i++) {
+        if (arr[i] && String(arr[i].id) === String(id)) { it = arr[i]; break; }
+      }
+    }
+    return it ? pick(it.name) : (fb || '');
+  }
+
+  function includesOf(item) {
+    var cfg = (item && typeof item.config === 'object' && item.config) ? item.config : null;
+    var keys = (SN.Nail && SN.Nail.KEYS) ? SN.Nail.KEYS : [];
+    var nails = cfg && cfg.nails ? cfg.nails : null;
+    var out = [], i, key, n, patterned = 0, charms = 0, seenFinish = [], side;
+    var hand = cfg && (cfg.hand === 'right' || cfg.hand === 'left') ? cfg.hand : 'both';
+    var count = 0;
+
+    if (!cfg) return out;
+
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      side = key.indexOf('left') === 0 ? 'left' : 'right';
+      if (hand !== 'both' && side !== hand) continue;
+      count++;
+      n = nails ? nails[key] : null;
+      if (!n) continue;
+      if (n.pattern && n.pattern.kind && n.pattern.kind !== 'none') patterned++;
+      if (Array.isArray(n.charms)) charms += n.charms.length;
+      if (n.finish && seenFinish.indexOf(n.finish) === -1) seenFinish.push(n.finish);
+    }
+
+    if (count > 0) out.push({ ico: 'hand', text: countedText('shop.incNails', count) });
+    if (cfg.shape) {
+      out.push({ ico: 'gem', text: t('shop.incShape', { name: nameOfItem('shapes', cfg.shape, cfg.shape) }) });
+    }
+    if (cfg.length) {
+      out.push({ ico: 'ruler', text: t('shop.incLength', { name: nameOfItem('lengths', cfg.length, cfg.length) }) });
+    }
+    if (seenFinish.length === 1) {
+      out.push({ ico: 'sparkle', text: t('shop.incFinish', { name: nameOfItem('finishes', seenFinish[0], seenFinish[0]) }) });
+    }
+    if (patterned > 0) out.push({ ico: 'brush', text: countedText('shop.incPattern', patterned) });
+    else out.push({ ico: 'brush', text: t('shop.incPlain') });
+    if (charms > 0) out.push({ ico: 'gem', text: countedText('shop.incCharms', charms) });
+
+    return out;
+  }
+
+  /* Arabic counts one, two and many differently, and "على 1 أظافر" is the
+     kind of line that tells a shopper nobody read the page. Each key may
+     publish a `<key>1` and `<key>2` form; anything else uses the plural. */
+  function countedText(key, n) {
+    var special = n === 1 ? '1' : (n === 2 ? '2' : '');
+    var s;
+    if (special) {
+      s = t(key + special);
+      if (s && s !== key + special) return s;
+    }
+    return t(key, { n: num(n) });
+  }
+
+  function includesBlock(item) {
+    var rows = includesOf(item);
+    var kids = [], i;
+    if (!rows.length) return null;
+    for (i = 0; i < rows.length; i++) {
+      kids.push(el('li', { 'class': 'row', style: { gap: '8px', flexWrap: 'nowrap' } }, [
+        el('span', { 'class': 'ico', html: icon('check', 15), 'aria-hidden': 'true' }),
+        el('span', { text: rows[i].text })
+      ]));
+    }
+    return el('div', { 'class': 'note' }, [
+      el('span', { html: icon('shield', 18), 'aria-hidden': 'true' }),
+      el('div', {}, [
+        el('span', { 'class': 'label', text: t('shop.qvIncludes') }),
+        el('ul', { 'class': 'flow flow-sm shop-inc' }, kids)
+      ])
+    ]);
   }
 
   function qtyStepper(state) {
@@ -1026,6 +1171,8 @@
           ? el('div', { 'class': 'shop-tags', 'aria-label': t('shop.qvTags') }, tagKids)
           : null,
 
+        includesBlock(it),
+
         el('div', { 'class': 'shop-qv-opts' }, [
           el('span', { 'class': 'label', text: t('shop.qvOptions') }),
           el('div', { 'class': 'shop-qv-row' }, [
@@ -1070,10 +1217,16 @@
           }),
           el('a', {
             'class': 'btn btn-line btn-lg',
-            href: 'design.html#load=' + encodeURIComponent(String(it.id || '')),
-            text: t('shop.customizeLong')
-          })
-        ])
+            href: 'design.html#load=' + encodeURIComponent(String(it.id || ''))
+          }, [
+            el('span', { html: icon('brush', 18), 'aria-hidden': 'true' }),
+            el('span', { text: t('shop.customizeLong') })
+          ])
+        ]),
+
+        /* the one advantage this shop has over every other press-on seller,
+           said as a promise about what changes rather than as an adjective */
+        el('p', { 'class': 'hint', text: t('shop.customizeHint') })
       ])
     ]);
   }
@@ -1163,20 +1316,11 @@
   /* 9. rendering                                                          */
   /* ==================================================================== */
 
-  function reveal(node) {
-    if (!node) return node;
-    window.setTimeout(function () {
-      if (node.classList) node.classList.add('is-in');
-    }, 20);
-    return node;
-  }
-
   function renderHero() {
     var rows = activeRows();
-    var kids = [], total = 0, i, b;
+    var kids = [], i, b, top;
 
     if (!dom.heroMeta) return;
-    for (i = 0; i < rows.length; i++) total += Math.max(0, numOf(rows[i].it.orders, 0));
 
     kids.push(el('span', { 'class': 'pill pill-rose' }, [
       el('span', { html: icon('grid', 14), 'aria-hidden': 'true' }),
@@ -1190,12 +1334,33 @@
         el('span', { text: t('shop.fromPrice', { p: money(b.lo) }) })
       ]));
     }
-    if (total > 0) {
+    /* One specific, checkable fact beats a grand total. Summing every design's
+       lifetime orders produces a number that sits a page away from the
+       owner's own «+1200 طقم تم تسليمه» stat and quietly disagrees with it;
+       naming the leading set and its own count cannot disagree with anything. */
+    top = topRows(1)[0];
+    if (top && numOf(top.it.orders, 0) > 0) {
       kids.push(el('span', { 'class': 'pill pill-gold' }, [
-        el('span', { html: icon('sparkle', 14), 'aria-hidden': 'true' }),
-        el('span', { text: t('shop.madeN', { n: num(Math.round(total)) }) })
+        el('span', { html: icon('star', 14), 'aria-hidden': 'true' }),
+        el('span', {
+          text: t('shop.topOne', {
+            name: pick(top.it.name),
+            n: num(Math.round(numOf(top.it.orders, 0)))
+          })
+        })
       ]));
     }
+
+    /* Nobody arrives at a shop knowing exactly what she wants. The quiz is
+       on the home page, so this is a real link — it works with JS or without. */
+    kids.push(el('a', {
+      'class': 'btn btn-soft btn-sm shop-quiz',
+      href: 'index.html#quiz'
+    }, [
+      el('span', { html: icon('sparkle', 15), 'aria-hidden': 'true' }),
+      el('span', { text: t('shop.quizCta') })
+    ]));
+
     fill(dom.heroMeta, kids);
   }
 
@@ -1339,13 +1504,14 @@
       if (st.fav && !favCount()) {
         kids.push(el('p', { 'class': 'empty-x', text: t('shop.favEmpty') }));
       }
-      kids.push(el('p', { 'class': 'mt-2' }, [
+      kids.push(el('p', { 'class': 'mt-2 btns', style: { justifyContent: 'center' } }, [
         el('button', {
           type: 'button',
           'class': 'btn btn-pri',
           text: t('shop.clearFilters'),
           on: { click: clearFilters }
-        })
+        }),
+        el('a', { 'class': 'btn btn-line', href: 'index.html#quiz', text: t('shop.quizCta') })
       ]));
     } else {
       kids.push(el('p', { 'class': 'mt-2' }, [
@@ -1355,12 +1521,25 @@
     return el('div', { 'class': 'empty' }, kids);
   }
 
+  /* the ids of the three most-ordered live designs — the only thing on this
+     page allowed to shout, and it shouts a number the owner can point to */
+  function hotIds() {
+    var rows = topRows(3), out = {}, i;
+    for (i = 0; i < rows.length; i++) {
+      if (numOf(rows[i].it.orders, 0) > 0) out[String(rows[i].it.id)] = true;
+    }
+    return out;
+  }
+
   function renderGrid() {
     var rows = filtered();
     var total = activeRows().length;
+    var hot = hotIds();
     var kids = [], i;
 
     if (!dom.grid) return;
+    /* the shared motion system staggers the arrival for us */
+    if (dom.grid.classList) dom.grid.classList.add('sn-stagger', 'sn-stagger-sm');
 
     if (dom.result) {
       dom.result.textContent = t('shop.resultsN', { n: num(rows.length), total: num(total) });
@@ -1374,7 +1553,9 @@
       return;
     }
 
-    for (i = 0; i < rows.length; i++) kids.push(reveal(designCard(rows[i].it)));
+    for (i = 0; i < rows.length; i++) {
+      kids.push(designCard(rows[i].it, !!hot[String(rows[i].it.id)]));
+    }
     fill(dom.grid, kids);
     show(dom.grid, true);
     clear(dom.empty);

@@ -1270,6 +1270,18 @@
 
   var remountSoon = debounce(remount, 80);
 
+  /* iOS Safari refuses to apply :active until the document carries a touch
+     listener, so every press state on the site is dead on an iPhone without
+     this. One empty passive listener is the whole fix. */
+  var touchUnlocked = false;
+  function unlockTouchActive(){
+    var d = doc();
+    if (touchUnlocked || !d) return;
+    touchUnlocked = true;
+    try { d.addEventListener('touchstart', function(){}, { passive: true }); }
+    catch (e) { try { d.addEventListener('touchstart', function(){}, false); } catch (e2) {} }
+  }
+
   function boot(page){
     var d = doc();
     var p = page;
@@ -1279,6 +1291,7 @@
     }
     currentPage = p;
 
+    unlockTouchActive();
     applyTheme(themeGet());
     mountAnnounce();
     mountHeader(currentPage);

@@ -32,6 +32,18 @@
         note2: 'مقاس مضبوط لكل ظفر على حدة',
         note3: 'تشوفين تصميمك قبل ما تطلبينه',
 
+        /* the hero looks — the same hand, three different sets */
+        lookCap: 'كلها مصمّمة داخل الموقع · {name}',
+        lookPick: 'اعرضي طقم {name}',
+        look: {
+          pearl: 'وردي ولؤلؤ',
+          chrome: 'كروم برقّة الذهب',
+          sunset: 'صيفي مرجاني'
+        },
+
+        /* the quiz card */
+        quizNote: 'أقل من دقيقة',
+
         /* stats */
         statsTitle: 'أرقام شوش نيل',
 
@@ -51,10 +63,12 @@
         topTitle: 'الأكثر طلباً',
         topSub: 'التصاميم اللي ما تهدأ الطلبات عليها. اطلبيها زي ما هي، أو خذيها أساس وعدّلي عليها براحتك.',
         topAll: 'تصفّحي كل التصاميم',
+        proofSets: '{n} طقم جاهز للطلب',
+        proofTop: 'الأكثر طلباً: {name} · {n} طلب',
         topEmpty: 'ما فيه تصاميم جاهزة معروضة حالياً — بس تقدرين تصمّمين طقمك من الصفر.',
         topEmptyCta: 'ابدئي من الصفر',
-        order: 'اطلبه',
-        customize: 'خصّصه',
+        order: 'اطلبيه',
+        customize: 'خصّصيه',
         ordersN: '{n} طلب',
         openInShop: 'افتحي تفاصيل {name}',
 
@@ -101,6 +115,16 @@
         note2: 'Every nail sized individually',
         note3: 'See your design before you order',
 
+        lookCap: 'All designed on this site · {name}',
+        lookPick: 'Show the {name} set',
+        look: {
+          pearl: 'Rose and pearl',
+          chrome: 'Chrome with gold',
+          sunset: 'Coral summer'
+        },
+
+        quizNote: 'Under a minute',
+
         statsTitle: 'Shosh Nail in numbers',
 
         stepsEyebrow: 'Four steps, that is all',
@@ -116,6 +140,8 @@
         topTitle: 'Most ordered',
         topSub: 'The sets our customers keep coming back for. Order one as it is, or use it as a starting point and make it yours.',
         topAll: 'Browse every design',
+        proofSets: '{n} sets ready to order',
+        proofTop: 'Most ordered: {name} · {n} orders',
         topEmpty: 'No ready-made sets are on show right now — but you can still build one from scratch.',
         topEmptyCta: 'Start from scratch',
         order: 'Order it',
@@ -258,45 +284,69 @@
   }
 
   /* ==================================================================== */
-  /* 2. the hero showcase — a hand-built, valid DESIGN_CONFIG              */
+  /* 2. the hero showcase — three hand-built, valid DESIGN_CONFIGs         */
   /*    (SPEC section 6). Used only when settings home.heroImage is empty. */
+  /*                                                                      */
+  /*    The hero does not show a nail set. It shows the SAME hand wearing  */
+  /*    three different sets, one after another, because that — not a      */
+  /*    sentence about it — is what says "this is made to order".          */
   /* ==================================================================== */
 
   /* One look per finger, mirrored onto both hands. Deliberately mid-tone
-     roses rather than sheer nudes: the hero has to read as a *product* from
-     across the room, on the light ground and on the dark one. */
-  var SHOWCASE = {
-    /* solid rose — the plainest possible nail, so the set has somewhere to rest */
-    thumb: {
-      color: '#D493A8', finish: 'gloss',
-      pattern: { kind: 'none', color: '#FFFFFF', color2: '#D493A8', scale: 1 }
+     colours rather than sheer nudes: the hero has to read as a *product*
+     from across the room, on the light ground and on the dark one. */
+  var LOOKS = [
+    {
+      id: 'pearl', shape: 'almond', length: 'long',
+      /* solid rose — the plainest possible nail, so the set has somewhere to rest */
+      thumb: { color: '#D493A8', finish: 'gloss', pattern: { kind: 'none', color: '#FFFFFF', color2: '#D493A8', scale: 1 } },
+      /* the classic french */
+      index: { color: '#EFCBD0', finish: 'gloss', pattern: { kind: 'french', color: '#FFFFFF', color2: '#D89AAE', scale: 1 } },
+      /* a finish, not a pattern: velvet reads as a soft matte sheen */
+      middle: { color: '#D493A8', finish: 'velvet', pattern: { kind: 'none', color: '#FFFFFF', color2: '#D493A8', scale: 1 } },
+      /* the accent nail: ombré base carrying the charms */
+      ring: {
+        color: '#F0D7DC', finish: 'gloss',
+        pattern: { kind: 'ombre', color: '#C3728F', color2: '#F0D7DC', scale: 1 },
+        charms: [
+          { id: 'ch-pearl', x: 0.5, y: 0.24, s: 0.78, r: 0 },
+          { id: 'ch-round', x: 0.33, y: 0.46, s: 0.6, r: -12 },
+          { id: 'ch-pearl', x: 0.67, y: 0.5, s: 0.54, r: 0 }
+        ]
+      },
+      /* a printed motif in the brand gold */
+      pinky: { color: '#D493A8', finish: 'gloss', pattern: { kind: 'dots', color: '#FFFFFF', color2: '#C2A05E', scale: 0.9 } }
     },
-    /* the classic french */
-    index: {
-      color: '#EFCBD0', finish: 'gloss',
-      pattern: { kind: 'french', color: '#FFFFFF', color2: '#D89AAE', scale: 1 }
+
+    {
+      id: 'chrome', shape: 'stiletto', length: 'long',
+      thumb: { color: '#4A1F3D', finish: 'chrome', pattern: { kind: 'none', color: '#C2A05E', color2: '#4A1F3D', scale: 1 } },
+      index: { color: '#4A1F3D', finish: 'chrome', pattern: { kind: 'chrome', color: '#C2A05E', color2: '#4A1F3D', scale: 1 } },
+      middle: { color: '#EDE4E9', finish: 'chrome', pattern: { kind: 'none', color: '#C2A05E', color2: '#EDE4E9', scale: 1 } },
+      ring: {
+        color: '#4A1F3D', finish: 'chrome',
+        pattern: { kind: 'aura', color: '#C2A05E', color2: '#4A1F3D', scale: 1.1 },
+        charms: [
+          { id: 'ch-star', x: 0.5, y: 0.28, s: 0.7, r: 0 },
+          { id: 'ch-star', x: 0.36, y: 0.5, s: 0.46, r: 14 }
+        ]
+      },
+      pinky: { color: '#4A1F3D', finish: 'chrome', pattern: { kind: 'stars', color: '#C2A05E', color2: '#4A1F3D', scale: 0.85 } }
     },
-    /* a finish, not a pattern: velvet reads as a soft matte sheen */
-    middle: {
-      color: '#D493A8', finish: 'velvet',
-      pattern: { kind: 'none', color: '#FFFFFF', color2: '#D493A8', scale: 1 }
-    },
-    /* the accent nail: ombré base carrying the charms */
-    ring: {
-      color: '#F0D7DC', finish: 'gloss',
-      pattern: { kind: 'ombre', color: '#C3728F', color2: '#F0D7DC', scale: 1 },
-      charms: [
-        { id: 'ch-pearl', x: 0.5, y: 0.24, s: 0.78, r: 0 },
-        { id: 'ch-sparkles', x: 0.33, y: 0.46, s: 0.66, r: -12 },
-        { id: 'ch-pearl', x: 0.67, y: 0.5, s: 0.54, r: 0 }
-      ]
-    },
-    /* a printed motif in the brand gold */
-    pinky: {
-      color: '#D493A8', finish: 'gloss',
-      pattern: { kind: 'dots', color: '#FFFFFF', color2: '#C2A05E', scale: 0.9 }
+
+    {
+      id: 'sunset', shape: 'squoval', length: 'medium',
+      thumb: { color: '#FAC7AC', finish: 'gloss', pattern: { kind: 'none', color: '#FFFFFF', color2: '#FAC7AC', scale: 1 } },
+      index: { color: '#F3705A', finish: 'gloss', pattern: { kind: 'none', color: '#FFFFFF', color2: '#F3705A', scale: 1 } },
+      middle: { color: '#FAC7AC', finish: 'gloss', pattern: { kind: 'french', color: '#FFFFFF', color2: '#F3705A', scale: 1 } },
+      ring: {
+        color: '#F3705A', finish: 'gloss',
+        pattern: { kind: 'ombre', color: '#F2782B', color2: '#FAC7AC', scale: 1 },
+        charms: [{ id: 'ch-daisy', x: 0.5, y: 0.32, s: 0.82, r: 0 }]
+      },
+      pinky: { color: '#F2782B', finish: 'gloss', pattern: { kind: 'dots', color: '#FFFFFF', color2: '#FAC7AC', scale: 0.9 } }
     }
-  };
+  ];
 
   function fingerOf(key) {
     var s = String(key || '');
@@ -304,9 +354,10 @@
     return f.charAt(0).toLowerCase() + f.slice(1);
   }
 
-  function showcaseDesign() {
-    var d, keys, i, k, look, tones, tone;
+  function showcaseDesign(look) {
+    var d, keys, i, k, plan, tones, tone, c;
 
+    look = look || LOOKS[0];
     if (!SN.Nail || typeof SN.Nail.blank !== 'function') return null;
     try { d = SN.Nail.blank(); }
     catch (e) { return null; }
@@ -318,31 +369,31 @@
     if (tone && typeof tone.hex === 'string' && tone.hex) d.skin = tone.hex;
 
     d.hand = 'both';
-    d.shape = 'almond';
-    d.length = 'long';
+    d.shape = look.shape;
+    d.length = look.length;
 
     keys = (SN.Nail.KEYS && SN.Nail.KEYS.length) ? SN.Nail.KEYS : [];
     for (i = 0; i < keys.length; i++) {
       k = keys[i];
-      look = SHOWCASE[fingerOf(k)];
-      if (!look || !d.nails[k]) continue;
-      d.nails[k].color = look.color;
-      d.nails[k].finish = look.finish;
+      plan = look[fingerOf(k)];
+      if (!plan || !d.nails[k]) continue;
+      d.nails[k].color = plan.color;
+      d.nails[k].finish = plan.finish;
       d.nails[k].pattern = {
-        kind: look.pattern.kind,
-        color: look.pattern.color,
-        color2: look.pattern.color2,
-        scale: look.pattern.scale
+        kind: plan.pattern.kind,
+        color: plan.pattern.color,
+        color2: plan.pattern.color2,
+        scale: plan.pattern.scale
       };
       d.nails[k].charms = [];
-      if (look.charms) {
-        for (var c = 0; c < look.charms.length; c++) {
+      if (plan.charms) {
+        for (c = 0; c < plan.charms.length; c++) {
           d.nails[k].charms.push({
-            id: look.charms[c].id,
-            x: look.charms[c].x,
-            y: look.charms[c].y,
-            s: look.charms[c].s,
-            r: look.charms[c].r
+            id: plan.charms[c].id,
+            x: plan.charms[c].x,
+            y: plan.charms[c].y,
+            s: plan.charms[c].s,
+            r: plan.charms[c].r
           });
         }
       }
@@ -432,13 +483,145 @@
 
   /* ── 4.1 hero ─────────────────────────────────────────────────────── */
 
+  /* The rotating deck. Layers are rendered on demand and then kept, so the
+     first paint costs exactly one hand render and the rest arrive while she
+     is reading. The timer only runs while the hero is on screen and the tab
+     is in front, and it never starts at all under reduced motion. */
+  var deck = {
+    stage: null,
+    layers: [],      /* index -> {node, dot} */
+    idx: 0,
+    timer: 0,
+    io: null,
+    onScreen: true
+  };
+
+  var DECK_MS = 4600;
+
+  function deckStop() {
+    if (deck.timer) { window.clearInterval(deck.timer); deck.timer = 0; }
+    if (deck.io) {
+      try { deck.io.disconnect(); }
+      catch (e) { /* ignore */ }
+      deck.io = null;
+    }
+    deck.stage = null;
+    deck.cap = null;
+    deck.layers = [];
+    deck.idx = 0;
+    deck.onScreen = true;
+  }
+
+  function deckLayer(i) {
+    var entry = deck.layers[i];
+    var svg = null, design;
+    if (!entry || entry.built || !entry.node) return entry;
+    entry.built = true;
+    design = showcaseDesign(LOOKS[i]);
+    if (design && SN.Nail && typeof SN.Nail.preview === 'function') {
+      try {
+        svg = SN.Nail.preview(design, {
+          w: 0, interactive: false,
+          ariaLabel: t('home.lookCap', { name: t('home.look.' + LOOKS[i].id) })
+        });
+      } catch (e) { svg = null; console.warn('[SN.Home] hero preview failed', e); }
+    }
+    if (svg) entry.node.appendChild(svg);
+    return entry;
+  }
+
+  function deckShow(i) {
+    var n = deck.layers.length, j, entry;
+    if (!n) return;
+    i = ((i % n) + n) % n;
+    deck.idx = i;
+    deckLayer(i);
+    for (j = 0; j < n; j++) {
+      entry = deck.layers[j];
+      if (!entry) continue;
+      if (entry.node && entry.node.classList) {
+        if (j === i) entry.node.classList.add('is-on');
+        else entry.node.classList.remove('is-on');
+      }
+      if (entry.dot) entry.dot.setAttribute('aria-pressed', j === i ? 'true' : 'false');
+    }
+    if (deck.cap) {
+      setText(deck.cap, t('home.lookCap', { name: t('home.look.' + LOOKS[i].id) }));
+    }
+    /* keep the next one warm so the cross-fade never waits on a render */
+    window.setTimeout(function () { deckLayer((i + 1) % n); }, 400);
+  }
+
+  function deckTick() {
+    if (!deck.onScreen) return;
+    try { if (document.hidden) return; }
+    catch (e) { /* ignore */ }
+    deckShow(deck.idx + 1);
+  }
+
+  function deckPlay() {
+    if (deck.timer || deck.layers.length < 2 || reducedMotion()) return;
+    deck.timer = window.setInterval(deckTick, DECK_MS);
+  }
+
+  /* a tap on a dot is hers, so the auto-advance restarts from that moment
+     instead of flipping the set half a second after she chose it */
+  function deckPick(i) {
+    deckShow(i);
+    if (deck.timer) { window.clearInterval(deck.timer); deck.timer = 0; }
+    deckPlay();
+  }
+
+  function buildDeck(host) {
+    var wrapEl = el('div', { 'class': 'home-hero-deck' });
+    var nav = el('div', { 'class': 'home-hero-nav' });
+    var i, node, dot;
+
+    for (i = 0; i < LOOKS.length; i++) {
+      node = el('div', { 'class': 'home-hero-look' });
+      dot = (function (idx) {
+        return el('button', {
+          type: 'button',
+          'class': 'home-hero-dot',
+          'aria-pressed': 'false',
+          'aria-label': t('home.lookPick', { name: t('home.look.' + LOOKS[idx].id) }),
+          title: t('home.look.' + LOOKS[idx].id),
+          on: { click: function () { deckPick(idx); } }
+        });
+      })(i);
+      wrapEl.appendChild(node);
+      nav.appendChild(dot);
+      deck.layers.push({ node: node, dot: dot, built: false });
+    }
+
+    deck.cap = el('p', { 'class': 'home-hero-cap' });
+    host.appendChild(wrapEl);
+    host.appendChild(nav);
+    host.appendChild(deck.cap);
+    deck.stage = host;
+
+    deckShow(0);
+
+    if (reducedMotion() || LOOKS.length < 2) return;
+    if (typeof window.IntersectionObserver === 'function') {
+      try {
+        deck.io = new window.IntersectionObserver(function (entries) {
+          var k;
+          for (k = 0; k < entries.length; k++) deck.onScreen = entries[k].isIntersecting;
+        }, { threshold: 0.15 });
+        deck.io.observe(host);
+      } catch (e) { deck.io = null; }
+    }
+    deckPlay();
+  }
+
   function renderHero() {
     var title = q('home-hero-t');
     var sub = q('home-hero-sub');
     var cta = q('home-hero-cta');
     var notes = q('home-hero-notes');
     var art = q('home-hero-art');
-    var img, stage, svg, design, free, items;
+    var img, stage, free, items;
 
     if (title) setText(title, pick(cfg('home.heroTitle', null)) || t('home.heroTitleFb'));
     if (sub) setText(sub, pick(cfg('home.heroSub', null)) || t('home.heroSubFb'));
@@ -470,20 +653,97 @@
         loading: 'eager',
         decoding: 'async'
       }));
-    } else {
-      design = showcaseDesign();
-      svg = null;
-      if (design && SN.Nail && typeof SN.Nail.preview === 'function') {
-        try { svg = SN.Nail.preview(design, { w: 0, interactive: false, ariaLabel: t('home.heroAlt') }); }
-        catch (e) { svg = null; console.warn('[SN.Home] hero preview failed', e); }
-      }
-      if (svg) stage.appendChild(svg);
+      fill(art, [stage]);
+      return;
     }
+
+    buildDeck(stage);
 
     /* nothing renderable (no image, no engine) — leave the column empty
        rather than shipping a broken box */
-    if (!stage.firstChild) { fill(art, []); return; }
+    if (!stage.querySelector('svg')) { deckStop(); fill(art, []); return; }
     fill(art, [stage]);
+  }
+
+  /* ── 4.1b the style quiz card ─────────────────────────────────────── */
+
+  function renderQuiz() {
+    var card = q('home-quiz');
+    var note = q('home-quiz-note');
+    var cta = q('home-quiz-cta');
+    var art = q('home-quiz-art');
+    var svg = null, design;
+
+    if (note) {
+      fill(note, [
+        el('span', { 'class': 'ico', html: icon('clock', 16), 'aria-hidden': 'true' }),
+        el('span', { text: t('home.quizNote') })
+      ]);
+    }
+
+    /* a small fan of the set the quiz would build for its own first answer —
+       real output, not an illustration of one */
+    if (art) {
+      if (SN.Quiz && typeof SN.Quiz.build === 'function' && SN.Nail && typeof SN.Nail.thumb === 'function') {
+        try {
+          design = SN.Quiz.build({ vibe: 'romantic', tone: 'sweet', occasion: 'party', decor: 'some' });
+          if (design) svg = SN.Nail.thumb(design, 0);
+        } catch (e) { svg = null; }
+      }
+      fill(art, svg ? [svg] : []);
+    }
+
+    if (cta && !cta.getAttribute('data-wired')) {
+      cta.setAttribute('data-wired', '1');
+      cta.addEventListener('click', function (ev) {
+        /* let a modified click (new tab) do the native thing */
+        if (ev && (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button > 0)) return;
+        if (SN.Quiz && typeof SN.Quiz.open === 'function') {
+          if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+          SN.Quiz.open();
+        }
+        /* no SN.Quiz: the href stands, and quiz.js opens on the hash if it
+           ever does load — otherwise nothing worse than a no-op happens */
+      }, false);
+    }
+
+    /* the one luxury sweep on this page, and only once it is actually seen */
+    if (card && firstPass && !reducedMotion() && typeof window.IntersectionObserver === 'function') {
+      shineWhenSeen(card);
+    }
+
+    /* A deferred script runs while readyState is already "interactive", so
+       this file's first paint happens BEFORE quiz.js has been evaluated and
+       SN.Quiz does not exist yet. Come back for the artwork once the whole
+       set of page scripts has run. */
+    if (!svg && !quizArtPending && (!SN.Quiz || typeof SN.Quiz.build !== 'function')) {
+      quizArtPending = true;
+      document.addEventListener('DOMContentLoaded', function () { renderQuiz(); }, false);
+    }
+  }
+
+  var quizArtPending = false;
+
+  var shineIo = null;
+
+  function shineWhenSeen(node) {
+    if (!node || node.getAttribute('data-shine') === '1') return;
+    try {
+      if (!shineIo) {
+        shineIo = new window.IntersectionObserver(function (entries) {
+          var i, target;
+          for (i = 0; i < entries.length; i++) {
+            if (!entries[i].isIntersecting) continue;
+            target = entries[i].target;
+            target.setAttribute('data-shine', '1');
+            if (target.classList) target.classList.add('sn-shine');
+            try { shineIo.unobserve(target); }
+            catch (e) { /* ignore */ }
+          }
+        }, { threshold: 0.35 });
+      }
+      shineIo.observe(node);
+    } catch (e2) { /* no observer — the card simply never sweeps */ }
   }
 
   /* ── 4.2 stats strip ──────────────────────────────────────────────── */
@@ -674,12 +934,47 @@
     return out.slice(0, n);
   }
 
+  /* Social proof, counted rather than claimed. Deliberately ONE specific
+     fact — which single set leads and by how many real orders — instead of a
+     grand total: a total would be a second, larger number sitting a screen
+     away from the owner's own «+1200 طقم تم تسليمه» and quietly contradicting
+     it. A named leader with its own count cannot contradict anything. */
+  function renderProof() {
+    var host = q('home-proof');
+    var all = list('designs');
+    var kids = [];
+    var live = 0, i, d;
+    var top = topDesigns(1)[0] || null;
+    var topOrders = top ? Math.round(toNum(top.orders, 0)) : 0;
+
+    if (!host) return;
+    for (i = 0; i < all.length; i++) {
+      d = all[i];
+      if (d && d.active !== false) live++;
+    }
+
+    if (top && topOrders > 0) {
+      kids.push(el('span', { 'class': 'pill pill-rose' }, [
+        el('span', { html: icon('star', 14), 'aria-hidden': 'true' }),
+        el('span', { text: t('home.proofTop', { name: pick(top.name), n: num(topOrders) }) })
+      ]));
+    }
+    if (live > 0) {
+      kids.push(el('span', { 'class': 'pill' }, [
+        el('span', { html: icon('grid', 14), 'aria-hidden': 'true' }),
+        el('span', { text: t('home.proofSets', { n: num(live) }) })
+      ]));
+    }
+    fill(host, kids);
+  }
+
   function renderTop() {
     var host = q('home-top');
     var items = topDesigns(4);
     var i, kids = [];
 
     if (!host) return;
+    renderProof();
 
     if (!items.length) {
       fill(host, [fullRow([
@@ -798,8 +1093,10 @@
   function render() {
     if (!isHome) return;
     dropObserved();
+    deckStop();
     try {
       renderHero();
+      renderQuiz();
       renderStats();
       renderSteps();
       renderFeatures();
