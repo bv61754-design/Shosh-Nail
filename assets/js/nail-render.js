@@ -2359,6 +2359,11 @@
      light's business — a photograph of one nail in one pose cannot know where
      a finger is pointing. */
   function specular(g, x, strength) {
+    /* x.gloss is how much MEASURED reflection already landed on this plate. A
+       drawn bloom beside a real reflection reads as a smudge, so it stands
+       down to a faint sheen and lets the photograph carry the highlight. */
+    strength = strength * (1 - 0.80 * clamp(num(x.gloss, 0), 0, 1));
+    if (strength <= 0.02) return;
     var peak = clamp(0.5 + x.L.x * 0.18, 0.22, 0.78);
     var hy = clamp(0.34 + x.L.y * 0.09, 0.12, 0.52);
     var bx = peak * x.w, by = hy * x.h;
@@ -2753,17 +2758,74 @@
      data: URIs about 18 KB together, and ten copies of that in the markup was
      the whole reason this goes through shared()/<use> instead of ten <image>
      elements. */
-  function glossImg(defs, which) {
-    var G = SN.Gloss, uri = G && G[which];
+  function glossImg(defs, which, tiles) {
+    var G = SN.Gloss, uri = G && G[which], n = Math.max(1, num(tiles, 1));
     if (typeof uri !== 'string' || !uri) return null;
     return shared(defs, 'glossimg|' + which, function (dd) {
       var id = uid('gl');
       add(dd, E('image', {
-        id: id, x: 0, y: 0, width: 1, height: 1,
+        id: id, x: 0, y: 0, width: n, height: 1,
         preserveAspectRatio: 'none', href: uri, 'xlink:href': uri
       }));
       return id;
     });
+  }
+
+  /* ====================================================================== */
+  /* 8d. THE REFLECTION                                                      */
+  /*                                                                         */
+  /*  A plate drawn as colour x shade is a MULTIPLY and nothing else, and a  */
+  /*  multiply can only ever darken. So the brightest pixel on it was 1.18x  */
+  /*  its own body, against 1.78-2.14x on the shop's real press-ons; nothing */
+  /*  anywhere on it reached three times its own median, where a real nail   */
+  /*  has 4-31% of its area up there; and its least saturated 2% still sat   */
+  /*  at 87% of the plate's own saturation, against 23% on a real one.       */
+  /*  Nothing on it was white. Its chroma even climbed toward the highlight, */
+  /*  which is the arithmetic signature of tinted paint and the opposite of  */
+  /*  what light does.                                                       */
+  /*                                                                         */
+  /*      out = colour x SHADE + REFLECTION                                  */
+  /*                                                                         */
+  /*  And a reflection is WHITE. That one fact is the whole reason this is   */
+  /*  affordable: it does not multiply out against 45 colours x 8 shapes x   */
+  /*  4 lengths x 6 finishes x 22 patterns x 43 charms — one 8 KB greyscale  */
+  /*  sheet is correct for every combination of them.                        */
+  /*                                                                         */
+  /*  The sheet holds FIVE reflections, pulled off five nails in one of the  */
+  /*  shop's own photographs (see tools/spec-map.py). Each finger is dealt a */
+  /*  different one, mirrored on the hand whose light comes from the other   */
+  /*  side, so ten fingers are not ten copies of one photograph.             */
+  /* ====================================================================== */
+
+  var SPEC_MIX = {
+    gloss: 1, jelly: 0.85, glitter: 0.5, chrome: 0.34, matte: 0, velvet: 0
+  };
+
+  function specReflect(host, x, kind) {
+    var G = SN.Gloss, n = G ? Math.max(1, num(G.specN, 1)) : 1;
+    var k = SPEC_MIX[kind], id, tile, r = x.rnd, sc, dx, dy, a, sx;
+    if (typeof k !== 'number') k = SPEC_MIX.gloss;
+    if (!x.on || k <= 0) return 0;
+    id = glossImg(x.defs, 'spec', n);
+    if (!id) return 0;
+    tile = Math.floor(r() * n) % n;
+    /* the same kind of seeded nudge the surface gets, so the reflection and
+       the surface under it belong to one object */
+    sc = 1.0 + r() * 0.10;
+    dx = (r() - 0.5) * x.w * 0.10;
+    dy = (r() - 0.5) * x.h * 0.06;
+    a  = (r() - 0.5) * 7;
+    sx = (x.L.x > 0 ? -1 : 1) * x.w * sc;
+    add(host, E('use', {
+      href: '#' + id, 'xlink:href': '#' + id,
+      transform: 'translate(' + f(x.w / 2 + dx) + ' ' + f(x.h / 2 + dy) + ') ' +
+                 'rotate(' + f(a) + ') ' +
+                 'scale(' + f(sx) + ' ' + f(x.h * sc) + ') ' +
+                 'translate(' + f(-(tile + 0.5)) + ' -0.5)',
+      opacity: f(k * (0.86 + r() * 0.24)),
+      style: 'mix-blend-mode:screen'
+    }));
+    return k;
   }
 
   /* Returns how much of the photographic specular actually landed, so the
@@ -2772,7 +2834,7 @@
   function photoGloss(host, x, kind) {
     var id, tf, r = x.rnd, sc, dx, dy, a;
     if (!x.on) return;
-    id = glossImg(x.defs, 'shade');
+    id = glossImg(x.defs, 'shade', 1);
     if (!id) return;
 
     /* ONE measurement on ten fingers would put the same surface at the same
@@ -2899,7 +2961,7 @@
     var h = num(opts.h, 0);
     var key, u, kind, d, g, defs, clipId, plate, pg, fg, fn, i, ring, hover, sel, cls, onPick;
     var L, q, peak, ybright, tipD, body, jelly, clipG, glow, wallLit, wallDark;
-    var gDamp, gd, gOn;
+    var gDamp, gd, gOn, gRefl;
 
     if (!(w > 0)) w = NAIL_BOX.w;
     if (!(h > 0)) h = w * ASPECT[s] * lenFactor(opts.length);
@@ -3079,12 +3141,18 @@
       rnd: seeded(key + '|gloss|' + s)
     }, kind);
 
+    /* --- 4c. and the reflection over it ----------------------------------- */
+    gRefl = specReflect(clipG, {
+      w: w, h: h, on: gOn, L: L, defs: defs, rnd: seeded(key + '|refl|' + s)
+    }, kind);
+
     /* --- 5. finish -------------------------------------------------------- */
     fn = FINISHES[kind] || FINISHES.gloss;
     fg = add(clipG, E('g'));
     try {
       fn(fg, {
         w: w, h: h, u: u, d: d, color: n.color, defs: defs, L: L, q: q,
+        gloss: gRefl,
         rnd: seeded(key + '|' + s + '|' + kind + '|' + n.color)
       });
     } catch (e2) {
