@@ -236,10 +236,13 @@
 }
 .adm-navb.is-on .adm-navn{ background:var(--bg-2); color:var(--rose-3); }
 
+/* above #sn-header (z-index 100 in base.css) so the drawer's own close button
+   is not buried under the site header on a phone, and still below the modal
+   layer (200+) so a dialog always wins */
 .adm-scrim{
   position:fixed;
   inset:0;
-  z-index:39;
+  z-index:119;
   background:var(--scrim);
   opacity:0;
   visibility:hidden;
@@ -251,7 +254,7 @@
   .adm-shell{ grid-template-columns:minmax(0,1fr); }
   .adm-side{
     position:fixed;
-    z-index:40;
+    z-index:120;
     inset-block:0;
     inset-inline-start:0;
     inline-size:min(84vw,290px);
@@ -409,6 +412,16 @@
   .adm-row-t{ flex-wrap:wrap; gap:2px; }
   .adm-row-sub{ margin-inline-start:0; padding-inline-start:0; flex-basis:100%; }
   .adm-row-chev{ margin-inline-start:auto; }
+  /* a name he can read beats a name that fits: five reorder/copy/delete
+     targets leave no room for an ellipsis as well */
+  .adm-row-name,
+  .adm-row-sub{
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+    flex-basis:100%;
+    line-height:1.35;
+  }
 }
 
 
@@ -587,7 +600,15 @@
   overflow:hidden;
 }
 .adm-dthumb img{ inline-size:100%; block-size:100%; object-fit:cover; }
-.adm-dthumb svg{ inline-size:100%; block-size:auto; display:block; }
+/* the rendered fan is taller than it is wide — contain it instead of
+   cropping the tips off */
+.adm-dthumb svg{
+  inline-size:auto;
+  block-size:auto;
+  max-inline-size:100%;
+  max-block-size:100%;
+  display:block;
+}
 .adm-row-pv:has(.adm-dthumb){ inline-size:56px; block-size:56px; }
 
 
@@ -613,6 +634,67 @@
 /* ---- pricing sample ---- */
 .adm-sample{ min-inline-size:0; }
 .adm-sample .table-wrap{ margin:0; }
+
+/* ---- every item price, grouped and collapsed ---- */
+.adm-pgroup{
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  overflow:hidden;
+}
+.adm-pgroup + .adm-pgroup{ margin-block-start:8px; }
+.adm-pghead{
+  inline-size:100%;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-block-size:52px;
+  padding-inline:14px;
+  padding-block:10px;
+  border:0;
+  background:transparent;
+  color:inherit;
+  font-family:inherit;
+  font-size:.96rem;
+  font-weight:700;
+  text-align:start;
+  cursor:pointer;
+}
+.adm-pghead:hover{ background:var(--bg-4); }
+.adm-pghead:focus-visible{ outline:2px solid var(--rose); outline-offset:-2px; }
+.adm-pgt{ flex:1 1 auto; min-inline-size:0; }
+.adm-pghead[aria-expanded="true"]{ background:var(--bg-4); color:var(--rose-3); }
+.adm-pghead[aria-expanded="true"] .adm-row-chev{ transform:rotate(90deg); }
+.adm-pgbody{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:0;
+  padding:6px 14px 12px;
+  border-block-start:1px solid var(--line);
+  background:var(--bg-4);
+}
+/* one line per item: the name reads, the number sits at the end, and a list
+   of fifty charms stays a list instead of becoming a page */
+.adm-pgbody .adm-f{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:10px;
+  padding-block:8px;
+  border-block-end:1px dashed var(--line);
+}
+.adm-pgbody .adm-f:last-child{ border-block-end:0; }
+.adm-pgbody .adm-f .label{
+  flex:1 1 auto;
+  min-inline-size:0;
+  margin:0;
+  font-size:.88rem;
+  font-weight:600;
+  overflow-wrap:anywhere;
+}
+.adm-pgbody .adm-num{ flex:0 0 104px; inline-size:104px; max-inline-size:104px; }
 
 /* ---- designs ---- */
 .adm-dact{ display:flex; flex-wrap:wrap; gap:8px; }
@@ -687,6 +769,23 @@
 .adm-opv:empty{ display:none; }
 .adm-opv svg,.adm-opv img{ max-inline-size:100%; block-size:auto; display:block; }
 .adm-opv img{ max-block-size:220px; border-radius:var(--r-sm); }
+/* on a phone the design must not push the editable half off the first screen */
+@media (max-width:560px){
+  .adm-opv svg{ max-block-size:170px; inline-size:auto; }
+}
+
+/* ---- the editable half of an order ---- */
+.adm-oedit{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+}
+.adm-oedit .adm-fields{ gap:10px 14px; }
+.adm-obulk{ min-block-size:40px; }
 
 .adm-ometa{
   display:grid;
@@ -718,6 +817,132 @@
 
 
 /* =========================================================================
+   08b  REAL PHOTOGRAPHS + THE DRAWN DECORATION LIBRARY
+   -------------------------------------------------------------------------
+   The owner's promise to his customer is «you receive what you see», so the
+   panel has to make a photograph feel like a first-class field, not an
+   afterthought: a real thumbnail, its weight in KB, and one obvious way back
+   to the drawn default.
+   ========================================================================= */
+
+/* ---- the image control ---- */
+.adm-imgpv.is-on{ border-style:solid; border-color:var(--line-2); background:var(--bg-2); }
+.adm-imgact{ flex:1 1 220px; min-inline-size:0; }
+.adm-imgmeta{
+  margin:0;
+  font-variant-numeric:tabular-nums;
+  color:var(--ink-3);
+}
+.adm-imgmeta.is-on{ color:var(--rose-3); font-weight:700; }
+.adm-imgurl{ margin-block-start:8px; font-size:.82rem; }
+.adm-imgshrink{ margin:0; margin-block-start:6px; }
+.adm-imgup{ min-block-size:40px; }
+.adm-imgact .btn{ min-block-size:40px; }
+
+/* ---- storage meter ---- */
+.adm-meter{
+  inline-size:100%;
+  block-size:10px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  overflow:hidden;
+  border:1px solid var(--line);
+}
+.adm-meter-i{
+  display:block;
+  block-size:100%;
+  inline-size:0;
+  border-radius:var(--r-full);
+  background:linear-gradient(90deg,var(--ok),var(--gold));
+  transition:inline-size var(--dur,200ms) var(--ease);
+}
+.adm-meter-i.is-warn{ background:linear-gradient(90deg,var(--gold),var(--warn)); }
+.adm-meter-i.is-full{ background:linear-gradient(90deg,var(--warn),var(--err)); }
+.adm-storefigs{ display:flex; flex-direction:column; gap:6px; }
+.adm-storefigs > p{ margin:0; }
+
+/* ---- the shared SN.Art gradient block: present, never seen ---- */
+.adm-artdefs{
+  position:absolute;
+  inline-size:0;
+  block-size:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+
+/* ---- the art field inside a decoration row ---- */
+.adm-artf{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+}
+.adm-artpv{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  inline-size:52px;
+  block-size:52px;
+  border-radius:var(--r-xs);
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  color:var(--ink-3);
+}
+.adm-artpv svg{ display:block; }
+.adm-artinfo{ flex:1 1 200px; min-inline-size:0; display:flex; flex-direction:column; gap:8px; }
+.adm-artname{ font-weight:700; font-size:.92rem; color:var(--ink); overflow-wrap:anywhere; }
+.adm-artinfo .btn{ min-block-size:40px; }
+
+/* ---- the picker ---- */
+.adm-artpick{ display:flex; flex-direction:column; gap:12px; }
+.adm-artchips{ gap:6px; }
+.adm-artletter{ max-inline-size:240px; }
+.adm-artchar{ text-align:center; font-size:1.1rem; }
+.adm-artgrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(88px,1fr));
+  gap:8px;
+}
+.adm-arttile{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  padding:10px 6px;
+  min-block-size:92px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  color:var(--ink-2);
+  font-family:inherit;
+  cursor:pointer;
+  transition:border-color var(--dur,200ms) var(--ease),
+             background-color var(--dur,200ms) var(--ease);
+}
+.adm-arttile:hover{ border-color:var(--rose); background:var(--bg-4); }
+.adm-arttile:focus-visible{ outline:2px solid var(--rose); outline-offset:2px; }
+.adm-arttile.is-on{ border-color:var(--rose); background:var(--rose-soft); }
+.adm-arttile svg{ display:block; }
+.adm-arttl{
+  font-size:.72rem;
+  line-height:1.3;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+
+/* ---- a drawn charm as a row preview ---- */
+.adm-sw-art{ background:var(--bg-2); overflow:hidden; }
+.adm-sw-art svg{ display:block; }
+
+/* ---- the «new decoration» form ---- */
+.adm-ndform{ display:flex; flex-direction:column; gap:12px; }
+.adm-ndErr:empty{ display:none; }
+
+/* =========================================================================
    09  BACKUP TAB
    ========================================================================= */
 .adm-btnrow{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
@@ -743,6 +968,31 @@
    10  UTILITIES + REDUCED MOTION
    ========================================================================= */
 .adm-root .empty{ margin-block:8px; }
+
+/* ---- phone ergonomics -------------------------------------------------
+   He administers this from a phone with one thumb. Anything he taps has to
+   be a real target, not a 32px icon meant for a mouse. ------------------- */
+@media (max-width:640px){
+  .adm-row-a .icon-btn,
+  .adm-orow-a .icon-btn,
+  .adm-tlact .icon-btn{ inline-size:40px; block-size:40px; }
+  .adm-row-a{ gap:0; }
+  /* «إضافة جديد» stays in reach even 50 rows down the list */
+  .adm-crud-h{
+    position:sticky;
+    inset-block-start:0;
+    z-index:2;
+    padding-block:8px;
+    background:var(--bg-2);
+    box-shadow:0 6px 10px -8px rgba(74,43,57,.28);
+  }
+  .adm-add{ min-block-size:44px; }
+  .adm-artgrid{ grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); }
+  .adm-arttile{ min-block-size:86px; }
+  .adm-obtns .btn{ flex:1 1 44%; justify-content:center; min-block-size:44px; }
+  .adm-imgrow{ gap:10px; }
+  .adm-imgpv{ inline-size:64px; block-size:64px; }
+}
 
 @media print{
   .adm-side,.adm-top,.adm-scrim,.adm-row-a,.adm-add{ display:none !important; }

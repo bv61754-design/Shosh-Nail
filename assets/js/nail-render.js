@@ -118,12 +118,6 @@
     }
   };
 
-  /* which limb of a finger carries its nail plate */
-  function nailLimb(fk) {
-    var gm = HAND_GEOM[fk];
-    return (gm && gm.tip) ? gm.tip : gm;
-  }
-
   /* --- the bent thumb ---------------------------------------------------- */
   function qAt(a, b, c, t) {
     var u = 1 - t;
@@ -227,7 +221,7 @@
      length factor 1 the plate is seated so its free edge lands exactly on the
      fingertip, shorter sets pull just inside it, and only long / xlong reach
      past it. */
-  var PLATE_W = 0.90;
+  var PLATE_W = 0.945;
   var PLATE_AT = 0.80;
   var PLATE_SEAT = 0.16;
 
@@ -432,6 +426,10 @@
     if (!isObj(c)) return null;
     return {
       id: typeof c.id === 'string' ? c.id : '',
+      /* a placement may carry its own artwork: `art` is a vector id drawn by
+         SN.Art, `image` a data-url photo. Either overrides the store item. */
+      art: typeof c.art === 'string' ? c.art : '',
+      image: typeof c.image === 'string' ? c.image : '',
       x: clamp(num(c.x, 0.5), -0.4, 1.4),
       y: clamp(num(c.y, 0.35), -0.4, 1.4),
       s: clamp(num(c.s, 1), 0.25, 4),
@@ -694,35 +692,133 @@
   }
 
   /* ====================================================================== */
-  /* 5. Paint helpers (gradients / filters, all with unique ids)             */
+  /* 5. Paint helpers                                                        */
+  /*                                                                         */
+  /*  THE LIGHT. One source for the whole scene: high, to the LEFT, slightly */
+  /*  in front. Everything in this file — the cast shadow's direction, the   */
+  /*  bright side of the C-curve, the specular hot spot, the rim light, the  */
+  /*  shading of the hand itself — is derived from this one vector, which is */
+  /*  why the picture holds together. It points FROM the surface TOWARDS the */
+  /*  light, in WORLD space (x right, y down).                              */
+  /*                                                                         */
+  /*  SHARED DEFS. A ten nail preview used to build ten copies of every      */
+  /*  gradient and filter. Now a render pass opens one context and every     */
+  /*  gradient / filter / clip is memoised on its own definition, so ten     */
+  /*  identical nails cost exactly one of each. This is the whole mobile     */
+  /*  performance story — filters are the expensive part, and they are now   */
+  /*  both rare and shared.                                                  */
   /* ====================================================================== */
 
-  function grad(defs, type, stops, attrs) {
-    var id = uid(type === 'radialGradient' ? 'rg' : 'lg');
-    var a = attrs || {}, i, s;
-    a.id = id;
-    var el = E(type, a);
-    for (i = 0; i < stops.length; i++) {
-      s = stops[i];
-      el.appendChild(E('stop', {
-        offset: f(s[0] * 100) + '%',
-        'stop-color': s[1],
-        'stop-opacity': f(s.length > 2 ? s[2] : 1)
-      }));
-    }
-    add(defs, el);
-    return 'url(#' + id + ')';
-  }
-  function linGrad(defs, stops, a) { return grad(defs, 'linearGradient', stops, a || { x1: 0, y1: 0, x2: 0, y2: 1 }); }
-  function radGrad(defs, stops, a) { return grad(defs, 'radialGradient', stops, a || { cx: 0.5, cy: 0.5, r: 0.6 }); }
+  var LIGHT = { x: -0.56, y: -0.83 };
 
+  var CTX = null;
+
+  function ctxOpen(defsEl) {
+    var prev = CTX;
+    CTX = { defs: defsEl, cache: {} };
+    return prev;
+  }
+  function ctxClose(prev) { CTX = prev || null; }
+
+  /* every def-maker funnels through here: same key -> same url(#id) */
+  function shared(localDefs, key, make) {
+    var d = (CTX && CTX.defs) ? CTX.defs : localDefs;
+    if (CTX && CTX.cache[key]) return CTX.cache[key];
+    var ref = make(d);
+    if (CTX) CTX.cache[key] = ref;
+    return ref;
+  }
+
+  function grad(defs, type, stops, attrs) {
+    var key = 'g|' + type + '|' + JSON.stringify(stops) + '|' + JSON.stringify(attrs || 0);
+    return shared(defs, key, function (d) {
+      var id = uid(type === 'radialGradient' ? 'rg' : 'lg'), a = {}, k, i, s;
+      if (attrs) for (k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) a[k] = attrs[k];
+      a.id = id;
+      var el = E(type, a);
+      for (i = 0; i < stops.length; i++) {
+        s = stops[i];
+        el.appendChild(E('stop', {
+          offset: f(clamp(s[0], 0, 1) * 100) + '%',
+          'stop-color': s[1],
+          'stop-opacity': f(s.length > 2 ? s[2] : 1)
+        }));
+      }
+      add(d, el);
+      return 'url(#' + id + ')';
+    });
+  }
+  /* vertical  = along the nail, 0 at the free edge, 1 at the cuticle */
+  function vGrad(defs, stops) { return grad(defs, 'linearGradient', stops, { x1: 0, y1: 0, x2: 0, y2: 1 }); }
+  /* horizontal = across the nail, 0 at the left side wall                */
+  function hGrad(defs, stops) { return grad(defs, 'linearGradient', stops, { x1: 0, y1: 0, x2: 1, y2: 0 }); }
+  function dGrad(defs, stops, x1, y1, x2, y2) {
+    return grad(defs, 'linearGradient', stops, { x1: f(x1), y1: f(y1), x2: f(x2), y2: f(y2) });
+  }
+  function radGrad(defs, stops, a) {
+    return grad(defs, 'radialGradient', stops, a || { cx: 0.5, cy: 0.5, r: 0.6 });
+  }
+
+  /* Gaussian blur, quantised so near-identical requests collapse onto one
+     definition. Blurs are the only expensive primitive in the file, so they
+     are counted: a nail plate uses NONE, a hand uses two, and a pattern may
+     use one shared group blur. */
   function blurF(defs, std) {
-    var id = uid('bl');
-    add(defs, E('filter', {
-      id: id, x: '-45%', y: '-45%', width: '190%', height: '190%',
-      'color-interpolation-filters': 'sRGB'
-    }, [E('feGaussianBlur', { stdDeviation: f(Math.max(0.01, std)) })]));
-    return 'url(#' + id + ')';
+    var q = Math.max(0.05, Math.round(num(std, 1) * 4) / 4);
+    return shared(defs, 'bl|' + q, function (d) {
+      var id = uid('bl');
+      add(d, E('filter', {
+        id: id, x: '-45%', y: '-45%', width: '190%', height: '190%',
+        'color-interpolation-filters': 'sRGB'
+      }, [E('feGaussianBlur', { stdDeviation: f(q) })]));
+      return 'url(#' + id + ')';
+    });
+  }
+
+  /* organic distortion for marble veins — one definition for the whole page */
+  function marbleF(defs, scale, freq, seed) {
+    var q = Math.round(scale * 2) / 2;
+    var fq = Math.round(freq * 1000) / 1000;
+    return shared(defs, 'mb|' + q + '|' + fq + '|' + seed, function (d) {
+      var id = uid('mb');
+      add(d, E('filter', {
+        id: id, x: '-30%', y: '-30%', width: '160%', height: '160%',
+        'color-interpolation-filters': 'sRGB'
+      }, [
+        E('feTurbulence', {
+          type: 'fractalNoise', baseFrequency: f(fq), numOctaves: 3,
+          seed: seed, result: 'n'
+        }),
+        E('feDisplacementMap', {
+          in: 'SourceGraphic', in2: 'n', scale: f(q),
+          xChannelSelector: 'R', yChannelSelector: 'G'
+        })
+      ]));
+      return 'url(#' + id + ')';
+    });
+  }
+
+  /* A micro speckle used by matte / velvet / airbrushed ombré so a flat fill
+     stops looking like a flat fill. One <pattern> for the whole page; it is
+     plain geometry, so it rasterises to PNG like anything else. */
+  function grainP(defs, tone, op, size) {
+    var sz = Math.max(1, Math.round(num(size, 7) * 2) / 2);
+    var dots = 26;
+    return shared(defs, 'gr|' + tone + '|' + op + '|' + sz, function (d) {
+      var id = uid('gr');
+      var pt = E('pattern', {
+        id: id, width: f(sz), height: f(sz), patternUnits: 'userSpaceOnUse'
+      });
+      var r = seeded('grain|' + tone), i;
+      for (i = 0; i < dots; i++) {
+        pt.appendChild(E('circle', {
+          cx: f(r() * sz), cy: f(r() * sz), r: f(sz * r.r(0.007, 0.019)),
+          fill: tone, opacity: f(op * r.r(0.45, 1))
+        }));
+      }
+      add(d, pt);
+      return 'url(#' + id + ')';
+    });
   }
 
   function rect(x, y, w, h, attrs) {
@@ -731,54 +827,99 @@
     return E('rect', a);
   }
 
+  /* --------------------------------------------------------------- colour */
+  /* Polish is not a flat fill. These three derive the whole tonal range of a
+     plate from the one colour the customer picked, and they behave for the
+     extremes on purpose: a WHITE nail needs its form carved by shadow (there
+     is no headroom to brighten), a BLACK nail can only show form by catching
+     light (there is no headroom to darken). Both are tested in the lab. */
+  function cLit(c) { var l = lum(c); return lighten(c, 0.07 + (1 - l) * 0.20); }
+  function cWall(c) { var l = lum(c); return darken(c, 0.15 + l * 0.19); }
+  function cEdge(c) { var l = lum(c); return darken(c, 0.25 + l * 0.26); }
+  /* light passes through the thin free edge of a press-on and comes back
+     paler and slightly desaturated */
+  function cTip(c) { var l = lum(c); return mix(lighten(c, 0.30 + (1 - l) * 0.16), '#FBF2F4', 0.22); }
+
+  /* the plate's own light direction, in the plate's local coordinates
+     (x across the nail, y from tip to cuticle) */
+  function localLight(opts) {
+    var a = rad(num(opts && opts.light, 0));
+    var mx = (opts && opts.mirror) ? -LIGHT.x : LIGHT.x;
+    var my = LIGHT.y;
+    return { x: Math.cos(a) * mx + Math.sin(a) * my, y: -Math.sin(a) * mx + Math.cos(a) * my };
+  }
+
   /* ====================================================================== */
-  /* 6. Patterns (SPEC section 8). Each one paints inside the clipped plate  */
-  /*    box (0,0)-(w,h) using ctx:                                           */
-  /*      w,h  plate box      u    1/100 of the plate width (a scale unit)   */
-  /*      c1   pattern.color  c2   pattern.color2                            */
-  /*      S    pattern.scale 0.6..1.6 (motif size / tip depth)               */
-  /*      rnd  seeded PRNG    defs <defs> to hang gradients & filters on     */
+  /* 6. Patterns (SPEC section 8)                                            */
+  /*                                                                         */
+  /*    Every one of these is a salon technique, not a diagram. They paint    */
+  /*    inside the clipped plate box (0,0)-(w,h) using ctx:                   */
+  /*      w,h  plate box     u   1/100 of the plate width (the scale unit)    */
+  /*      c1   pattern.color c2  pattern.color2   base  the nail colour       */
+  /*      S    pattern.scale 0.6..1.6 (motif size / tip depth)                */
+  /*      L    the local light vector    q  detail budget 0.35..1             */
+  /*      rnd  seeded PRNG   defs  where gradients & filters are registered   */
   /* ====================================================================== */
 
   var PATTERNS = {};
 
+  /* --- the classic smile line ------------------------------------------- */
+  function smile(x, depth, curve) {
+    return pb().M(-x.w * 0.28, depth * (1 - curve))
+      .C(x.w * 0.22, depth * (1 + curve * 1.5), x.w * 0.78, depth * (1 + curve * 1.5),
+         x.w * 1.28, depth * (1 - curve)).d();
+  }
+
   PATTERNS.french = function (g, x) {
-    var d = x.h * 0.20 * x.S;
-    var p = pb();
-    p.M(-x.w * 0.25, d * 0.52)
-      .C(x.w * 0.24, d * 1.36, x.w * 0.76, d * 1.36, x.w * 1.25, d * 0.52)
-      .L(x.w * 1.25, -x.h * 0.2).L(-x.w * 0.25, -x.h * 0.2).Z();
-    add(g, E('path', { d: p.d(), fill: x.c1 }));
+    var d = x.h * 0.185 * x.S;
+    var line = smile(x, d, 0.42);
+    /* the tip itself, faintly deeper where it meets the smile line */
     add(g, E('path', {
-      d: pb().M(-x.w * 0.25, d * 0.52)
-        .C(x.w * 0.24, d * 1.36, x.w * 0.76, d * 1.36, x.w * 1.25, d * 0.52).d(),
-      fill: 'none', stroke: lighten(x.c1, 0.45), 'stroke-width': f(x.u * 0.7), opacity: 0.5
+      d: line + ' L' + f(x.w * 1.28) + ' ' + f(-x.h * 0.3) +
+         ' L' + f(-x.w * 0.28) + ' ' + f(-x.h * 0.3) + ' Z',
+      fill: vGrad(x.defs, [
+        [0, cTip(x.c1)], [0.45, x.c1], [1, mix(x.c1, cWall(x.c1), 0.55)]
+      ]), opacity: 0.94
+    }));
+    /* a real French tip is a SECOND layer: it has a lip that catches light on
+       top of the smile line and drops a hairline of shadow below it */
+    add(g, E('path', {
+      d: line, fill: 'none', stroke: lighten(x.c1, 0.55),
+      'stroke-width': f(x.u * 0.9), opacity: 0.75
+    }));
+    add(g, E('path', {
+      d: line, fill: 'none', stroke: darken(x.base, 0.28),
+      'stroke-width': f(x.u * 1.5), opacity: 0.20,
+      transform: 'translate(0 ' + f(x.u * 1.3) + ')'
     }));
   };
 
   PATTERNS.frenchDeep = function (g, x) {
-    var d = x.h * 0.36 * x.S;
-    var p = pb();
-    p.M(-x.w * 0.25, d * 0.28)
-      .C(x.w * 0.26, d * 1.16, x.w * 0.62, d * 1.30, x.w * 1.25, d * 0.70)
-      .L(x.w * 1.25, -x.h * 0.2).L(-x.w * 0.25, -x.h * 0.2).Z();
-    add(g, E('path', { d: p.d(), fill: x.c1 }));
+    var d = x.h * 0.34 * x.S;
+    var line = smile(x, d, 0.30);
     add(g, E('path', {
-      d: pb().M(-x.w * 0.25, d * 0.28)
-        .C(x.w * 0.26, d * 1.16, x.w * 0.62, d * 1.30, x.w * 1.25, d * 0.70).d(),
-      fill: 'none', stroke: x.c2, 'stroke-width': f(x.u * 1.1), opacity: 0.55
+      d: line + ' L' + f(x.w * 1.28) + ' ' + f(-x.h * 0.3) +
+         ' L' + f(-x.w * 0.28) + ' ' + f(-x.h * 0.3) + ' Z',
+      fill: vGrad(x.defs, [[0, cTip(x.c1)], [0.5, x.c1], [1, mix(x.c1, cWall(x.c1), 0.55)]])
+    }));
+    add(g, E('path', {
+      d: line, fill: 'none', stroke: x.c2, 'stroke-width': f(x.u * 1.6), opacity: 0.7
+    }));
+    add(g, E('path', {
+      d: line, fill: 'none', stroke: lighten(x.c1, 0.5), 'stroke-width': f(x.u * 0.7),
+      opacity: 0.6, transform: 'translate(0 ' + f(-x.u * 1.1) + ')'
     }));
   };
 
   PATTERNS.tipsGlitter = function (g, x) {
-    var depth = x.h * 0.44 * x.S, i, t, r, op;
+    var depth = x.h * 0.42 * x.S, i, t, r, op, n = Math.round(120 * x.q);
     add(g, rect(-1, -1, x.w + 2, depth + 1, {
-      fill: linGrad(x.defs, [[0, x.c1, 0.6], [0.65, x.c1, 0.18], [1, x.c1, 0]], { x1: 0, y1: 0, x2: 0, y2: 1 })
+      fill: vGrad(x.defs, [[0, x.c1, 1], [0.42, x.c1, 0.55], [0.78, x.c1, 0.12], [1, x.c1, 0]])
     }));
-    for (i = 0; i < 110; i++) {
+    for (i = 0; i < n; i++) {
       t = x.rnd(); t = t * t;
-      r = x.rnd.r(0.35, 1.9) * x.u;
-      op = clamp(x.rnd.r(0.3, 1) * (1 - t * 0.55), 0.05, 1);
+      r = x.rnd.r(0.3, 1.8) * x.u;
+      op = clamp(x.rnd.r(0.3, 1) * (1 - t * 0.5), 0.05, 1);
       add(g, E('circle', {
         cx: f(x.rnd() * x.w), cy: f(t * depth * 1.1), r: f(r),
         fill: x.rnd() < 0.5 ? '#FFFFFF' : (x.rnd() < 0.55 ? x.c1 : x.c2),
@@ -787,26 +928,45 @@
     }
   };
 
+  /* airbrushed: a long soft ramp plus the fine grain a real airbrush leaves,
+     which is what kills the banding an SVG gradient shows on a phone */
   PATTERNS.ombre = function (g, x) {
     var mid = clamp(0.5 * (2 - x.S), 0.16, 0.84);
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      opacity: 0.96,
-      fill: linGrad(x.defs, [[0, x.c1], [mid, mix(x.c1, x.c2, 0.5)], [1, x.c2]], { x1: 0, y1: 0, x2: 0, y2: 1 })
+      fill: vGrad(x.defs, [
+        [0, x.c1], [mid * 0.5, mix(x.c1, x.c2, 0.22)], [mid, mix(x.c1, x.c2, 0.5)],
+        [mid + (1 - mid) * 0.5, mix(x.c1, x.c2, 0.8)], [1, x.c2]
+      ])
     }));
+    if (x.q >= 0.7) {
+      add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+        fill: grainP(x.defs, '#FFFFFF', 0.5, x.u * 15), opacity: 0.4
+      }));
+    }
   };
 
   PATTERNS.ombreV = function (g, x) {
     var mid = clamp(0.5 * (2 - x.S), 0.16, 0.84);
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      opacity: 0.96,
-      fill: linGrad(x.defs, [[0, x.c1], [mid, mix(x.c1, x.c2, 0.5)], [1, x.c2]], { x1: 0, y1: 0, x2: 1, y2: 0 })
+      fill: hGrad(x.defs, [
+        [0, x.c1], [mid * 0.5, mix(x.c1, x.c2, 0.22)], [mid, mix(x.c1, x.c2, 0.5)],
+        [mid + (1 - mid) * 0.5, mix(x.c1, x.c2, 0.8)], [1, x.c2]
+      ])
     }));
+    if (x.q >= 0.7) {
+      add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+        fill: grainP(x.defs, '#FFFFFF', 0.5, x.u * 15), opacity: 0.4
+      }));
+    }
   };
 
   PATTERNS.half = function (g, x) {
     var y = clamp(0.5 * x.S, 0.18, 0.84) * x.h;
-    add(g, rect(-1, -1, x.w + 2, y + 1, { fill: x.c2 }));
-    add(g, rect(-1, y - x.u * 0.6, x.w + 2, x.u * 1.2, { fill: x.c1, opacity: 0.75 }));
+    add(g, rect(-1, -1, x.w + 2, y + 1, {
+      fill: vGrad(x.defs, [[0, cTip(x.c2)], [0.4, x.c2], [1, mix(x.c2, cWall(x.c2), 0.4)]])
+    }));
+    add(g, rect(-1, y - x.u * 0.5, x.w + 2, x.u * 1, { fill: lighten(x.c1, 0.4), opacity: 0.7 }));
+    add(g, rect(-1, y + x.u * 0.5, x.w + 2, x.u * 1.4, { fill: darken(x.base, 0.3), opacity: 0.18 }));
   };
 
   PATTERNS.diagonal = function (g, x) {
@@ -814,26 +974,35 @@
     var y1 = clamp(0.20 * x.S, 0.04, 0.6) * x.h;
     add(g, E('path', {
       d: pb().M(-2, y0).L(x.w + 2, y1).L(x.w + 2, -2).L(-2, -2).Z().d(),
-      fill: x.c1
+      fill: dGrad(x.defs, [[0, cTip(x.c1)], [0.45, x.c1], [1, cWall(x.c1)]], 0, 0, 0.7, 1)
     }));
     add(g, E('path', {
       d: pb().M(-2, y0).L(x.w + 2, y1).d(),
-      fill: 'none', stroke: x.c2, 'stroke-width': f(x.u * 1.3), opacity: 0.8
+      fill: 'none', stroke: x.c2, 'stroke-width': f(x.u * 1.3), opacity: 0.85
+    }));
+    add(g, E('path', {
+      d: pb().M(-2, y0 + x.u * 1.4).L(x.w + 2, y1 + x.u * 1.4).d(),
+      fill: 'none', stroke: darken(x.base, 0.3), 'stroke-width': f(x.u * 1.2), opacity: 0.16
     }));
   };
+
+  /* every painted dot is a tiny dome: a rim of its own shadow and a highlight
+     on the light side, otherwise it reads as a hole punched in the colour */
+  function dome(g, x, cx, cy, r, fill) {
+    add(g, E('circle', { cx: f(cx), cy: f(cy), r: f(r), fill: fill }));
+    add(g, E('circle', {
+      cx: f(cx + x.L.x * r * 0.34), cy: f(cy + x.L.y * r * 0.34), r: f(r * 0.42),
+      fill: '#FFFFFF', opacity: 0.28
+    }));
+  }
 
   PATTERNS.dots = function (g, x) {
     var cell = x.w * 0.28 * x.S, row = 0, cx, cy, r;
     for (cy = -cell * 0.3; cy < x.h + cell; cy += cell * 0.9) {
       for (cx = (row % 2 ? cell * 0.5 : 0) - cell * 0.2; cx < x.w + cell; cx += cell) {
-        r = cell * 0.19 * x.rnd.r(0.82, 1.16);
-        add(g, E('circle', {
-          cx: f(cx + x.rnd.r(-1, 1) * cell * 0.10),
-          cy: f(cy + x.rnd.r(-1, 1) * cell * 0.10),
-          r: f(r),
-          fill: x.rnd() < 0.74 ? x.c1 : x.c2,
-          opacity: f(x.rnd.r(0.82, 1))
-        }));
+        r = cell * 0.19 * x.rnd.r(0.84, 1.14);
+        dome(g, x, cx + x.rnd.r(-1, 1) * cell * 0.09, cy + x.rnd.r(-1, 1) * cell * 0.09,
+             r, x.rnd() < 0.74 ? x.c1 : x.c2);
       }
       row++;
     }
@@ -842,8 +1011,10 @@
   PATTERNS.stripes = function (g, x) {
     var gap = x.w * 0.20 * x.S, sw = gap * 0.30, cx;
     for (cx = gap * 0.42; cx < x.w + gap; cx += gap) {
-      add(g, rect(cx - sw / 2, -2, sw, x.h + 4, { fill: x.c1, opacity: 0.95 }));
-      add(g, rect(cx + gap * 0.5 - sw * 0.2, -2, sw * 0.4, x.h + 4, { fill: x.c2, opacity: 0.85 }));
+      add(g, rect(cx - sw / 2, -2, sw, x.h + 4, {
+        fill: hGrad(x.defs, [[0, cWall(x.c1)], [0.35, lighten(x.c1, 0.25)], [1, cWall(x.c1)]])
+      }));
+      add(g, rect(cx + gap * 0.5 - sw * 0.2, -2, sw * 0.4, x.h + 4, { fill: x.c2, opacity: 0.9 }));
     }
   };
 
@@ -853,110 +1024,199 @@
       y = x.h * 0.10 + i * step;
       add(g, E('path', {
         d: pb().M(-3, y).L(x.w / 2, y - dep).L(x.w + 3, y).d(),
-        fill: 'none',
-        stroke: i % 2 ? x.c2 : x.c1,
+        fill: 'none', stroke: i % 2 ? x.c2 : x.c1,
         'stroke-width': f(step * 0.24),
-        'stroke-linejoin': 'round', 'stroke-linecap': 'round',
-        opacity: 0.95
+        'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: 0.95
+      }));
+      add(g, E('path', {
+        d: pb().M(-3, y - step * 0.07).L(x.w / 2, y - dep - step * 0.07).L(x.w + 3, y - step * 0.07).d(),
+        fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(step * 0.06),
+        'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: 0.3
       }));
     }
   };
 
+  /* Real marble is stone seen THROUGH the polish: cloudy fields of the second
+     colour, then veins that are thick where they start and thin to nothing.
+     The organic wobble comes from one shared turbulence filter, not from the
+     path data — hand drawn bezier veins always read as drawn. */
   PATTERNS.marble = function (g, x) {
-    var soft = blurF(x.defs, x.u * 2.6);
-    var fine = blurF(x.defs, x.u * 0.55);
-    var i, j, p, px, py, dx;
+    var warp = marbleF(x.defs, x.u * 2.2 * x.S, 0.026 / x.S, (hash32(String(x.key)) % 90) + 1);
+    var i, j, p, px, py, dx, wob, cloud;
 
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, { fill: x.c2, opacity: 0.16 }));
+    cloud = add(g, E('g', { filter: warp }));
+    add(cloud, rect(-2, -2, x.w + 4, x.h + 4, { fill: x.c2, opacity: 0.14 }));
     for (i = 0; i < 3; i++) {
-      add(g, E('ellipse', {
+      add(cloud, E('ellipse', {
         cx: f(x.rnd() * x.w), cy: f(x.rnd() * x.h),
         rx: f(x.w * x.rnd.r(0.34, 0.62) * x.S),
-        ry: f(x.h * x.rnd.r(0.18, 0.34) * x.S),
-        fill: i === 1 ? lighten(x.c2, 0.35) : x.c2,
-        opacity: f(x.rnd.r(0.3, 0.55)), filter: soft
+        ry: f(x.h * x.rnd.r(0.16, 0.30) * x.S),
+        fill: radGrad(x.defs, [
+          [0, i === 1 ? lighten(x.c2, 0.4) : x.c2, 0.7],
+          [0.55, i === 1 ? lighten(x.c2, 0.4) : x.c2, 0.34],
+          [1, x.c2, 0]
+        ])
       }));
     }
+
+    wob = add(g, E('g', { filter: warp }));
     for (i = 0; i < 4; i++) {
       p = pb();
-      px = x.rnd.r(-0.1, 1.1) * x.w;
-      p.M(px, -3);
-      py = -3;
+      px = x.rnd.r(-0.15, 1.15) * x.w;
+      py = -x.h * 0.12;
+      p.M(px, py);
       for (j = 0; j < 4; j++) {
-        dx = x.rnd.r(-0.26, 0.26) * x.w;
-        p.Q(px + dx, py + x.h * 0.16, px + dx * 0.6, py + x.h * 0.31);
-        px += dx * 0.6;
-        py += x.h * 0.31;
+        dx = x.rnd.r(-0.34, 0.34) * x.w;
+        p.Q(px + dx, py + x.h * 0.17, px + dx * 0.55, py + x.h * 0.33);
+        px += dx * 0.55;
+        py += x.h * 0.33;
       }
-      add(g, E('path', {
+      /* A vein is thick where it starts and thins to nothing. Three passes,
+         each shorter and finer than the last, with a dash that runs out —
+         that is what stops it looking like a drawn line. */
+      add(wob, E('path', {
         d: p.d(), fill: 'none', stroke: x.c1,
-        'stroke-width': f(x.u * (1.7 - i * 0.28) * x.S),
-        'stroke-linecap': 'round', opacity: f(0.85 - i * 0.12), filter: fine
+        'stroke-width': f(x.u * (3.2 - i * 0.55) * x.S),
+        'stroke-linecap': 'round', opacity: f(0.20 - i * 0.03),
+        'stroke-dasharray': f(x.h * (1.1 - i * 0.2)) + ' ' + f(x.h * 2)
+      }));
+      add(wob, E('path', {
+        d: p.d(), fill: 'none', stroke: x.c1,
+        'stroke-width': f(x.u * (1.5 - i * 0.26) * x.S),
+        'stroke-linecap': 'round', opacity: f(0.44 - i * 0.06),
+        'stroke-dasharray': f(x.h * (0.85 - i * 0.16)) + ' ' + f(x.h * 2)
+      }));
+      add(wob, E('path', {
+        d: p.d(), fill: 'none', stroke: lighten(x.c1, 0.3),
+        'stroke-width': f(x.u * (0.6 - i * 0.09) * x.S),
+        'stroke-linecap': 'round', opacity: f(0.5 - i * 0.08),
+        'stroke-dasharray': f(x.h * (0.5 - i * 0.09)) + ' ' + f(x.h * 2)
       }));
     }
   };
 
+  /* chrome AS A PATTERN: the same mirror model the chrome finish uses, but
+     driven by the customer's two colours instead of the nail colour */
+  function mirrorFill(defs, c, tint) {
+    /* Metal is a desaturated version of the colour with a lot of range on it */
+    var m = mix(c, tint || c, 0.35);
+    var g0 = mix(m, '#8E8792', 0.16);
+    /* Slightly off vertical: a real hand is never square to the room, and a
+       dead level band is the single biggest tell that this is a gradient. */
+    return grad(defs, 'linearGradient', [
+      [0.00, darken(g0, 0.34)],
+      [0.15, darken(g0, 0.26)],
+      [0.25, darken(g0, 0.22)],
+      [0.265, lighten(g0, 0.74)],   /* the horizon: a hard edge, like a room */
+      [0.33, lighten(g0, 0.40)],
+      [0.42, lighten(g0, 0.10)],
+      [0.50, darken(g0, 0.16)],
+      [0.60, darken(g0, 0.30)],
+      [0.615, darken(g0, 0.04)],
+      [0.74, mix(g0, '#FFFFFF', 0.26)],
+      [0.87, lighten(g0, 0.58)],
+      [1.00, mix(g0, '#FFFFFF', 0.34)]
+    ], { x1: 0.34, y1: 0, x2: 0.66, y2: 1 });
+  }
+
   PATTERNS.chrome = function (g, x) {
-    var gid = linGrad(x.defs, [
-      [0, darken(x.c2, 0.28)],
-      [0.14, lighten(x.c1, 0.5)],
-      [0.3, x.c1],
-      [0.44, '#FFFFFF'],
-      [0.56, x.c1],
-      [0.7, x.c2],
-      [0.86, darken(x.c2, 0.34)],
-      [1, lighten(x.c1, 0.42)]
-    ], { x1: 0.05, y1: 0, x2: 0.95, y2: 1 });
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, { fill: gid, opacity: 0.94 }));
-    add(g, E('ellipse', {
-      cx: f(x.w * 0.34), cy: f(x.h * 0.42),
-      rx: f(x.w * 0.10 * x.S), ry: f(x.h * 0.42),
-      fill: '#FFFFFF', opacity: 0.5,
-      transform: 'rotate(-18 ' + f(x.w * 0.34) + ' ' + f(x.h * 0.42) + ')',
-      filter: blurF(x.defs, x.u * 1.6)
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, { fill: mirrorFill(x.defs, x.c1, x.c2) }));
+    /* the reflection is bent by the C-curve, so the bands bow */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, [
+        [0, '#0B0709', 0.5], [0.13, '#0B0709', 0.16],
+        [0.32, '#FFFFFF', 0.22], [0.42, '#FFFFFF', 0.05],
+        [0.72, '#0B0709', 0.12], [1, '#0B0709', 0.46]
+      ])
+    }));
+    add(g, E('path', {
+      d: x.d, fill: 'none', stroke: '#FFFFFF',
+      'stroke-width': f(x.u * 1.4), opacity: 0.6
     }));
   };
 
+  /* Glazed donut: a pearlescent veil, NOT a white wash. Fine shimmer plus a
+     hue that travels across the surface — pink into blue into gold. */
   PATTERNS.glazed = function (g, x) {
+    var i, n = Math.round(60 * x.q), r;
+    /* The glazed donut is an IRIDESCENT veil, not a white wash: the hue has
+       to travel across the surface — warm pink into violet into ice blue into
+       gold — or it just looks like someone breathed on the nail. */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      opacity: f(0.55 + x.S * 0.35),
+      fill: dGrad(x.defs, [
+        [0.00, mix(x.c1, '#FF9EC8', 0.55), 0.85],
+        [0.20, mix(x.c2, '#B79BFF', 0.6), 0.7],
+        [0.42, mix(x.c1, '#8ED6FF', 0.62), 0.72],
+        [0.62, mix(x.c1, '#A8FFD5', 0.5), 0.62],
+        [0.82, mix(x.c2, '#FFD98A', 0.6), 0.7],
+        [1.00, mix(x.c1, '#FFB0D8', 0.55), 0.85]
+      ], 0, 1, 1, 0)
+    }));
+    /* the pearl itself: a hard-edged bloom, the way a chrome powder buffs up */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: dGrad(x.defs, [
+        [0.10, '#FFFFFF', 0], [0.30, '#FFFFFF', 0.55],
+        [0.44, '#FFFFFF', 0.15], [0.70, '#FFFFFF', 0]
+      ], 0, 0, 1, 0.55)
+    }));
+    /* the pearl bloom sits where the light is */
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: radGrad(x.defs, [
-        [0, '#FFFFFF', 0.75], [0.4, x.c1, 0.45], [0.72, x.c2, 0.32], [1, x.c2, 0]
-      ], { cx: 0.38, cy: 0.26, r: 0.9 })
+        [0, '#FFFFFF', 0.8], [0.30, mix(x.c1, '#FFFFFF', 0.6), 0.5],
+        [0.66, mix(x.c2, '#FFFFFF', 0.35), 0.2], [1, x.c2, 0]
+      ], { cx: f(0.5 + x.L.x * 0.16), cy: f(0.34 + x.L.y * 0.10), r: 0.82 })
     }));
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      opacity: f(0.42 * x.S),
-      fill: linGrad(x.defs, [
-        [0, mix(x.c1, '#FFD9EC', 0.55), 0.55],
-        [0.34, mix(x.c2, '#D8ECFF', 0.5), 0.5],
-        [0.66, mix(x.c1, '#DFFBEA', 0.45), 0.45],
-        [1, mix(x.c2, '#FFF1CE', 0.5), 0.55]
-      ], { x1: 0, y1: 1, x2: 1, y2: 0 })
-    }));
+    for (i = 0; i < n; i++) {
+      r = x.rnd.r(0.2, 0.8) * x.u;
+      add(g, E('circle', {
+        cx: f(x.rnd() * x.w), cy: f(x.rnd() * x.h), r: f(r),
+        fill: x.rnd.pick(['#FFFFFF', '#FFD8EC', '#CFE6FF', '#FFF0C8', '#D9FFEC']),
+        opacity: f(x.rnd.r(0.35, 0.9))
+      }));
+    }
   };
 
+  /* A leopard rosette is a BROKEN ring — three or four separate arc strokes
+     of different weights around a warmer, softer centre — never a dashed
+     ellipse, which is the tell of a computer drawing one. */
+  function rosette(g, x, cx, cy, s, ang, dark, warm) {
+    var i, a0, a1, r1 = s * 0.54, r2 = s * 0.42, p, n = x.rnd.i(3, 4);
+    var gg = add(g, E('g', { transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')' }));
+    add(gg, E('ellipse', {
+      cx: f(cx), cy: f(cy), rx: f(s * 0.34), ry: f(s * 0.28),
+      fill: radGrad(x.defs, [[0, warm, 0.72], [0.55, warm, 0.42], [1, warm, 0]])
+    }));
+    a0 = x.rnd.r(0, 6.28);
+    for (i = 0; i < n; i++) {
+      a1 = a0 + (6.28 / n) * x.rnd.r(0.52, 0.78);
+      p = pb().M(cx + Math.cos(a0) * r1, cy + Math.sin(a0) * r2)
+        .A(r1, r2, 0, 0, 1, cx + Math.cos(a1) * r1, cy + Math.sin(a1) * r2);
+      add(gg, E('path', {
+        d: p.d(), fill: 'none', stroke: dark,
+        'stroke-width': f(s * x.rnd.r(0.16, 0.25)),
+        'stroke-linecap': 'round', opacity: f(x.rnd.r(0.82, 1))
+      }));
+      a0 += (6.28 / n) * x.rnd.r(0.95, 1.05);
+    }
+  }
+
   PATTERNS.leopard = function (g, x) {
-    /* a jittered grid, not pure noise — a real leopard print covers evenly */
-    var cell = x.w * 0.42 * x.S, sp, cx, cy, ang, row = 0, gx, gy;
-    for (gy = -cell * 0.2; gy < x.h + cell * 0.4; gy += cell * 0.86) {
-      for (gx = (row % 2 ? cell * 0.5 : 0) - cell * 0.15; gx < x.w + cell * 0.4; gx += cell) {
-        sp = x.w * 0.21 * x.S * x.rnd.r(0.78, 1.2);
-        cx = gx + x.rnd.r(-1, 1) * cell * 0.16;
-        cy = gy + x.rnd.r(-1, 1) * cell * 0.16;
-        ang = x.rnd.r(-70, 70);
-        add(g, E('ellipse', {
-          cx: f(cx), cy: f(cy), rx: f(sp * 0.52), ry: f(sp * 0.40),
-          fill: 'none', stroke: x.c1, 'stroke-width': f(sp * 0.21),
-          'stroke-dasharray': f(sp * 0.85) + ' ' + f(sp * 0.52),
-          'stroke-linecap': 'round',
-          transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')',
-          opacity: 0.92
-        }));
-        add(g, E('ellipse', {
-          cx: f(cx + sp * 0.03), cy: f(cy - sp * 0.02),
-          rx: f(sp * 0.25), ry: f(sp * 0.18),
-          fill: x.c2, opacity: 0.95,
-          transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')'
-        }));
+    /* A rosette is a dark ring around a WARMER centre — whichever way round
+       the customer picked her two colours, the ring has to be the darker one
+       or the print reads as white worms instead of leopard. */
+    var dark = lum(x.c1) <= lum(x.c2) ? x.c1 : x.c2;
+    var warm = lum(x.c1) <= lum(x.c2) ? x.c2 : x.c1;
+    var cell = x.w * 0.40 * x.S, row = 0, gx, gy, s;
+    /* the centre of a rosette is a warmer TINT of the nail, never a hole
+       punched in it, whatever the customer picked as her second colour */
+    warm = mix(warm, mix(x.base, '#E8A055', 0.30), 0.45);
+    if (Math.abs(lum(dark) - lum(warm)) < 0.14) warm = lighten(warm, 0.30);
+    for (gy = -cell * 0.25; gy < x.h + cell * 0.45; gy += cell * 0.88) {
+      for (gx = (row % 2 ? cell * 0.5 : 0) - cell * 0.2; gx < x.w + cell * 0.45; gx += cell) {
+        s = x.w * 0.33 * x.S * x.rnd.r(0.66, 1.24);
+        rosette(g, x, gx + x.rnd.r(-1, 1) * cell * 0.16, gy + x.rnd.r(-1, 1) * cell * 0.16,
+                s, x.rnd.r(-70, 70), dark, warm);
       }
       row++;
     }
@@ -968,12 +1228,15 @@
       c = 0;
       for (cx = -cell; cx < x.w + cell; cx += cell) {
         add(g, rect(cx, cy, cell + 0.4, cell + 0.4, {
-          fill: (r + c) % 2 ? x.c2 : x.c1, opacity: 0.95
+          fill: (r + c) % 2 ? x.c2 : x.c1, opacity: 0.96
         }));
         c++;
       }
       r++;
     }
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, [[0, '#0B0709', 0.26], [0.36, '#FFFFFF', 0.1], [1, '#0B0709', 0.24]])
+    }));
   };
 
   function heartPath(cx, cy, s) {
@@ -1009,26 +1272,34 @@
     }
   }
 
+  /* painted motifs sit ON the colour: a hairline of shadow underneath them
+     and a lit top edge, so they have thickness */
+  function painted(g, x, d, fill, ang, cx, cy) {
+    var tf = 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')';
+    add(g, E('path', {
+      d: d, fill: darken(x.base, 0.34), opacity: 0.18,
+      transform: tf + ' translate(' + f(x.u * 0.9) + ' ' + f(x.u * 1.2) + ')'
+    }));
+    add(g, E('path', { d: d, fill: fill, transform: tf }));
+    add(g, E('path', {
+      d: d, fill: 'none', stroke: lighten(fill, 0.45), 'stroke-width': f(x.u * 0.5),
+      opacity: 0.5, transform: tf
+    }));
+  }
+
   PATTERNS.hearts = function (g, x) {
     motifs(g, x, function (cx, cy, s, ang, fill) {
-      add(g, E('path', {
-        d: heartPath(cx, cy, s * 0.78), fill: fill, opacity: 0.95,
-        transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')'
-      }));
+      painted(g, x, heartPath(cx, cy, s * 0.78), fill, ang, cx, cy);
     });
   };
 
   PATTERNS.stars = function (g, x) {
     motifs(g, x, function (cx, cy, s, ang, fill) {
-      add(g, E('path', {
-        d: starPath(cx, cy, s * 0.44, 5, 0.42), fill: fill, opacity: 0.95,
-        transform: 'rotate(' + f(ang) + ' ' + f(cx) + ' ' + f(cy) + ')'
-      }));
+      painted(g, x, starPath(cx, cy, s * 0.44, 5, 0.42), fill, ang, cx, cy);
     });
   };
 
   PATTERNS.flames = function (g, x) {
-    /* tongues licking up from the cuticle towards the tip */
     function fy(t) { return x.h * (1 - (1 - t) * x.S); }
     function tongues(shrink) {
       var p = pb(), k = shrink;
@@ -1043,38 +1314,41 @@
       p.L(x.w + 3, x.h + 4).Z();
       return p.d();
     }
-    add(g, E('path', { d: tongues(1), fill: x.c2, opacity: 0.95 }));
-    add(g, E('path', { d: tongues(0.58), fill: x.c1, opacity: 0.95 }));
+    add(g, E('path', {
+      d: tongues(1),
+      fill: vGrad(x.defs, [[0, lighten(x.c2, 0.2)], [0.6, x.c2], [1, cWall(x.c2)]])
+    }));
+    add(g, E('path', {
+      d: tongues(0.58),
+      fill: vGrad(x.defs, [[0, lighten(x.c1, 0.3)], [0.7, x.c1], [1, cWall(x.c1)]])
+    }));
   };
 
   PATTERNS.lace = function (g, x) {
-    var i, y, sc, cx, p;
-    /* fine dotted arcs hugging the cuticle */
+    var i, y, sc, cx, p, n = Math.round(16 * x.q);
     for (i = 0; i < 4; i++) {
-      y = x.h * 0.90 - i * (x.h * 0.085 * x.S);
+      y = x.h * 0.92 - i * (x.h * 0.115 * x.S);
       add(g, E('path', {
         d: pb().M(-x.w * 0.1, y)
           .C(x.w * 0.26, y - x.h * 0.09, x.w * 0.74, y - x.h * 0.09, x.w * 1.1, y).d(),
-        fill: 'none',
-        stroke: i % 2 ? x.c2 : x.c1,
-        'stroke-width': f(x.u * (i === 0 ? 1.6 : 1) * x.S),
+        fill: 'none', stroke: i % 2 ? x.c2 : x.c1,
+        'stroke-width': f(x.u * (i === 0 ? 2.6 : 1.9) * x.S),
         'stroke-linecap': 'round',
-        'stroke-dasharray': i === 0 ? null : f(x.u * 0.2) + ' ' + f(x.u * 3.4 * x.S),
-        opacity: 0.9
+        'stroke-dasharray': i === 0 ? null : f(x.u * 0.3) + ' ' + f(x.u * 3.2 * x.S),
+        opacity: 0.95
       }));
     }
-    /* a scalloped edge, the way real lace finishes */
     sc = x.w * 0.16 * x.S;
-    y = x.h * 0.90 - 4 * (x.h * 0.085 * x.S);
+    y = x.h * 0.92 - 4 * (x.h * 0.115 * x.S);
     p = pb().M(-x.w * 0.1, y + sc * 0.3);
     for (cx = -x.w * 0.1; cx < x.w * 1.1; cx += sc) {
       p.A(sc * 0.5, sc * 0.5, 0, 0, 1, cx + sc, y + sc * 0.3);
     }
     add(g, E('path', {
       d: p.d(), fill: 'none', stroke: x.c1,
-      'stroke-width': f(x.u * 0.9 * x.S), opacity: 0.85
+      'stroke-width': f(x.u * 1.8 * x.S), opacity: 0.95
     }));
-    for (i = 0; i < 14; i++) {
+    for (i = 0; i < n; i++) {
       add(g, E('circle', {
         cx: f(x.rnd() * x.w), cy: f(x.h * x.rnd.r(0.45, 0.95)),
         r: f(x.u * x.rnd.r(0.4, 1.1) * x.S),
@@ -1083,191 +1357,366 @@
     }
   };
 
+  /* Magnetic cat eye. A deep, saturated base — magnetic gel is always dark —
+     and one bright band pulled up out of it by the magnet, brightest at its
+     core, falling off smoothly on both sides, with the faint chromatic shift
+     along its length that a real magnetic pigment gives you. The falloff is
+     built from stacked strokes and finished with ONE shared blur, so ten of
+     them still cost one filter definition and one small filter region each. */
   PATTERNS.catEye = function (g, x) {
+    var deep = darken(x.c2, 0.34);
     var band = pb()
-      .M(-4, x.h * 0.76)
-      .C(x.w * 0.30, x.h * 0.60, x.w * 0.66, x.h * 0.44, x.w + 4, x.h * 0.20).d();
-    var soft = blurF(x.defs, x.u * 3.4);
-    var tight = blurF(x.defs, x.u * 1.1);
+      .M(-x.w * 0.14, x.h * 0.86)
+      .C(x.w * 0.26, x.h * 0.72, x.w * 0.60, x.h * 0.48, x.w * 1.14, x.h * 0.14).d();
+    var core = mix(x.c1, '#FFFFFF', 0.30);
+    var shift = dGrad(x.defs, [
+      [0, mix(core, '#FFD9B0', 0.45)], [0.42, core],
+      [0.7, mix(core, '#CFE6FF', 0.35)], [1, mix(x.c1, '#E6C7FF', 0.3)]
+    ], 0, 1, 1, 0);
+    var gg, i;
+    var W = [0.52, 0.38, 0.27, 0.185, 0.115, 0.07];
+    var O = [0.12, 0.16, 0.21, 0.28, 0.38, 0.58];
 
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, { fill: x.c2, opacity: 0.8 }));
-    add(g, E('path', {
-      d: band, fill: 'none', stroke: darken(x.c2, 0.45),
-      'stroke-width': f(x.w * 0.62), opacity: 0.75, filter: soft
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: vGrad(x.defs, [[0, darken(deep, 0.12)], [0.5, deep], [1, darken(deep, 0.22)]])
     }));
-    add(g, E('path', {
-      d: band, fill: 'none', stroke: x.c1,
-      'stroke-width': f(x.w * 0.26 * x.S), opacity: 0.85, filter: tight
-    }));
-    add(g, E('path', {
-      d: band, fill: 'none', stroke: lighten(x.c1, 0.62),
-      'stroke-width': f(x.w * 0.075 * x.S), opacity: 0.95, filter: blurF(x.defs, x.u * 0.5)
+    gg = add(g, E('g', { filter: blurF(x.defs, x.u * 1.5) }));
+    for (i = 0; i < W.length; i++) {
+      add(gg, E('path', {
+        d: band, fill: 'none', stroke: i >= 4 ? shift : x.c1,
+        'stroke-width': f(x.w * W[i] * (0.62 + x.S * 0.38)),
+        'stroke-linecap': 'round', opacity: f(O[i])
+      }));
+    }
+    add(gg, E('path', {
+      d: band, fill: 'none', stroke: mix(core, '#FFFFFF', 0.5),
+      'stroke-width': f(x.w * 0.028 * (0.62 + x.S * 0.38)),
+      'stroke-linecap': 'round', opacity: 0.65
     }));
   };
 
+  /* Aura: a bloom that glows OUT of the nail, tightest in the middle third */
   PATTERNS.aura = function (g, x) {
+    var r = clamp(0.40 * x.S, 0.24, 0.66);
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: radGrad(x.defs, [
-        [0, x.c1, 0.95], [0.34, x.c1, 0.6], [0.62, x.c2, 0.42], [1, x.c2, 0]
-      ], { cx: 0.5, cy: 0.42, r: f(0.42 * x.S) }),
-      filter: blurF(x.defs, x.u * 2.2)
+        [0, mix(x.c1, '#FFFFFF', 0.35), 0.95], [0.22, x.c1, 0.8],
+        [0.5, mix(x.c1, x.c2, 0.55), 0.5], [0.78, x.c2, 0.22], [1, x.c2, 0]
+      ], { cx: 0.5, cy: 0.40, r: f(r) })
+    }));
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: radGrad(x.defs, [
+        [0, '#FFFFFF', 0.4], [0.55, '#FFFFFF', 0.08], [1, '#FFFFFF', 0]
+      ], { cx: 0.5, cy: 0.40, r: f(r * 0.55) })
     }));
   };
 
   /* ====================================================================== */
   /* 7. Finishes                                                             */
-  /*    ctx: w,h,u, d (the plate path), color (the nail colour), defs, rnd    */
+  /*                                                                         */
+  /*  Each of the six has ONE thing that makes it unmistakable at a glance,   */
+  /*  and the job here is to make that thing loud:                            */
+  /*    gloss   a tight hot spot next to a broad wet reflection               */
+  /*    matte   the ABSENCE of any specular at all                            */
+  /*    glitter particles at different depths, denser toward the tip          */
+  /*    chrome  a reflected room, with a hard horizon                         */
+  /*    velvet  a diffused pile with a fuzzy edge                             */
+  /*    jelly   you can see through it                                        */
+  /*  ctx: w,h,u,d,color,defs,rnd,L (local light),q (detail budget)           */
   /* ====================================================================== */
 
   var FINISHES = {};
 
+  /* the hot spot + the broad reflection, both placed by the light vector and
+     both squeezed toward the bright line of the C-curve */
+  function specular(g, x, strength) {
+    var peak = clamp(0.5 + x.L.x * 0.18, 0.22, 0.78);
+    var hy = clamp(0.34 + x.L.y * 0.09, 0.12, 0.52);
+    var bx = peak * x.w, by = hy * x.h;
+    var rw = x.w * 0.20, rh = Math.min(x.h * 0.22, x.w * 0.36);
+    /* the broad, soft reflection — long, because the nail is a cylinder */
+    add(g, E('ellipse', {
+      cx: f(bx), cy: f(by + rh * 0.35), rx: f(rw), ry: f(rh * 1.5),
+      fill: radGrad(x.defs, [
+        [0, '#FFFFFF', f(0.62 * strength)], [0.5, '#FFFFFF', f(0.24 * strength)], [1, '#FFFFFF', 0]
+      ]),
+      transform: 'rotate(' + f(x.L.x * 14) + ' ' + f(bx) + ' ' + f(by + rh * 0.35) + ')'
+    }));
+    /* the hot spot: small and hard, this is what says "wet" */
+    add(g, E('ellipse', {
+      cx: f(bx - x.w * 0.028), cy: f(by - rh * 0.34), rx: f(x.w * 0.055), ry: f(rh * 0.28),
+      fill: radGrad(x.defs, [
+        [0, '#FFFFFF', f(1 * strength)], [0.5, '#FFFFFF', f(0.9 * strength)],
+        [0.8, '#FFFFFF', f(0.28 * strength)], [1, '#FFFFFF', 0]
+      ]),
+      transform: 'rotate(' + f(x.L.x * 18) + ' ' + f(bx) + ' ' + f(by) + ')'
+    }));
+    /* the far side of the cylinder picks up a wide, weak bounce — a smear,
+       never a second blob, or the nail grows a pair of eyes. At hand scale a
+       plate is about twenty pixels across and this is simply not visible, so
+       the detail budget drops it: ten nails, ten fewer gradient fills. */
+    if (x.q < 0.7) return;
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, [
+        [f(clamp(peak + 0.22, 0.3, 0.86)), '#FFFFFF', 0],
+        [f(clamp(peak + 0.40, 0.5, 0.95)), '#FFFFFF', f(0.14 * strength)],
+        [1, '#FFFFFF', 0]
+      ])
+    }));
+  }
+
   FINISHES.gloss = function (g, x) {
-    var blob = radGrad(x.defs, [[0, '#FFFFFF', 0.9], [0.5, '#FFFFFF', 0.42], [1, '#FFFFFF', 0]]);
-    var spark = radGrad(x.defs, [[0, '#FFFFFF', 0.75], [1, '#FFFFFF', 0]]);
-    /* the highlight is a light source, not a stretched copy of the plate:
-       cap its height against the WIDTH so a long stiletto does not grow a
-       highlight the whole length of the nail */
-    var by = Math.min(x.h * 0.31, x.w * 0.42);
-    var br = Math.min(x.h * 0.19, x.w * 0.27);
-    add(g, E('ellipse', {
-      cx: f(x.w * 0.33), cy: f(by),
-      rx: f(x.w * 0.19), ry: f(br), fill: blob,
-      transform: 'rotate(-18 ' + f(x.w * 0.33) + ' ' + f(by) + ')'
+    specular(g, x, 1);
+  };
+
+  /* No specular. None. A matte topcoat scatters everything, so all you get is
+     a very wide, very weak lift on the lit side and a velvety micro texture —
+     and the missing highlight is exactly what the eye reads as "matte". */
+  FINISHES.matte = function (g, x) {
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: radGrad(x.defs, [
+        [0, '#FFFFFF', 0.16], [0.55, '#FFFFFF', 0.05], [1, '#FFFFFF', 0]
+      ], { cx: f(clamp(0.5 + x.L.x * 0.2, 0.2, 0.8)), cy: f(clamp(0.4 + x.L.y * 0.12, 0.12, 0.7)), r: 0.85 })
     }));
-    add(g, E('ellipse', {
-      cx: f(x.w * 0.63), cy: f(Math.min(x.h * 0.13, x.w * 0.18)),
-      rx: f(x.w * 0.12), ry: f(Math.min(x.h * 0.05, x.w * 0.07)), fill: spark, opacity: 0.7,
-      transform: 'rotate(-24 ' + f(x.w * 0.63) + ' ' + f(Math.min(x.h * 0.13, x.w * 0.18)) + ')'
+    if (x.q >= 0.7) {
+      add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+        fill: grainP(x.defs, '#FFFFFF', 0.6, x.u * 13), opacity: 0.55
+      }));
+      add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+        fill: grainP(x.defs, darken(x.color, 0.55), 0.5, x.u * 17), opacity: 0.28
+      }));
+    }
+    /* matte kills the rim: paint a little of the wall tone back over it */
+    add(g, E('path', {
+      d: x.d, fill: 'none', stroke: cWall(x.color),
+      'stroke-width': f(x.u * 2.2), opacity: 0.42
     }));
-    add(g, rect(-1, x.h * 0.5, x.w + 2, x.h * 0.55, {
-      fill: linGrad(x.defs, [[0, '#2B171F', 0], [1, '#2B171F', 0.14]], { x1: 0, y1: 0, x2: 0, y2: 1 })
+  };
+
+  /* Suspended particles at several depths, inside a gloss topcoat. Density
+     rises toward the free edge, the way a real glitter gel settles. */
+  FINISHES.glitter = function (g, x) {
+    var i, r, cx, cy, t, n1 = Math.round(96 * x.q), n2 = Math.round(14 * x.q),
+        n3 = Math.round(6 * x.q);
+    var tones = ['#FFFFFF', lighten(x.color, 0.62), '#F8E6B6', lighten(x.color, 0.88), '#FCEFF8'];
+
+    /* the suspension itself: a faint milky depth under the particles */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: vGrad(x.defs, [[0, '#FFFFFF', 0.20], [0.45, '#FFFFFF', 0.06], [1, '#FFFFFF', 0.02]])
+    }));
+    /* deep dust — small, dim, out of focus */
+    for (i = 0; i < n1; i++) {
+      t = x.rnd(); t = t * t;                       /* bias toward the tip */
+      cx = x.rnd() * x.w; cy = t * x.h;
+      r = x.rnd.r(0.28, 1.15) * x.u;
+      add(g, E('circle', {
+        cx: f(cx), cy: f(cy), r: f(r), fill: x.rnd.pick(tones),
+        opacity: f(x.rnd.r(0.18, 0.6))
+      }));
+    }
+    /* flakes — larger, brighter, with a facet */
+    for (i = 0; i < n2; i++) {
+      t = x.rnd(); t = t * t;
+      cx = x.rnd() * x.w; cy = t * x.h;
+      r = x.rnd.r(1.3, 2.8) * x.u;
+      add(g, E('path', {
+        d: starPath(cx, cy, r, 3, 0.62), fill: x.rnd.pick(tones),
+        opacity: f(x.rnd.r(0.55, 0.95)),
+        transform: 'rotate(' + f(x.rnd.r(0, 120)) + ' ' + f(cx) + ' ' + f(cy) + ')'
+      }));
+    }
+    /* the few that are catching the light dead on */
+    for (i = 0; i < n3; i++) {
+      t = x.rnd(); t = t * t;
+      cx = x.rnd() * x.w; cy = t * x.h;
+      r = x.rnd.r(2.6, 4.6) * x.u;
+      add(g, E('path', {
+        d: starPath(cx, cy, r, 4, 0.18), fill: '#FFFFFF',
+        opacity: f(x.rnd.r(0.6, 1)),
+        transform: 'rotate(' + f(x.rnd.r(0, 90)) + ' ' + f(cx) + ' ' + f(cy) + ')'
+      }));
+      add(g, E('circle', { cx: f(cx), cy: f(cy), r: f(r * 0.28), fill: '#FFFFFF', opacity: 0.9 }));
+    }
+    /* and it is all under a gloss topcoat */
+    specular(g, x, 0.75);
+  };
+
+  /* A MIRROR, not shiny paint. Dark, bright, dark bands with a hard horizon
+     where the reflected room ends, tinted by the colour, finished with a
+     bright metal edge. */
+  FINISHES.chrome = function (g, x) {
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, { fill: mirrorFill(x.defs, x.color) }));
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, [
+        [0, '#07050A', 0.55], [0.12, '#07050A', 0.18],
+        [f(clamp(0.5 + x.L.x * 0.2, 0.2, 0.8)), '#FFFFFF', 0.26],
+        [0.55, '#FFFFFF', 0.04], [0.78, '#07050A', 0.14], [1, '#07050A', 0.5]
+      ])
+    }));
+    /* a single hard streak — the edge of something in the room */
+    add(g, E('path', {
+      d: pb().M(x.w * 0.16, -2).L(x.w * 0.38, -2).L(x.w * 0.14, x.h + 2).L(-2, x.h + 2).Z().d(),
+      fill: '#FFFFFF', opacity: 0.09
     }));
     add(g, E('path', {
-      d: x.d, fill: 'none', stroke: '#FFFFFF',
-      'stroke-width': f(x.u * 1.9), opacity: 0.34
+      d: x.d, fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(x.u * 1.5), opacity: 0.7
     }));
   };
 
-  FINISHES.matte = function (g, x) {
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, { fill: '#EEE7E7', opacity: 0.14 }));
-    add(g, rect(-1, x.h * 0.46, x.w + 2, x.h * 0.6, {
-      fill: linGrad(x.defs, [[0, '#2B171F', 0], [1, '#2B171F', 0.11]], { x1: 0, y1: 0, x2: 0, y2: 1 })
-    }));
-    add(g, rect(-1, -1, x.w + 2, x.h * 0.3, {
-      fill: linGrad(x.defs, [[0, '#FFFFFF', 0.09], [1, '#FFFFFF', 0]], { x1: 0, y1: 0, x2: 0, y2: 1 })
-    }));
-  };
-
-  FINISHES.glitter = function (g, x) {
-    var i, r, cx, cy, tone, tones = ['#FFFFFF', lighten(x.color, 0.6), '#F7E7B8', lighten(x.color, 0.85), '#FDF3FA'];
+  /* Flocked pile: light goes in and comes back diffused, the silhouette is
+     slightly fuzzy, and there is a broad sheen instead of a highlight. */
+  FINISHES.velvet = function (g, x) {
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      fill: linGrad(x.defs, [[0, '#FFFFFF', 0.16], [0.5, '#FFFFFF', 0.04], [1, '#FFFFFF', 0.12]], { x1: 0, y1: 0, x2: 1, y2: 1 })
+      fill: radGrad(x.defs, [
+        [0, lighten(x.color, 0.42), 0.62], [0.45, lighten(x.color, 0.22), 0.28],
+        [0.8, x.color, 0.05], [1, x.color, 0]
+      ], { cx: f(clamp(0.5 + x.L.x * 0.14, 0.24, 0.76)), cy: f(clamp(0.4 + x.L.y * 0.1, 0.14, 0.7)), r: 0.72 })
     }));
-    for (i = 0; i < 78; i++) {
-      cx = x.rnd() * x.w;
-      cy = x.rnd() * x.h;
-      r = x.rnd.r(0.35, 1.7) * x.u;
-      tone = x.rnd.pick(tones);
-      add(g, E('circle', { cx: f(cx), cy: f(cy), r: f(r), fill: tone, opacity: f(x.rnd.r(0.28, 0.95)) }));
-    }
-    for (i = 0; i < 7; i++) {
-      cx = x.rnd() * x.w;
-      cy = x.rnd() * x.h;
-      r = x.rnd.r(2.2, 4.2) * x.u;
-      add(g, E('path', {
-        d: starPath(cx, cy, r, 4, 0.24), fill: '#FFFFFF',
-        opacity: f(x.rnd.r(0.5, 0.95)),
-        transform: 'rotate(' + f(x.rnd.r(0, 90)) + ' ' + f(cx) + ' ' + f(cy) + ')'
+    /* pile crushed at the rim always goes dark */
+    add(g, E('path', {
+      d: x.d, fill: 'none', stroke: darken(x.color, 0.45),
+      'stroke-width': f(x.u * 8), opacity: 0.42, filter: blurF(x.defs, x.u * 2.2)
+    }));
+    if (x.q >= 0.7) {
+      add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+        fill: grainP(x.defs, lighten(x.color, 0.8), 0.55, x.u * 11), opacity: 0.4
       }));
     }
   };
 
-  FINISHES.chrome = function (g, x) {
-    var c = x.color;
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      opacity: 0.8,
-      fill: linGrad(x.defs, [
-        [0, darken(c, 0.4)], [0.16, lighten(c, 0.55)], [0.32, c],
-        [0.46, '#FFFFFF'], [0.58, c], [0.74, darken(c, 0.3)], [1, lighten(c, 0.5)]
-      ], { x1: 0.08, y1: 0, x2: 0.92, y2: 1 })
-    }));
-    add(g, E('ellipse', {
-      cx: f(x.w * 0.30), cy: f(x.h * 0.44),
-      rx: f(x.w * 0.09), ry: f(x.h * 0.4), fill: '#FFFFFF', opacity: 0.55,
-      transform: 'rotate(-20 ' + f(x.w * 0.30) + ' ' + f(x.h * 0.44) + ')',
-      filter: blurF(x.defs, x.u * 1.5)
-    }));
-    add(g, E('path', {
-      d: x.d, fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(x.u * 1.6), opacity: 0.45
-    }));
-  };
-
-  FINISHES.velvet = function (g, x) {
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      fill: radGrad(x.defs, [[0, '#FFFFFF', 0.34], [0.55, '#FFFFFF', 0.1], [1, '#FFFFFF', 0]],
-        { cx: 0.44, cy: 0.34, r: 0.68 })
-    }));
-    add(g, E('path', {
-      d: x.d, fill: 'none', stroke: darken(x.color, 0.42),
-      'stroke-width': f(x.u * 7), opacity: 0.5, filter: blurF(x.defs, x.u * 2.6)
-    }));
-    add(g, E('path', {
-      d: x.d, fill: 'none', stroke: lighten(x.color, 0.5),
-      'stroke-width': f(x.u * 1.2), opacity: 0.3
-    }));
-  };
-
+  /* Translucent. The plate opacity is dropped in nailSVG so whatever is
+     behind it shows through; here we add the tell-tale pooling of colour at
+     the edges and one glassy highlight. */
   FINISHES.jelly = function (g, x) {
-    add(g, E('ellipse', {
-      cx: f(x.w * 0.5), cy: f(x.h * 0.56),
-      rx: f(x.w * 0.44), ry: f(x.h * 0.36),
-      fill: radGrad(x.defs, [[0, '#FFFFFF', 0.4], [0.6, '#FFFFFF', 0.12], [1, '#FFFFFF', 0]])
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: radGrad(x.defs, [
+        [0, '#FFFFFF', 0.34], [0.5, '#FFFFFF', 0.1], [1, '#FFFFFF', 0]
+      ], { cx: 0.5, cy: 0.5, r: 0.62 })
     }));
     add(g, E('path', {
-      d: x.d, fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(x.u * 3), opacity: 0.5
+      d: x.d, fill: 'none', stroke: darken(x.color, 0.28),
+      'stroke-width': f(x.u * 7), opacity: 0.5
     }));
     add(g, E('path', {
-      d: x.d, fill: 'none', stroke: darken(x.color, 0.22), 'stroke-width': f(x.u * 1), opacity: 0.35
+      d: x.d, fill: 'none', stroke: darken(x.color, 0.4),
+      'stroke-width': f(x.u * 2.6), opacity: 0.45
     }));
-    add(g, E('ellipse', {
-      cx: f(x.w * 0.32), cy: f(Math.min(x.h * 0.26, x.w * 0.36)),
-      rx: f(x.w * 0.16), ry: f(Math.min(x.h * 0.14, x.w * 0.20)),
-      fill: radGrad(x.defs, [[0, '#FFFFFF', 0.8], [1, '#FFFFFF', 0]]),
-      transform: 'rotate(-18 ' + f(x.w * 0.32) + ' ' + f(Math.min(x.h * 0.26, x.w * 0.36)) + ')'
-    }));
+    specular(g, x, 0.9);
   };
 
   /* ====================================================================== */
   /* 8. Charms                                                               */
+  /*                                                                         */
+  /*  Three sources, in priority order:                                       */
+  /*    art    an id drawn by SN.Art (assets/js/nail-art.js) when it exists    */
+  /*    image  a data-url photo, clipped round with its own contact shadow     */
+  /*    glyph  the emoji fallback, which is what the store ships today         */
+  /*  SN.Art may be absent, may throw, may return nothing: all three are        */
+  /*  handled and fall through to the next source.                            */
   /* ====================================================================== */
 
-  /* `ink` is only used by monochrome glyphs (◆ ● ✦ …): colour-emoji fonts
-     ignore fill, so this simply guarantees a plain glyph stays readable
-     whatever the nail underneath it is doing. */
-  function charmEl(c, w, h, mirror, ink) {
+  function str(v) { return (typeof v === 'string' && v) ? v : ''; }
+
+  /* SN.Art draws its bevels and metals with a block of shared gradients that
+     has to be present in the same <svg>, or the art comes out flat and — far
+     worse — toPNG rasterises a standalone document with dangling references.
+     Injected once per render context, so ten art charms cost one block. */
+  function artDefs(localDefs) {
+    if (!SN.Art || typeof SN.Art.defs !== 'function') return;
+    shared(localDefs, 'sn-art-defs', function (d) {
+      var src = null;
+      try { src = SN.Art.defs(); } catch (e) { src = null; }
+      if (src) while (src.firstChild) d.appendChild(src.firstChild);
+      return 1;
+    });
+  }
+
+  function charmShadow(g, size, L, defs) {
+    add(g, E('ellipse', {
+      cx: f(-L.x * size * 0.13), cy: f(-L.y * size * 0.13 + size * 0.05),
+      rx: f(size * 0.52), ry: f(size * 0.5),
+      fill: radGrad(defs, [
+        [0, '#25141B', 0.42], [0.55, '#25141B', 0.22], [1, '#25141B', 0]
+      ])
+    }));
+  }
+
+  function charmEl(c, w, h, mirror, ink, L, defs, q) {
     var item = sFind('charms', c.id);
     var size = w * 0.26 * c.s;
     var tf = 'translate(' + f(c.x * w) + ' ' + f(c.y * h) + ')';
-    var img = (item && typeof item.image === 'string') ? item.image : '';
-    var g, txt, glyph;
+    var art = str(c.art) || (item ? str(item.art) : '');
+    var img = str(c.image) || (item ? str(item.image) : '');
+    var g, txt, glyph, node, clipId, tint;
 
     if (c.r) tf += ' rotate(' + f(c.r) + ')';
-    /* on a mirrored hand the glyph itself must not read backwards */
     if (mirror) tf += ' scale(-1 1)';
-
     g = E('g', { 'class': 'nail-charm', transform: tf });
+
+    /* 1. a vector charm drawn by SN.Art (assets/js/nail-art.js). It may not be
+       loaded, may not know this id, may throw, or may hand back an empty
+       group — all four fall through to the next source. */
+    if (art && SN.Art && typeof SN.Art.node === 'function' &&
+        (typeof SN.Art.has !== 'function' || SN.Art.has(art))) {
+      node = null;
+      try {
+        artDefs(defs);
+        node = SN.Art.node(art, {
+          size: size, color: ink, seed: String(c.id || art),
+          lod: (num(q, 1) < 0.7) ? 'lite' : 'full'
+        });
+      } catch (e) { node = null; }
+      if (node && node.nodeType === 1 && node.firstChild) {
+        charmShadow(g, size, L, defs);
+        add(g, node);
+        return g;
+      }
+    }
+
+    /* 2. a real photo */
     if (img) {
-      add(g, E('image', {
+      charmShadow(g, size, L, defs);
+      clipId = uid('cc');
+      add(g, E('defs', null, [
+        E('clipPath', { id: clipId, clipPathUnits: 'userSpaceOnUse' }, [
+          E('rect', {
+            x: f(-size / 2), y: f(-size / 2), width: f(size), height: f(size),
+            rx: f(size * 0.30), ry: f(size * 0.30)
+          })
+        ])
+      ]));
+      add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }, [
+        E('image', {
+          x: f(-size / 2), y: f(-size / 2), width: f(size), height: f(size),
+          href: img, 'xlink:href': img, preserveAspectRatio: 'xMidYMid slice'
+        })
+      ]));
+      /* it is sitting under the same topcoat as everything else */
+      add(g, E('rect', {
         x: f(-size / 2), y: f(-size / 2), width: f(size), height: f(size),
-        href: img, 'xlink:href': img, preserveAspectRatio: 'xMidYMid meet'
+        rx: f(size * 0.30), ry: f(size * 0.30),
+        fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(size * 0.035), opacity: 0.4
+      }));
+      add(g, E('ellipse', {
+        cx: f(L.x * size * 0.2), cy: f(L.y * size * 0.2),
+        rx: f(size * 0.2), ry: f(size * 0.13),
+        fill: radGrad(defs, [[0, '#FFFFFF', 0.7], [1, '#FFFFFF', 0]]),
+        transform: 'rotate(-22)'
       }));
       return g;
     }
-    glyph = (item && typeof item.glyph === 'string' && item.glyph) ? item.glyph : '✦';
+
+    /* 3. the emoji glyph */
+    glyph = (item && str(item.glyph)) ? item.glyph : '✦';
+    tint = ink || '#3A2129';
+    add(g, E('ellipse', {
+      cx: f(-L.x * size * 0.10), cy: f(-L.y * size * 0.10 + size * 0.06),
+      rx: f(size * 0.42), ry: f(size * 0.36),
+      fill: radGrad(defs, [[0, '#25141B', 0.3], [0.6, '#25141B', 0.14], [1, '#25141B', 0]])
+    }));
     txt = E('text', {
       x: 0, y: 0, 'text-anchor': 'middle', 'dominant-baseline': 'central',
-      'font-size': f(size), 'font-family': EMOJI_FONT,
-      fill: ink || '#3A2129'
+      'font-size': f(size), 'font-family': EMOJI_FONT, fill: tint
     });
     txt.appendChild(document.createTextNode(glyph));
     add(g, txt);
@@ -1275,10 +1724,25 @@
   }
 
   /* ====================================================================== */
-  /* 9. One nail plate                                                       */
-  /*    opts: {shape, length, w, h, finishId, id|key, interactive, selected,  */
-  /*           onPick, mirror, shadow}                                        */
-  /*    Layer order: [drop shadow] base -> pattern -> finish -> charms -> rim */
+  /* 9. One nail plate — a curved, glossy, slightly translucent object       */
+  /*                                                                         */
+  /*  Bottom to top, and every layer obeys the one light:                     */
+  /*    0  cast shadow on the finger, thrown away from the light              */
+  /*    1  the C-CURVE — the plate is a section of a cylinder, so it is dark   */
+  /*       at both side walls and brightest just off centre. This single      */
+  /*       layer does more for realism than everything else combined.        */
+  /*    2  lengthwise form: darker into the cuticle, brighter across the      */
+  /*       upper third                                                        */
+  /*    3  the free edge: paler and translucent, with a bright line on the    */
+  /*       very edge                                                          */
+  /*    4  the pattern                                                        */
+  /*    5  the finish                                                         */
+  /*    6  charms                                                             */
+  /*    7  the contour: absorption at grazing angles all round, and a rim     */
+  /*       light on the side facing the source                                */
+  /*                                                                         */
+  /*  opts: {shape,length,w,h,finishId,id|key,interactive,selected,onPick,     */
+  /*         mirror,shadow,light,detail,bed}                                   */
   /* ====================================================================== */
 
   function nailSVG(nailState, opts) {
@@ -1288,6 +1752,7 @@
     var w = num(opts.w, NAIL_BOX.w);
     var h = num(opts.h, 0);
     var key, u, kind, d, g, defs, clipId, plate, pg, fg, fn, i, ring, hover, sel, cls, onPick;
+    var L, q, peak, ybright, tipD, body, jelly, clipG;
 
     if (!(w > 0)) w = NAIL_BOX.w;
     if (!(h > 0)) h = w * ASPECT[s] * lenFactor(opts.length);
@@ -1295,58 +1760,155 @@
     key = String(opts.key !== undefined && opts.key !== null ? opts.key
       : (opts.id !== undefined && opts.id !== null ? opts.id : 'nail'));
     u = w / 100;
+    q = clamp(num(opts.detail, 1), 0.25, 1);
     kind = finishKind((opts.finishId !== undefined && opts.finishId !== null && opts.finishId !== '')
       ? opts.finishId : n.finish);
     d = path(s, w, h);
     sel = !!(opts.selected && selection(opts.selected)[key]);
+    L = localLight(opts);
+    jelly = kind === 'jelly';
 
     cls = 'nail' + (sel ? ' is-selected' : '');
     g = E('g', { 'class': cls, 'data-key': key });
     defs = add(g, E('defs'));
-    clipId = uid('clip');
-    add(defs, E('clipPath', { id: clipId, clipPathUnits: 'userSpaceOnUse' }, [E('path', { d: d })]));
+    clipId = shared(defs, 'cp|' + d, function (dd) {
+      var id = uid('clip');
+      add(dd, E('clipPath', { id: id, clipPathUnits: 'userSpaceOnUse' }, [E('path', { d: d })]));
+      return id;
+    });
 
-    /* soft contact shadow so the plate sits ON the finger */
+    /* --- 0. the cast shadow, thrown away from the light ------------------ */
+    /* No blur: the shape is filled with a radial ramp that has already faded
+       to nothing by the time it reaches its own silhouette, which is soft for
+       free and costs the phone nothing. */
     if (opts.shadow) {
-      add(g, E('path', {
-        d: d, fill: col(opts.shadow, '#3A2129'), opacity: 0.4,
-        filter: blurF(defs, u * 1.8),
-        transform: 'translate(0 ' + f(u * 2.4) + ')'
-      }));
+      add(g, E('g', {
+        transform: 'translate(' + f(w / 2 - L.x * u * 3.4) + ' ' + f(h / 2 - L.y * u * 3.4) + ') ' +
+                   'scale(1.09) translate(' + f(-w / 2) + ' ' + f(-h / 2) + ')'
+      }, [
+        E('path', {
+          d: d,
+          fill: radGrad(defs, [
+            [0, col(opts.shadow, '#3A2129'), 0.5],
+            [0.5, col(opts.shadow, '#3A2129'), 0.34],
+            [1, col(opts.shadow, '#3A2129'), 0]
+          ], { cx: 0.5, cy: 0.55, r: 0.72 })
+        })
+      ]));
     }
 
-    /* --- base + pattern (jelly makes the whole plate translucent) --------- */
-    plate = add(g, E('g', kind === 'jelly' ? { opacity: 0.78 } : null));
-    add(plate, E('path', { d: d, fill: n.color }));
-    if (kind !== 'matte') {
-      add(plate, E('path', {
-        d: d,
-        fill: linGrad(defs, [[0, '#FFFFFF', 0.18], [0.42, '#FFFFFF', 0.04], [1, '#2B171F', 0.08]],
-          { x1: 0, y1: 0, x2: 0, y2: 1 })
-      }));
+    /* --- the nail bed under a translucent plate --------------------------- */
+    if (opts.bed) {
+      add(g, E('g', {
+        transform: 'translate(' + f(w / 2) + ' ' + f(h * 0.02) + ') scale(1.035 1) ' +
+                   'translate(' + f(-w / 2) + ' 0)'
+      }, [
+        E('path', {
+          d: d,
+          fill: vGrad(defs, [
+            [0, col(opts.bed, '#E7BCA6')],
+            [0.45, mix(col(opts.bed, '#E7BCA6'), '#FFFFFF', 0.10)],
+            [1, mix(col(opts.bed, '#E7BCA6'), '#C98A76', 0.5)]
+          ])
+        }),
+        /* the lunula */
+        E('ellipse', {
+          cx: f(w * 0.5), cy: f(h * 0.955), rx: f(w * 0.30), ry: f(h * 0.075),
+          fill: radGrad(defs, [
+            [0, '#FFFFFF', 0.6], [0.7, '#FFFFFF', 0.24], [1, '#FFFFFF', 0]
+          ])
+        })
+      ]));
     }
 
+    /* --- 1..3. the plate body -------------------------------------------- */
+    peak = clamp(0.5 + L.x * 0.20, 0.22, 0.78);
+    ybright = clamp(0.28 + L.y * 0.12, 0.10, 0.52);
+    tipD = clamp(0.055 + 0.035 * (w * 1.55 / h), 0.04, 0.13);
+
+    /* One clip application for the whole plate. Clipping turned out to be the
+       most expensive thing on the page at ten nails — far more than the
+       filters — so every layer that needs the silhouette shares a single
+       clipped group instead of asking for its own. */
+    clipG = add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }));
+    body = add(clipG, E('g', jelly ? { opacity: 0.87 } : null));
+    plate = body;
+
+    /* 1. THE C-CURVE. Painted with real colours, not a translucent veil, so
+       the customer's colour survives intact through the middle of the nail
+       and only the walls turn away from the light. */
+    add(plate, E('path', {
+      d: d,
+      fill: hGrad(defs, [
+        [0.00, cEdge(n.color)],
+        [0.05, cWall(n.color)],
+        [f(Math.max(0.10, peak - 0.20)), n.color],
+        [f(peak), cLit(n.color)],
+        [f(Math.min(0.90, peak + 0.24)), n.color],
+        [0.95, cWall(n.color)],
+        [1.00, cEdge(n.color)]
+      ])
+    }));
+
+    /* 2. lengthwise form */
+    add(plate, E('path', {
+      d: d,
+      fill: vGrad(defs, [
+        [0, '#FFFFFF', 0.10],
+        [f(Math.max(0.03, ybright - 0.12)), '#FFFFFF', 0],
+        [f(ybright), '#FFFFFF', 0.13],
+        [f(Math.min(0.72, ybright + 0.28)), '#FFFFFF', 0],
+        [0.82, '#150C10', 0.06],
+        [1, '#150C10', 0.20]
+      ])
+    }));
+
+    /* 3. the free edge: a press-on tip is thin, so light comes through it.
+       Painted straight onto the plate path — a clipped overlay would cost
+       another clip application, and clipping is the most expensive thing on
+       the page once ten nails are on screen. */
+    add(plate, E('path', {
+      d: d,
+      fill: vGrad(defs, [
+        [0, cTip(n.color), 0.95],
+        [f(tipD * 0.35), cTip(n.color), 0.52],
+        [f(tipD * 0.72), cTip(n.color), 0.18],
+        [f(tipD), cTip(n.color), 0]
+      ])
+    }));
+
+    /* --- 4. pattern ------------------------------------------------------- */
     fn = PATTERNS[n.pattern.kind];
     if (typeof fn === 'function') {
-      pg = add(plate, E('g', { 'clip-path': 'url(#' + clipId + ')' }));
+      pg = add(plate, E('g'));
       try {
         fn(pg, {
-          w: w, h: h, u: u, d: d, shape: s, base: n.color, defs: defs,
+          w: w, h: h, u: u, d: d, shape: s, base: n.color, defs: defs, key: key,
           c1: n.pattern.color, c2: n.pattern.color2, S: n.pattern.scale,
+          L: L, q: q,
           rnd: seeded(key + '|' + s + '|' + n.pattern.kind + '|' + n.pattern.color)
         });
       } catch (e) {
         if (pg.parentNode) pg.parentNode.removeChild(pg);
         console.warn('[SN.Nail] pattern "' + n.pattern.kind + '" failed', e);
       }
+      /* the C-curve is UNDER the pattern too — polish over art still curves */
+      add(plate, E('path', {
+        d: d,
+        fill: hGrad(defs, [
+          [0, '#0D0709', 0.34], [0.09, '#0D0709', 0.12],
+          [f(peak), '#FFFFFF', 0.10], [f(Math.min(0.9, peak + 0.26)), '#FFFFFF', 0],
+          [0.93, '#0D0709', 0.12], [1, '#0D0709', 0.34]
+        ])
+      }));
     }
 
-    /* --- finish ---------------------------------------------------------- */
+    /* --- 5. finish -------------------------------------------------------- */
     fn = FINISHES[kind] || FINISHES.gloss;
-    fg = add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }));
+    fg = add(clipG, E('g'));
     try {
       fn(fg, {
-        w: w, h: h, u: u, d: d, color: n.color, defs: defs,
+        w: w, h: h, u: u, d: d, color: n.color, defs: defs, L: L, q: q,
         rnd: seeded(key + '|' + s + '|' + kind + '|' + n.color)
       });
     } catch (e2) {
@@ -1354,28 +1916,53 @@
       console.warn('[SN.Nail] finish "' + kind + '" failed', e2);
     }
 
-    /* --- charms ---------------------------------------------------------- */
-    if (n.charms.length) {
-      pg = add(g, E('g', { 'class': 'nail-charms' }));
-      for (i = 0; i < n.charms.length; i++) {
-        add(pg, charmEl(n.charms[i], w, h, !!opts.mirror, against(n.color, 0.55)));
-      }
-    }
-
-    /* --- rim / free edge ------------------------------------------------- */
-    add(g, E('path', {
-      d: d, fill: 'none', stroke: darken(n.color, 0.3),
-      'stroke-width': f(u * 1.1), opacity: 0.35
-    }));
-    add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }, [
+    /* --- 6. the contour --------------------------------------------------- */
+    /* absorption all round: at a grazing angle you are looking through a lot
+       more polish, so every edge goes deeper than the face of the nail */
+    /* Both edge treatments share one clipped group: half a stroke sitting
+       outside the silhouette is a halo, and a halo is what makes a render
+       look like a sticker. */
+    add(clipG, E('g', null, [
       E('path', {
-        d: d, fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(u * 1.4),
-        opacity: kind === 'matte' ? 0.14 : 0.4,
-        transform: 'translate(0 ' + f(u * 2) + ')'
+        d: d, fill: 'none', stroke: cEdge(n.color),
+        'stroke-width': f(u * 3.4), opacity: jelly ? 0.3 : 0.5
+      }),
+      /* the fine bright line along the free edge itself — a vertical fade on
+         the stroke keeps it to the tip, which is the only part of a press-on
+         thin enough to glow */
+      E('path', {
+        d: d, fill: 'none',
+        stroke: vGrad(defs, [
+          [0, '#FFFFFF', 0.8], [f(tipD * 0.8), '#FFFFFF', 0.5],
+          [f(tipD * 1.9), '#FFFFFF', 0], [1, '#FFFFFF', 0]
+        ]),
+        'stroke-width': f(Math.max(u * 2.4, 0.7)),
+        opacity: kind === 'matte' ? 0.3 : 0.85,
+        transform: 'translate(0 ' + f(u * 1.1) + ')'
+      }),
+      /* the rim light, on the side facing the source, dying out on the other */
+      kind === 'matte' ? null : E('path', {
+        d: d, fill: 'none',
+        stroke: dGrad(defs, [
+          [0, '#FFFFFF', kind === 'chrome' ? 0.95 : 0.72],
+          [0.30, '#FFFFFF', 0.20],
+          [0.60, '#FFFFFF', 0],
+          [1, '#150C10', 0.18]
+        ], f(0.5 + L.x * 0.5), f(0.5 + L.y * 0.5), f(0.5 - L.x * 0.5), f(0.5 - L.y * 0.5)),
+        'stroke-width': f(Math.max(u * 2.6, 0.8))
       })
     ]));
 
-    /* --- interaction ----------------------------------------------------- */
+
+    /* --- 7. charms sit ON the topcoat, so they come after the contour ------ */
+    if (n.charms.length) {
+      pg = add(g, E('g', { 'class': 'nail-charms' }));
+      for (i = 0; i < n.charms.length; i++) {
+        add(pg, charmEl(n.charms[i], w, h, !!opts.mirror, against(n.color, 0.55), L, defs, q));
+      }
+    }
+
+    /* --- interaction ------------------------------------------------------ */
     if (opts.interactive) {
       onPick = typeof opts.onPick === 'function' ? opts.onPick : null;
       g.setAttribute('tabindex', '0');
@@ -1384,9 +1971,6 @@
       g.setAttribute('aria-pressed', sel ? 'true' : 'false');
       g.setAttribute('style', 'cursor:pointer;outline:none');
 
-      /* The ring is drawn in plate units, but a plate on a hand is only ~30
-         units wide, so a purely proportional stroke lands under one device
-         pixel and the selection reads as nothing at all. Floor it. */
       hover = add(g, E('path', {
         d: d, fill: 'none', stroke: '#FFFFFF',
         'stroke-width': f(Math.max(u * 3.2, 1.6)),
@@ -1428,44 +2012,60 @@
       });
     }
 
+    if (defs && !defs.firstChild && defs.parentNode) defs.parentNode.removeChild(defs);
     return g;
   }
 
   /* ====================================================================== */
   /* 10. The hand                                                            */
+  /*                                                                         */
+  /*  THE MIRRORED HAND PROBLEM. A left hand really is a mirrored right hand, */
+  /*  so the anatomy must flip — but scale(-1,1) flips the LIGHTING with it,  */
+  /*  and then one hand is lit from the left while the other is lit from the  */
+  /*  right. The eye reads that contradiction instantly and the whole picture */
+  /*  turns to plastic. The fix, everywhere below: geometry is built once and */
+  /*  mirrored, while every gradient, highlight and shadow is placed through  */
+  /*  LX() / SX(), which pre-flips it so that AFTER the mirror it points the  */
+  /*  same way in world space as on the right hand. Both hands are lit from   */
+  /*  the upper left, always.                                                */
   /* ====================================================================== */
 
   function fingerTF(gm) {
     return 'translate(' + f(gm.x) + ' ' + f(gm.y) + ') rotate(' + f(gm.angle) + ')';
   }
 
-  /* One limb (finger, or one of the thumb's two segments) in its own local
-     frame: the base centre is (0,0) and the tip is at (0,-length). Wider at
-     the base than at the tip, rounded cap, and a root that runs back into
-     whatever it grows out of so the two shapes fuse. */
+  /* One limb in its own frame: base centre at (0,0), tip at (0,-length).
+     A finger is not a capsule — it swells a little at each joint and the pad
+     at the tip is wider than the shaft just behind it. */
   function limbPath(gm, rootMul) {
     var hb = gm.width / 2;
     var ht = hb * num(gm.taper, FINGER_TAPER);
     var y0 = gm.width * num(rootMul, FINGER_ROOT);
     var yTip = -(gm.length - ht);
     var span = y0 - yTip;
-    var p = pb();
-    p.M(-hb, y0);
-    p.C(-hb, y0 - span * 0.42, -ht - (hb - ht) * 0.40, yTip + span * 0.30, -ht, yTip);
-    p.A(ht, ht, 0, 0, 1, ht, yTip);
-    p.C(ht + (hb - ht) * 0.40, yTip + span * 0.30, hb, y0 - span * 0.42, hb, y0);
-    p.Z();
-    return p.d();
+    var mid = hb * 0.955, knu = hb * 0.99, pad = ht * 1.045;
+    /* one closed run: base -> left wall -> pad -> right wall -> base */
+    var q = pb();
+    q.M(-hb, y0);
+    q.C(-hb, y0 - span * 0.16, -knu, y0 - span * 0.34, -knu, y0 - span * 0.44);
+    q.C(-knu, y0 - span * 0.56, -mid, y0 - span * 0.62, -mid, y0 - span * 0.70);
+    q.C(-mid, y0 - span * 0.82, -pad * 1.05, y0 - span * 0.88, -pad, yTip + ht * 0.30);
+    q.C(-pad, yTip - ht * 0.42, -pad * 0.66, yTip - ht * 1.02, 0, yTip - ht * 1.03);
+    q.C(pad * 0.66, yTip - ht * 1.02, pad, yTip - ht * 0.42, pad, yTip + ht * 0.30);
+    q.C(pad * 1.05, y0 - span * 0.88, mid, y0 - span * 0.82, mid, y0 - span * 0.70);
+    q.C(mid, y0 - span * 0.62, knu, y0 - span * 0.56, knu, y0 - span * 0.44);
+    q.C(knu, y0 - span * 0.34, hb, y0 - span * 0.16, hb, y0);
+    q.Z();
+    return q.d();
   }
   function fingerPath(gm) { return limbPath(gm, FINGER_ROOT); }
 
-  /* the rounded pad of skin that fills the V where two fingers separate */
-  function webs() {
+  function webs(geom) {
     var out = [], i, w, A, B, cx, cy;
     for (i = 0; i < WEB.length; i++) {
       w = WEB[i];
       if (w.a) {
-        A = HAND_GEOM[w.a]; B = HAND_GEOM[w.b];
+        A = geom[w.a]; B = geom[w.b];
         cx = (A.x + B.x) / 2;
         cy = (A.y + B.y) / 2 + w.drop;
       } else { cx = w.x; cy = w.y; }
@@ -1473,25 +2073,77 @@
     }
     return out;
   }
-  var WEB_PTS = webs();
 
-  /* fresh copies every call — the same silhouette is needed several times */
-  function skinShapes(attrs) {
-    var out = [], i, gm, a = attrs || {};
-    out.push(E('rect', mergeAttrs({
+  /* Both hands are the same anatomy, but a real pair is never pixel identical:
+     the left splays a shade wider and sits a degree off, which is enough to
+     stop the eye reading "stamped twice". */
+  var HAND_VARIANT = {
+    right: { splay: 0, lift: 0, wrist: 0 },
+    left:  { splay: 1.6, lift: -1.4, wrist: -1.5 }
+  };
+
+  function geomFor(side) {
+    var v = HAND_VARIANT[side] || HAND_VARIANT.right;
+    var out = {}, k, src, i, fk;
+    for (k in HAND_GEOM) if (Object.prototype.hasOwnProperty.call(HAND_GEOM, k)) out[k] = HAND_GEOM[k];
+    if (!v.splay && !v.lift) return out;
+    for (i = 0; i < FINGERS.length; i++) {
+      fk = FINGERS[i].key;
+      src = HAND_GEOM[fk];
+      if (!src || src.spine) continue;
+      out[fk] = {
+        x: src.x, y: src.y + v.lift * (i === 2 ? 1 : 0.5),
+        angle: src.angle + v.splay * (i - 1.7) * 0.4,
+        width: src.width, length: src.length + (i === 1 ? 1.5 : 0)
+      };
+    }
+    return out;
+  }
+
+  /* The silhouette is stamped four or five times per hand (clip, outline,
+     knock-out, …) and the thumb alone walks a 26 step sweep to build its
+     outline, so the geometry is resolved ONCE per hand and only the elements
+     are rebuilt. Keyed on the numbers themselves, so tuning HAND_GEOM at
+     runtime still takes effect. */
+  var SIL_CACHE = {};
+  function silhouette(geom) {
+    var sig = '', i, k, gm, pts, out;
+    for (i = 0; i < FINGERS.length; i++) {
+      gm = geom[FINGERS[i].key];
+      sig += gm.spine
+        ? 's' + gm.spine.p0 + gm.spine.c + gm.spine.p2 + gm.spine.h0 + gm.spine.hc + gm.spine.h2
+        : '|' + gm.x + ',' + gm.y + ',' + gm.angle + ',' + gm.width + ',' + gm.length;
+    }
+    if (SIL_CACHE[sig]) return SIL_CACHE[sig];
+    out = [];
+    out.push({ t: 'rect', a: {
       x: f(WRIST.x), y: f(WRIST.y), width: f(WRIST.w), height: f(WRIST.h),
       rx: f(WRIST.r), ry: f(WRIST.r)
-    }, a)));
-    out.push(E('path', mergeAttrs({ d: PALM_D }, a)));
-    for (i = 0; i < WEB_PTS.length; i++) {
-      out.push(E('circle', mergeAttrs({
-        cx: f(WEB_PTS[i].cx), cy: f(WEB_PTS[i].cy), r: f(WEB_PTS[i].r)
-      }, a)));
+    } });
+    out.push({ t: 'path', a: { d: PALM_D } });
+    pts = webs(geom);
+    for (i = 0; i < pts.length; i++) {
+      out.push({ t: 'circle', a: { cx: f(pts[i].cx), cy: f(pts[i].cy), r: f(pts[i].r) } });
     }
     for (i = 0; i < FINGERS.length; i++) {
-      gm = HAND_GEOM[FINGERS[i].key];
-      if (gm.spine) out.push(E('path', mergeAttrs({ d: spinePath(gm.spine) }, a)));
-      else out.push(E('path', mergeAttrs({ d: fingerPath(gm), transform: fingerTF(gm) }, a)));
+      gm = geom[FINGERS[i].key];
+      if (gm.spine) out.push({ t: 'path', a: { d: spinePath(gm.spine) } });
+      else out.push({ t: 'path', a: { d: fingerPath(gm), transform: fingerTF(gm) } });
+    }
+    /* keep the map from growing without bound if someone animates the table */
+    k = 0;
+    for (i in SIL_CACHE) if (Object.prototype.hasOwnProperty.call(SIL_CACHE, i)) k++;
+    if (k > 8) SIL_CACHE = {};
+    SIL_CACHE[sig] = out;
+    return out;
+  }
+
+  function skinShapes(geom, attrs) {
+    var parts = silhouette(geom), out = [], i, k, a;
+    for (i = 0; i < parts.length; i++) {
+      a = {};
+      for (k in parts[i].a) if (Object.prototype.hasOwnProperty.call(parts[i].a, k)) a[k] = parts[i].a[k];
+      out.push(E(parts[i].t, mergeAttrs(a, attrs || {})));
     }
     return out;
   }
@@ -1501,89 +2153,360 @@
     return base;
   }
 
+  function nailLimbOf(geom, fk) {
+    var gm = geom[fk];
+    return (gm && gm.tip) ? gm.tip : gm;
+  }
+
   function handContent(side, design, opts) {
     opts = opts || {};
     var mirror = side === 'left';
+    var geom = geomFor(side);
     var skin = design.skin;
     var sh = skinShadow(skin);
     var W = HAND_VIEW.w, H = HAND_VIEW.h;
+    /* the wrist deliberately runs off the bottom edge, so every full-bleed
+       layer has to run off with it or the arm ends in a pale step */
+    var HB = H + 120;
     var g = E('g', { 'class': 'sn-hand-body' });
     var defs = add(g, E('defs'));
     var clipId = uid('hand');
-    var i, gm, fk, key, nw, nh, nhMed, back, dist, px, py, factor, aspect, shape, kn, el, vol, edge;
+    var i, gm, fk, key, nw, nh, nhMed, back, dist, px, py, factor, aspect, shape, kn, el, edge, wp;
+    var q = clamp(num(opts.detail, 0.55), 0.25, 1);
 
-    add(defs, E('clipPath', { id: clipId, clipPathUnits: 'userSpaceOnUse' }, skinShapes()));
+    /* world-space x: pre-flipped so that after the outer scale(-1,1) every
+       light lands on the same side of the world as it does on the right hand */
+    function LX(x) { return mirror ? W - x : x; }
+    /* a signed offset (a shadow nudge, a gradient direction) */
+    function SX(dx) { return mirror ? -dx : dx; }
 
-    /* 1. one darker edge around the WHOLE silhouette. Stroking each shape
-       underneath the fills means the interior strokes get painted over and
-       only the outline of the union survives — no wireframe of finger
-       outlines running across the palm. It is OPAQUE on purpose: a
-       translucent edge blends towards whatever is behind the hand and turns
-       into a pale halo on a light page. */
-    edge = mix(skin, sh, 0.8);
+    /* Skin palette, all derived from the one tone the customer picked. The
+       range has to be WIDE — a hand rendered inside a five percent band of one
+       colour is a paper cut-out, whatever else you do to it. Tested against
+       the lightest and the deepest tone in the store. */
+    var hi   = mix(skin, '#FFF6EC', 0.42);       /* knuckles, tendons, lit side */
+    var sh1  = mix(sh, darken(skin, 0.16), 0.5); /* the turn away from the light */
+    var sh2  = mix(darken(skin, 0.36), '#6A4553', 0.32);  /* the shaded side    */
+    var occ  = mix(darken(skin, 0.56), '#38202C', 0.36);  /* where light cannot get */
+    var warm = mix(skin, '#EE8A66', 0.30);       /* fingertips, knuckles      */
+
+    add(defs, E('clipPath', { id: clipId, clipPathUnits: 'userSpaceOnUse' },
+      skinShapes(geom)));
+    /* Every shading layer wants the same silhouette, so they all live inside
+       ONE clipped group and ask only for their own filter / mask / opacity.
+       Nine clip applications per hand became one. */
+    var skinG = null;
+    function clipped(kids, extra) {
+      var a = {}, k;
+      if (!skinG) skinG = add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }));
+      if (extra) for (k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) a[k] = extra[k];
+      return add(skinG, E('g', a, kids));
+    }
+
+    /* 1. one darker edge around the WHOLE silhouette (opaque on purpose: a
+       translucent edge turns into a pale halo on a light page) */
+    edge = mix(skin, occ, 0.42);
     add(g, E('g', {
-      fill: edge, stroke: edge, 'stroke-width': 3.5,
+      fill: edge, stroke: edge, 'stroke-width': 3,
       'stroke-linejoin': 'round', 'stroke-linecap': 'round'
-    }, skinShapes()));
+    }, skinShapes(geom)));
 
-    /* 2. the flat silhouette */
-    add(g, E('g', { fill: skin }, skinShapes()));
+    /* 2. the hand as a whole is a slab lit from the world's upper left — on
+       BOTH hands, which is the entire point of LX(). The ramp is opaque and
+       covers the whole silhouette, so there is no flat fill underneath it —
+       painting one would just be a layer nobody ever sees. */
+    clipped([rect(0, 0, W, HB, {
+      fill: grad(defs, 'linearGradient', [
+        [0, mix(hi, '#FFFFFF', 0.25)], [0.18, hi], [0.42, mix(hi, skin, 0.4)],
+        [0.62, skin], [0.84, sh1], [1, mix(sh2, occ, 0.45)]
+      ], {
+        x1: f(LX(28)), y1: 20, x2: f(LX(292)), y2: 330,
+        gradientUnits: 'userSpaceOnUse'
+      })
+    })]);
 
-    /* 3. the inner edge. Clip to the union, flood it with the shadow tone,
-       then knock the flooded area back out with a blurred copy of the same
-       union nudged up and towards the light. What survives is a soft rim that
-       hugs the silhouette — thicker on the shaded side, a hairline on the lit
-       one. Flat illustration: an edge, not a render. */
-    add(g, E('g', { 'clip-path': 'url(#' + clipId + ')', opacity: 0.5 }, [
-      rect(0, 0, W, H, { fill: sh }),
-      E('g', { fill: skin, transform: 'translate(-3.5 -4.5)', filter: blurF(defs, 5) }, skinShapes())
-    ]));
+    /* 2b. the inner edge: flood the silhouette with the shadow tone, then knock
+       it back out with a blurred copy nudged toward the light. What survives
+       hugs the outline — thick on the shaded side, a hairline on the lit one.
+       It has to happen HERE, under the form layers: run it last and it paints
+       flat skin back over everything and the hand goes flat again. */
+    clipped([
+      rect(0, 0, W, HB, { fill: mix(sh2, occ, 0.45) }),
+      E('g', {
+        fill: skin,
+        transform: 'translate(' + f(SX(-3.4)) + ' -4.6)',
+        filter: blurF(defs, 5)
+      }, skinShapes(geom))
+    ], { opacity: 0.55 });
 
-    /* 4. a whisper of form: ONE flat cross-light over the whole hand. A
-       per-shape gradient would seam wherever a finger crosses the palm. */
-    vol = grad(defs, 'linearGradient', [
-      [0, '#FFFFFF', 0.16], [0.34, '#FFFFFF', 0.04], [0.66, sh, 0], [1, sh, 0.16]
-    ], { x1: 58, y1: 0, x2: 262, y2: 0, gradientUnits: 'userSpaceOnUse' });
-    add(g, E('g', { 'clip-path': 'url(#' + clipId + ')' }, [rect(0, 0, W, H, { fill: vol })]));
-
-    /* 5. knuckle + joint hints — two hairlines per finger, nothing more */
-    kn = add(g, E('g', { 'clip-path': 'url(#' + clipId + ')', filter: blurF(defs, 2.6) }));
+    /* 3. EVERY FINGER IS A CYLINDER. Without this a hand is four flat straps;
+       with it, it has volume. The ramp runs across each finger in its own
+       rotated frame, and is reversed on the mirrored hand so the lit side
+       still faces the world's light and not the mirror's. */
+    function cyl(mirrorIt, stops) {
+      var out = [], i;
+      if (!mirrorIt) return stops;
+      for (i = stops.length - 1; i >= 0; i--) {
+        out.push([1 - stops[i][0], stops[i][1], stops[i].length > 2 ? stops[i][2] : 1]);
+      }
+      return out;
+    }
+    var CYL = [
+      [0.00, occ, 0.55], [0.07, sh2, 0.42], [0.20, sh1, 0.16],
+      [0.36, '#FFFFFF', 0.20], [0.46, '#FFFFFF', 0.10],
+      [0.66, sh1, 0.10], [0.85, sh2, 0.40], [1.00, occ, 0.60]
+    ];
+    /* the cylinders run the length of each finger and have to STOP somewhere;
+       a straight cut across the back of the hand is worse than no shading at
+       all, so the whole group fades out through one shared mask as it reaches
+       the knuckles */
+    var fadeMask = shared(defs, 'fmask|' + H + '|' + HB, function (dd) {
+      var id = uid('fm');
+      add(dd, E('mask', {
+        id: id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: f(W), height: f(H + 120)
+      }, [
+        rect(0, 0, W, H + 120, {
+          fill: grad(dd, 'linearGradient',
+            [[0, '#FFFFFF'], [0.44, '#FFFFFF'], [0.60, '#000000'], [1, '#000000']],
+            { x1: 0, y1: 0, x2: 0, y2: f(H), gradientUnits: 'userSpaceOnUse' })
+        })
+      ]));
+      return 'url(#' + id + ')';
+    });
+    kn = clipped([], { mask: fadeMask });
     for (i = 0; i < FINGERS.length; i++) {
-      gm = nailLimb(FINGERS[i].key);
-      add(kn, E('ellipse', {
-        cx: 0, cy: f(-gm.length * 0.52), rx: f(gm.width * 0.28), ry: 2.2,
-        fill: sh, opacity: 0.16, transform: fingerTF(gm)
+      fk = FINGERS[i].key;
+      gm = geom[fk];
+      if (gm.spine) continue;
+      add(kn, E('rect', {
+        x: f(-gm.width * 0.62), y: f(-gm.length * 1.15),
+        width: f(gm.width * 1.24), height: f(gm.length * 1.9),
+        fill: grad(defs, 'linearGradient', cyl(mirror, CYL), { x1: 0, y1: 0, x2: 1, y2: 0 }),
+        transform: fingerTF(gm)
       }));
+    }
+    /* The thumb gets the same treatment, but ACROSS its own bend rather than
+       along it — and faded out towards its root, because the root of the
+       thumb is a disc buried in the palm and shading it like a cylinder puts
+       a dark half-moon in the middle of the hand. */
+    var thumbMask = shared(defs, 'tmask', function (dd) {
+      var id = uid('tm');
+      add(dd, E('mask', {
+        id: id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: f(W), height: f(H + 120)
+      }, [
+        rect(0, 0, W, H + 120, {
+          fill: grad(dd, 'linearGradient',
+            [[0, '#000000'], [0.14, '#000000'], [0.44, '#FFFFFF'], [1, '#FFFFFF']],
+            { x1: 172, y1: 336, x2: 271, y2: 216, gradientUnits: 'userSpaceOnUse' })
+        })
+      ]));
+      return 'url(#' + id + ')';
+    });
+    kn = clipped([], { mask: thumbMask });
+    add(kn, E('path', {
+      d: spinePath(geom.thumb.spine),
+      fill: grad(defs, 'linearGradient', cyl(mirror, [
+        [0.00, occ, 0.42], [0.15, sh2, 0.26], [0.44, '#FFFFFF', 0.18],
+        [0.58, '#FFFFFF', 0.06], [0.80, sh1, 0.14], [1.00, occ, 0.45]
+      ]), {
+        x1: f(LX(202)), y1: 264, x2: f(LX(248)), y2: 302, gradientUnits: 'userSpaceOnUse'
+      })
+    }));
+
+    /* 4. the back of the hand is not flat either: knuckle mounds catch the
+       light, the metacarpal valleys between them fall away, and the thenar
+       (the muscle at the base of the thumb) is a real mass */
+    kn = clipped([]);
+    for (i = 0; i < FINGERS.length; i++) {
+      fk = FINGERS[i].key;
+      gm = geom[fk];
+      if (gm.spine) continue;
+      /* the knuckle itself */
       add(kn, E('ellipse', {
-        cx: 0, cy: f(-gm.length * 0.18), rx: f(gm.width * 0.32), ry: 2.6,
-        fill: sh, opacity: 0.13, transform: fingerTF(gm)
+        cx: f(gm.x - SX(gm.width * 0.14)), cy: f(gm.y + 8),
+        rx: f(gm.width * 0.56), ry: f(gm.width * 0.46),
+        fill: radGrad(defs, [[0, hi, 0.5], [0.6, hi, 0.2], [1, skin, 0]])
+      }));
+      /* and the crease under it */
+      add(kn, E('path', {
+        d: pb().M(gm.x - gm.width * 0.34, gm.y + 20)
+          .Q(gm.x, gm.y + 26, gm.x + gm.width * 0.34, gm.y + 20).d(),
+        fill: 'none', stroke: occ, 'stroke-width': 2.6, opacity: 0.24,
+        'stroke-linecap': 'round'
+      }));
+      /* the valley beside it */
+      if (i < FINGERS.length - 1) {
+        add(kn, E('ellipse', {
+          cx: f((gm.x + geom[FINGERS[i + 1].key].x) / 2), cy: f(gm.y + 58),
+          rx: 15, ry: 50,
+          fill: radGrad(defs, [[0, sh2, 0.10], [0.55, sh2, 0.045], [1, sh2, 0]])
+        }));
+      }
+    }
+    /* the whole back of the hand domes up over the metacarpals */
+    add(kn, E('ellipse', {
+      cx: f(LX(128)), cy: 246, rx: 66, ry: 70,
+      fill: radGrad(defs, [
+        [0, hi, 0.42], [0.45, mix(hi, skin, 0.5), 0.2], [0.8, skin, 0.03], [1, skin, 0]
+      ])
+    }));
+    add(kn, E('ellipse', {
+      cx: f(LX(194)), cy: 268, rx: 44, ry: 62,
+      fill: radGrad(defs, [[0, hi, 0.5], [0.5, hi, 0.22], [1, skin, 0]]),
+      transform: 'rotate(' + f(SX(-12)) + ' ' + f(LX(194)) + ' 268)'
+    }));
+    add(kn, E('ellipse', {
+      cx: f(LX(92)), cy: 262, rx: 26, ry: 62,
+      fill: radGrad(defs, [[0, sh2, 0.20], [0.6, sh2, 0.09], [1, sh2, 0]]),
+      transform: 'rotate(' + f(SX(8)) + ' ' + f(LX(92)) + ' 262)'
+    }));
+    /* warmth where blood is close to the surface — fingertips and knuckles */
+    for (i = 0; i < FINGERS.length; i++) {
+      gm = nailLimbOf(geom, FINGERS[i].key);
+      add(kn, E('ellipse', {
+        cx: 0, cy: f(-gm.length * 0.95), rx: f(gm.width * 0.5), ry: f(gm.width * 0.66),
+        fill: radGrad(defs, [[0, warm, 0.55], [0.55, warm, 0.24], [1, warm, 0]]),
+        transform: fingerTF(gm)
+      }));
+    }
+
+    /* 5. contact shadows and creases. Ambient occlusion where two fingers
+       touch and where each finger leaves the palm is what glues the pieces
+       into one hand instead of a bundle of separate shapes. */
+    kn = clipped([], { filter: blurF(defs, 1.6) });
+    for (i = 0; i < FINGERS.length - 1; i++) {
+      gm = geom[FINGERS[i].key];
+      add(kn, E('path', {
+        d: pb().M(gm.x, gm.y + 4).Q(gm.x + SX(2), gm.y + 34, gm.x + SX(4), gm.y + 64).d(),
+        fill: 'none', stroke: occ, 'stroke-width': 17, opacity: 0.13,
+        'stroke-linecap': 'round'
+      }));
+    }
+    wp = webs(geom);
+    for (i = 0; i < wp.length; i++) {
+      add(kn, E('ellipse', {
+        cx: f(wp[i].cx), cy: f(wp[i].cy), rx: 14, ry: 11, fill: occ, opacity: 0.16
+      }));
+    }
+    for (i = 0; i < FINGERS.length; i++) {
+      fk = FINGERS[i].key;
+      gm = nailLimbOf(geom, fk);
+      /* two knuckle creases — a real finger folds, twice */
+      add(kn, E('path', {
+        d: pb().M(-gm.width * 0.36, -gm.length * 0.585)
+          .Q(0, -gm.length * 0.55, gm.width * 0.36, -gm.length * 0.585).d(),
+        fill: 'none', stroke: occ, 'stroke-width': 2.4, opacity: 0.30,
+        transform: fingerTF(gm)
+      }));
+      if (q >= 0.5) {
+        add(kn, E('path', {
+          d: pb().M(-gm.width * 0.34, -gm.length * 0.545)
+            .Q(0, -gm.length * 0.515, gm.width * 0.34, -gm.length * 0.545).d(),
+          fill: 'none', stroke: hi, 'stroke-width': 2, opacity: 0.35,
+          transform: fingerTF(gm)
+        }));
+      }
+      add(kn, E('path', {
+        d: pb().M(-gm.width * 0.40, -gm.length * 0.26)
+          .Q(0, -gm.length * 0.215, gm.width * 0.40, -gm.length * 0.26).d(),
+        fill: 'none', stroke: occ, 'stroke-width': 3, opacity: 0.22,
+        transform: fingerTF(gm)
+      }));
+      /* the shadow one finger drops on the next */
+      add(kn, E('rect', {
+        x: f(SX(1) > 0 ? gm.width * 0.30 : -gm.width * 0.64),
+        y: f(-gm.length * 1.02), width: f(gm.width * 0.34), height: f(gm.length * 1.1),
+        fill: occ, opacity: 0.13, transform: fingerTF(gm)
+      }));
+    }
+    /* tendons running from the knuckles back toward the wrist */
+    for (i = 0; i < FINGERS.length - 1; i++) {
+      gm = geom[FINGERS[i].key];
+      add(kn, E('path', {
+        d: pb().M(gm.x, gm.y + 10)
+          .C(gm.x + (148 - gm.x) * 0.34, gm.y + 56, gm.x + (150 - gm.x) * 0.6, gm.y + 92,
+             gm.x + (152 - gm.x) * 0.74, gm.y + 132).d(),
+        fill: 'none', stroke: hi, 'stroke-width': 7, opacity: 0.08, 'stroke-linecap': 'round'
+      }));
+      add(kn, E('path', {
+        d: pb().M(gm.x + SX(7), gm.y + 14)
+          .C(gm.x + SX(7) + (148 - gm.x) * 0.34, gm.y + 60,
+             gm.x + SX(7) + (150 - gm.x) * 0.6, gm.y + 96,
+             gm.x + SX(7) + (152 - gm.x) * 0.74, gm.y + 136).d(),
+        fill: 'none', stroke: occ, 'stroke-width': 4, opacity: 0.035, 'stroke-linecap': 'round'
       }));
     }
     /* the crease where the thumb mound meets the palm */
     add(kn, E('path', {
-      d: 'M192 214 C210 240 216 280 205 316',
-      fill: 'none', stroke: sh, 'stroke-width': 3, opacity: 0.16
+      d: 'M' + f(LX(192)) + ' 214 C' + f(LX(210)) + ' 240 ' + f(LX(216)) + ' 280 ' +
+         f(LX(205)) + ' 316',
+      fill: 'none', stroke: occ, 'stroke-width': 3.4, opacity: 0.22
     }));
     /* the wrist reads as sitting behind the hand */
-    add(kn, E('ellipse', {
-      cx: f(WRIST.x + WRIST.w / 2), cy: 372, rx: f(WRIST.w * 0.62), ry: 26,
-      fill: sh, opacity: 0.22
-    }));
 
-    /* 6. the nails — sized from their own finger, so the pinky's plate is the
-       smallest and the thumb's the widest */
+    /* 6. the nail beds and the fold of skin at the sides of each plate.
+       Drawn before the plates so a jelly nail has something to show through. */
     shape = shapeId(design.shape);
     aspect = ASPECT[shape];
     factor = lenFactor(design.length);
+    kn = clipped([]);
+    /* the wrist crease, and then the arm falling away into shadow rather than
+       stopping at a line. It rides in this group on purpose: a full width rect
+       inside a blurred group makes the filter region — and the cost — jump. */
+    add(kn, rect(0, 290, W, 220, {
+      fill: grad(defs, 'linearGradient', [
+        [0, occ, 0], [0.20, occ, 0.15], [0.34, occ, 0.19],
+        [0.52, occ, 0.12], [1, occ, 0.24]
+      ], { x1: 0, y1: 290, x2: 0, y2: 510, gradientUnits: 'userSpaceOnUse' })
+    }));
     for (i = 0; i < FINGERS.length; i++) {
       fk = FINGERS[i].key;
-      gm = nailLimb(fk);
+      gm = nailLimbOf(geom, fk);
+      nw = gm.width * (1 - (1 - num(gm.taper, FINGER_TAPER)) * PLATE_AT) * PLATE_W;
+      nhMed = nw * aspect;
+      nh = nhMed * factor;
+      back = clamp(nhMed * (PLATE_SEAT + (1 - PLATE_SEAT) * Math.min(factor, 1)),
+                   nw * 0.8, gm.length * 0.62);
+      dist = gm.length - back;
+      /* the bed: a hair wider than the plate, pinker than the finger */
+      add(kn, E('ellipse', {
+        cx: 0, cy: f(-dist + nhMed * 0.34), rx: f(nw * 0.56), ry: f(nhMed * 0.48),
+        fill: radGrad(defs, [
+          [0, mix(skin, '#E48C90', 0.34), 0.75], [0.7, mix(skin, '#E48C90', 0.22), 0.4],
+          [1, skin, 0]
+        ]),
+        transform: fingerTF(gm)
+      }));
+      /* the fold of skin along each side wall */
+      add(kn, E('path', {
+        d: pb().M(-nw * 0.56, -dist + nhMed * 0.62)
+          .Q(-nw * 0.62, -dist + nhMed * 0.1, -nw * 0.42, -dist - nh * 0.1).d(),
+        fill: 'none', stroke: occ, 'stroke-width': 1.8, opacity: 0.30,
+        transform: fingerTF(gm)
+      }));
+      add(kn, E('path', {
+        d: pb().M(nw * 0.56, -dist + nhMed * 0.62)
+          .Q(nw * 0.62, -dist + nhMed * 0.1, nw * 0.42, -dist - nh * 0.1).d(),
+        fill: 'none', stroke: occ, 'stroke-width': 1.8, opacity: 0.30,
+        transform: fingerTF(gm)
+      }));
+      /* the cuticle itself */
+      add(kn, E('path', {
+        d: pb().M(-nw * 0.5, -dist + nhMed * 0.10)
+          .Q(0, -dist + nhMed * 0.30, nw * 0.5, -dist + nhMed * 0.10).d(),
+        fill: 'none', stroke: occ, 'stroke-width': 2.2, opacity: 0.26,
+        transform: fingerTF(gm)
+      }));
+    }
+
+    /* 7. the plates */
+    for (i = 0; i < FINGERS.length; i++) {
+      fk = FINGERS[i].key;
+      gm = nailLimbOf(geom, fk);
       key = side + fk.charAt(0).toUpperCase() + fk.slice(1);
       nw = gm.width * (1 - (1 - num(gm.taper, FINGER_TAPER)) * PLATE_AT) * PLATE_W;
       nhMed = nw * aspect;
       nh = nhMed * factor;
-      /* seat the cuticle: at factor 1 the free edge lands on the fingertip,
-         shorter sets pull just inside it, long / xlong reach past it */
       back = clamp(nhMed * (PLATE_SEAT + (1 - PLATE_SEAT) * Math.min(factor, 1)),
                    nw * 0.8, gm.length * 0.62);
       dist = gm.length - back;
@@ -1591,8 +2514,12 @@
       py = gm.y - Math.cos(rad(gm.angle)) * dist;
       el = nailSVG(design.nails[key], {
         shape: shape, w: nw, h: nh, key: key, mirror: mirror,
+        /* the plate is rotated with the finger, so the light has to be told
+           where it now is — and on the mirrored hand, told again */
+        light: mirror ? -gm.angle : gm.angle,
+        detail: q,
         finishId: design.nails[key] ? design.nails[key].finish : null,
-        shadow: darken(sh, 0.25),
+        shadow: darken(sh, 0.22),
         interactive: !!opts.interactive,
         selected: opts.selected,
         onPick: opts.onPick
@@ -1652,13 +2579,26 @@
     return svg;
   }
 
+  /* every public entry point opens a shared-defs context, so one call builds
+     one copy of each gradient / filter / clip however many nails it draws */
+  function inCtx(svg, fn) {
+    var defs = add(svg, E('defs'));
+    var prev = ctxOpen(defs);
+    try { fn(); }
+    finally {
+      ctxClose(prev);
+      if (!defs.firstChild && defs.parentNode) defs.parentNode.removeChild(defs);
+    }
+    return svg;
+  }
+
   function hand(opts) {
     opts = opts || {};
     var side = opts.side === 'left' ? 'left' : 'right';
     var design = normDesign(opts.design);
     var svg = newSvg(opts);
     svg.setAttribute('class', 'sn-svg sn-hand sn-hand-' + side);
-    add(svg, handGroup(side, design, opts));
+    inCtx(svg, function () { add(svg, handGroup(side, design, opts)); });
     return sizeSvg(svg, opts.w, HAND_VIEW.w, HAND_VIEW.h);
   }
 
@@ -1669,22 +2609,22 @@
     var gap = 20, vw, vh;
 
     if (d.hand === 'both') {
-      /* mirrored pair; the left hand rides a little lower so the pair reads
-         as a natural composition rather than a stamped duplicate */
       vw = HAND_VIEW.w * 2 + gap;
       vh = HAND_VIEW.h + 24;
       svg.setAttribute('class', 'sn-svg sn-preview sn-preview-both');
-      add(svg, E('g', { transform: 'translate(0 24)' }, [handGroup('left', d, opts)]));
-      add(svg, E('g', { transform: 'translate(' + f(HAND_VIEW.w + gap) + ' 0)' }, [handGroup('right', d, opts)]));
+      inCtx(svg, function () {
+        add(svg, E('g', { transform: 'translate(0 24)' }, [handGroup('left', d, opts)]));
+        add(svg, E('g', { transform: 'translate(' + f(HAND_VIEW.w + gap) + ' 0)' },
+          [handGroup('right', d, opts)]));
+      });
     } else {
       vw = HAND_VIEW.w;
       vh = HAND_VIEW.h;
       svg.setAttribute('class', 'sn-svg sn-preview sn-preview-' + d.hand);
-      add(svg, handGroup(d.hand, d, opts));
+      inCtx(svg, function () { add(svg, handGroup(d.hand, d, opts)); });
     }
     return sizeSvg(svg, opts.w, vw, vh);
   }
-
   /* ====================================================================== */
   /* 11. single() — one big nail, the charm placement editor's canvas        */
   /*                                                                         */
@@ -1699,6 +2639,68 @@
   /*  single() stamps on the <svg>, so it keeps working if the box changes.  */
   /* ====================================================================== */
 
+  /* The fingertip a single() plate lies on. Same light as everywhere else:
+     lit down the left wall, shaded down the right, warm where the blood is
+     close to the surface at the very end of the finger. */
+  function fingerTip(defs, skin, bx, by, bw, bh, vh) {
+    var sh = skinShadow(skin);
+    var warm = mix(skin, '#F0916F', 0.22);
+    var deep = darken(sh, 0.28);
+    var cx = bx + bw / 2;
+    var fw = bw * 1.24;
+    var half = fw / 2;
+    var top = by + bh - Math.min(bh * 0.99, bw * 1.58);
+    var bot = vh + fw * 0.5;
+    var g = E('g', { 'class': 'sn-fingertip' });
+    var cid = uid('ftc');
+    var d = pb()
+      .M(cx - half, top + half * 1.15)
+      .C(cx - half, top + half * 0.30, cx - fw * 0.30, top, cx, top)
+      .C(cx + fw * 0.30, top, cx + half, top + half * 0.30, cx + half, top + half * 1.15)
+      .C(cx + half * 1.03, top + (bot - top) * 0.5, cx + half * 1.05, bot - fw, cx + half * 1.06, bot)
+      .L(cx - half * 1.06, bot)
+      .C(cx - half * 1.05, bot - fw, cx - half * 1.03, top + (bot - top) * 0.5, cx - half, top + half * 1.15)
+      .Z().d();
+
+    add(g, E('defs', null, [
+      E('clipPath', { id: cid, clipPathUnits: 'userSpaceOnUse' }, [E('path', { d: d })])
+    ]));
+    add(g, E('path', {
+      d: d, fill: skin, stroke: mix(skin, sh, 0.55), 'stroke-width': f(bw * 0.010)
+    }));
+    add(g, E('g', { 'clip-path': 'url(#' + cid + ')' }, [
+      /* the cylinder of the finger */
+      E('path', {
+        d: d,
+        fill: grad(defs, 'linearGradient', [
+          [0, mix(sh, deep, 0.35)], [0.09, mix(skin, sh, 0.45)],
+          [0.30, mix(skin, '#FFFFFF', 0.16)], [0.52, skin],
+          [0.86, mix(skin, sh, 0.55)], [1, mix(sh, deep, 0.45)]
+        ], {
+          x1: f(cx - half * 1.06), y1: 0, x2: f(cx + half * 1.06), y2: 0,
+          gradientUnits: 'userSpaceOnUse'
+        })
+      }),
+      /* warmth in the pad of the finger, beyond the plate */
+      E('ellipse', {
+        cx: f(cx), cy: f(top + half * 0.62), rx: f(half * 1.0), ry: f(half * 0.95),
+        fill: radGrad(defs, [[0, warm, 0.5], [0.65, warm, 0.18], [1, warm, 0]])
+      }),
+      /* the joint crease below the nail */
+      E('path', {
+        d: pb().M(cx - half * 0.88, by + bh + bw * 0.60)
+          .Q(cx, by + bh + bw * 0.74, cx + half * 0.88, by + bh + bw * 0.60).d(),
+        fill: 'none', stroke: deep, 'stroke-width': f(bw * 0.022), opacity: 0.20
+      }),
+      E('path', {
+        d: pb().M(cx - half * 0.86, by + bh + bw * 0.50)
+          .Q(cx, by + bh + bw * 0.64, cx + half * 0.86, by + bh + bw * 0.50).d(),
+        fill: 'none', stroke: deep, 'stroke-width': f(bw * 0.016), opacity: 0.14
+      })
+    ]));
+    return g;
+  }
+
   function single(nailState, design, opts) {
     opts = opts || {};
     var d = normDesign(design);
@@ -1706,7 +2708,7 @@
     var bw = num(opts.boxW, NAIL_BOX.w);
     var bh = num(opts.boxH, 0);
     var key = String(opts.key !== undefined && opts.key !== null ? opts.key : 'nail');
-    var vw, vh, svg, defs, g;
+    var vw, vh, svg, defs, g, prev, finger;
 
     if (!(bw > 0)) bw = NAIL_BOX.w;
     if (!(bh > 0)) {
@@ -1730,28 +2732,43 @@
     svg.setAttribute('class', 'sn-svg sn-single');
     svg.setAttribute('data-key', key);
     defs = add(svg, E('defs'));
+    prev = ctxOpen(defs);
+    try {
+      if (opts.bg !== false) {
+        add(svg, E('rect', {
+          x: 1, y: 1, width: f(vw - 2), height: f(vh - 2), rx: 20,
+          fill: typeof opts.bg === 'string' && opts.bg ? opts.bg : '#C97B92',
+          'fill-opacity': typeof opts.bg === 'string' && opts.bg ? 1 : 0.07
+        }));
+        add(svg, E('rect', {
+          x: 1, y: 1, width: f(vw - 2), height: f(vh - 2), rx: 20,
+          fill: radGrad(defs, [[0, '#FFFFFF', 0.18], [1, '#FFFFFF', 0]], { cx: 0.5, cy: 0.3, r: 0.8 })
+        }));
+      }
 
-    if (opts.bg !== false) {
-      add(svg, E('rect', {
-        x: 1, y: 1, width: f(vw - 2), height: f(vh - 2), rx: 20,
-        fill: typeof opts.bg === 'string' && opts.bg ? opts.bg : '#C97B92',
-        'fill-opacity': typeof opts.bg === 'string' && opts.bg ? 1 : 0.07
-      }));
-      add(svg, E('rect', {
-        x: 1, y: 1, width: f(vw - 2), height: f(vh - 2), rx: 20,
-        fill: radGrad(defs, [[0, '#FFFFFF', 0.18], [1, '#FFFFFF', 0]], { cx: 0.5, cy: 0.3, r: 0.8 })
-      }));
+      /* A press-on is not a floating shape: it lies on a finger. Drawing the
+         fingertip behind it is what makes the plate read as an object rather
+         than a sticker — and a jelly finish has nothing to be translucent
+         against without it. Off when the caller asked for a bare chip. */
+      finger = (opts.finger === undefined || opts.finger === null)
+        ? (opts.bg !== false) : !!opts.finger;
+      if (finger) add(svg, fingerTip(defs, d.skin, BOX_PAD.x, BOX_PAD.y, bw, bh, vh));
+
+      g = nailSVG(nailState, {
+        shape: shape, w: bw, h: bh, key: key,
+        finishId: opts.finishId,
+        detail: clamp(num(opts.detail, 1), 0.25, 1),
+        shadow: finger ? darken(skinShadow(d.skin), 0.22) : null,
+        bed: finger ? mix(d.skin, '#E1898C', 0.30) : null,
+        interactive: !!opts.interactive,
+        selected: opts.selected,
+        onPick: opts.onPick
+      });
+      g.setAttribute('transform', 'translate(' + f(BOX_PAD.x) + ' ' + f(BOX_PAD.y) + ')');
+      add(svg, g);
+    } finally {
+      ctxClose(prev);
     }
-
-    g = nailSVG(nailState, {
-      shape: shape, w: bw, h: bh, key: key,
-      finishId: opts.finishId,
-      interactive: !!opts.interactive,
-      selected: opts.selected,
-      onPick: opts.onPick
-    });
-    g.setAttribute('transform', 'translate(' + f(BOX_PAD.x) + ' ' + f(BOX_PAD.y) + ')');
-    add(svg, g);
 
     svg.setAttribute('data-nx', f(BOX_PAD.x));
     svg.setAttribute('data-ny', f(BOX_PAD.y));
@@ -1809,7 +2826,7 @@
     var size = num(px, 0);
     var vw = 120, vh = 120, pad = 3;
     var svg = newSvg({});
-    var defs, shape, A, nw, nh, i, el, spread, cy, ca, sa, top, bot, lift;
+    var defs, shape, A, nw, nh, i, el, spread, cy, ca, sa, top, bot, lift, prev;
     var keys = ['rightRing', 'rightMiddle', 'rightIndex'];
     var order = [0, 2, 1];          /* outer plates first, centre one on top */
     var tilt = 16;                  /* how far the outer plates fan out */
@@ -1817,6 +2834,7 @@
 
     svg.setAttribute('class', 'sn-svg sn-thumb');
     defs = add(svg, E('defs'));
+    prev = ctxOpen(defs);
     add(svg, E('ellipse', {
       cx: 60, cy: 62, rx: 59, ry: 52,
       fill: radGrad(defs, [[0, '#C97B92', 0.16], [1, '#C97B92', 0]])
@@ -1847,7 +2865,8 @@
 
     for (i = 0; i < order.length; i++) {
       el = nailSVG(d.nails[keys[order[i]]], {
-        shape: shape, w: nw, h: nh, key: keys[order[i]], shadow: '#7A4B58'
+        shape: shape, w: nw, h: nh, key: keys[order[i]], shadow: '#7A4B58',
+        light: (order[i] - 1) * tilt, detail: 0.55
       });
       el.setAttribute('transform',
         'translate(' + f(vw / 2 + (order[i] - 1) * spread) + ' ' +
@@ -1856,6 +2875,7 @@
         'translate(' + f(-nw / 2) + ' ' + f(-nh) + ')');
       add(svg, el);
     }
+    ctxClose(prev);
     return sizeSvg(svg, size, vw, vh);
   }
 

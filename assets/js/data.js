@@ -101,8 +101,8 @@
         en: 'Press-on nails, made to your taste and your fit'
       },
       about: {
-        ar: 'شوش نيل استوديو صغير متخصص في الأظافر المركّبة المصنوعة يدويًا لكل عميلة على حدة. تختارين الشكل والطول واللون والنقشة، ونجهّز الطقم بمقاسك أنتِ — ظفرًا ظفرًا — بخامة مرنة مريحة ولمعة تدوم. توصلك العلبة كاملة مع اللاصقات وعدّة التركيب، وتلبسينها في أقل من عشر دقائق بدون صالون ولا مواعيد.',
-        en: 'Shosh Nail is a small studio making handcrafted press-on sets, one customer at a time. You choose the shape, length, colour and pattern, and we build the set to your own measurements — nail by nail — in a flexible, comfortable material with a lasting shine. Your box arrives complete with adhesives and a prep kit, so you can wear it in under ten minutes, no salon and no appointment.'
+        ar: 'شوش نيل مشغل منزلي صغير، كل طقم فيه مصنوع يدويًا لعميلة وحدة. تختارين الشكل والطول واللون والنقشة، ونجهّز الطقم بمقاسك أنتِ — ظفرًا ظفرًا — بخامة مرنة مريحة ولمعة تدوم. ما عندنا محل ولا صالون: تطلبين من الموقع أو الواتساب، وتوصلك العلبة للباب كاملة مع اللاصقات وعدّة التركيب، وتلبسينها في أقل من عشر دقائق.',
+        en: 'Shosh Nail is a small home workshop: every set is handmade for one customer at a time. You choose the shape, length, colour and pattern, and we build the set to your own measurements — nail by nail — in a flexible, comfortable material with a lasting shine. There is no shop and no salon: you order here or on WhatsApp, and the box is delivered to your door complete with adhesives and a prep kit, ready to wear in under ten minutes.'
       },
       phone: '+966500000000',
       whatsapp: '966500000000',
@@ -111,13 +111,14 @@
       snapchat: 'shosh.nail',
       tiktok: '',
       city: { ar: 'الرياض', en: 'Riyadh' },
-      address: {
-        ar: 'حي الياسمين، الرياض — الاستلام من الاستوديو بموعد مسبق',
-        en: 'Al Yasmin District, Riyadh — studio pickup by appointment'
-      },
+      /* No shop, no showroom, no pickup point — the work is done at home and
+         everything ships. The key stays so old backups and the admin panel
+         keep merging cleanly, but it must stay empty. */
+      address: { ar: '', en: '' },
+      /* Not shop opening times — the hours the owner answers messages. */
       hours: {
-        ar: 'السبت – الخميس: 11 ص – 9 م · الجمعة: 4 م – 10 م',
-        en: 'Sat – Thu: 11am – 9pm · Fri: 4pm – 10pm'
+        ar: 'نرد على الرسائل يوميًا من 11 صباحًا إلى 10 مساءً · والطلب من الموقع مفتوح 24 ساعة',
+        en: 'We answer messages daily, 11am – 10pm · ordering on the site is open 24/7'
       },
       currency: { ar: 'ر.س', en: 'SAR' },
       adminPass: 'shosh1234',
@@ -462,53 +463,81 @@
     ],
 
     /* =====================================================================
-       CHARMS — emoji / glyph decorations placed on a nail.
+       CHARMS — the real decorations a nail tech glues onto a press-on:
+       cut crystals, pearls, metal studs, foil, dried flowers, 3D shapes.
+       Each item points at a vector drawing in assets/js/nail-art.js through
+       `art` (SN.Art id). `glyph` stays in the shape as an empty string: old
+       backups saved before the artwork existed still merge cleanly, and the
+       renderer falls back to glyph -> image -> art in that order.
+       `group` must stay inside the six ids the admin panel offers:
+       stones · stars · flowers · letters · hearts · misc.
+       Prices follow the real work: a flat stud is cheap, a cut stone costs
+       more, a 3D shape more again, and a dangling charm is the dearest.
        ===================================================================== */
     charms: [
-      /* stones */
-      { id: 'ch-diamond', glyph: '💎', image: '', price: 6, group: 'stones', name: { ar: 'ألماسة', en: 'Diamond' } },
-      { id: 'ch-crystal-blue', glyph: '🔷', image: '', price: 4, group: 'stones', name: { ar: 'كريستال أزرق', en: 'Blue Crystal' } },
-      { id: 'ch-crystal-gold', glyph: '🔶', image: '', price: 4, group: 'stones', name: { ar: 'كريستال ذهبي', en: 'Gold Crystal' } },
-      { id: 'ch-pearl', glyph: '⚪', image: '', price: 3, group: 'stones', name: { ar: 'لؤلؤة', en: 'Pearl Bead' } },
-      { id: 'ch-rhinestone', glyph: '◆', image: '', price: 3, group: 'stones', name: { ar: 'حجر ماسي', en: 'Rhinestone' } },
-      { id: 'ch-stud', glyph: '●', image: '', price: 2, group: 'stones', name: { ar: 'حبة معدن', en: 'Metal Stud' } },
-      /* stars */
-      { id: 'ch-star', glyph: '⭐', image: '', price: 3, group: 'stars', name: { ar: 'نجمة', en: 'Star' } },
-      { id: 'ch-sparkles', glyph: '✨', image: '', price: 3, group: 'stars', name: { ar: 'لمعة', en: 'Sparkles' } },
-      { id: 'ch-glow-star', glyph: '🌟', image: '', price: 4, group: 'stars', name: { ar: 'نجمة متوهجة', en: 'Glowing Star' } },
-      { id: 'ch-star4', glyph: '✦', image: '', price: 2, group: 'stars', name: { ar: 'نجمة رباعية', en: 'Four-point Star' } },
-      { id: 'ch-star-outline', glyph: '✩', image: '', price: 2, group: 'stars', name: { ar: 'نجمة مفرغة', en: 'Outline Star' } },
-      { id: 'ch-moon', glyph: '🌙', image: '', price: 4, group: 'stars', name: { ar: 'هلال', en: 'Crescent Moon' } },
-      /* flowers */
-      { id: 'ch-daisy', glyph: '🌼', image: '', price: 3, group: 'flowers', name: { ar: 'أقحوانة', en: 'Daisy' } },
-      { id: 'ch-blossom', glyph: '🌸', image: '', price: 3, group: 'flowers', name: { ar: 'زهرة كرز', en: 'Cherry Blossom' } },
-      { id: 'ch-rose', glyph: '🌹', image: '', price: 4, group: 'flowers', name: { ar: 'وردة', en: 'Rose' } },
-      { id: 'ch-hibiscus', glyph: '🌺', image: '', price: 4, group: 'flowers', name: { ar: 'كركديه', en: 'Hibiscus' } },
-      { id: 'ch-tulip', glyph: '🌷', image: '', price: 4, group: 'flowers', name: { ar: 'تيوليب', en: 'Tulip' } },
-      { id: 'ch-leaf', glyph: '🍃', image: '', price: 2, group: 'flowers', name: { ar: 'ورقة خضراء', en: 'Leaf' } },
-      /* letters */
-      { id: 'ch-letter-a', glyph: 'A', image: '', price: 5, group: 'letters', name: { ar: 'حرف A', en: 'Letter A' } },
-      { id: 'ch-letter-m', glyph: 'M', image: '', price: 5, group: 'letters', name: { ar: 'حرف M', en: 'Letter M' } },
-      { id: 'ch-letter-s', glyph: 'S', image: '', price: 5, group: 'letters', name: { ar: 'حرف S', en: 'Letter S' } },
-      { id: 'ch-letter-sheen', glyph: 'ش', image: '', price: 5, group: 'letters', name: { ar: 'حرف ش', en: 'Letter Sheen' } },
-      { id: 'ch-letter-noon', glyph: 'ن', image: '', price: 5, group: 'letters', name: { ar: 'حرف ن', en: 'Letter Noon' } },
-      { id: 'ch-letter-meem', glyph: 'م', image: '', price: 4, group: 'letters', name: { ar: 'حرف م', en: 'Letter Meem' } },
-      /* hearts */
-      { id: 'ch-heart', glyph: '❤️', image: '', price: 3, group: 'hearts', name: { ar: 'قلب أحمر', en: 'Red Heart' } },
-      { id: 'ch-heart-pink', glyph: '💗', image: '', price: 3, group: 'hearts', name: { ar: 'قلب وردي', en: 'Pink Heart' } },
-      { id: 'ch-heart-white', glyph: '🤍', image: '', price: 3, group: 'hearts', name: { ar: 'قلب أبيض', en: 'White Heart' } },
-      { id: 'ch-heart-sparkle', glyph: '💖', image: '', price: 4, group: 'hearts', name: { ar: 'قلب لامع', en: 'Sparkling Heart' } },
-      { id: 'ch-heart-outline', glyph: '♡', image: '', price: 2, group: 'hearts', name: { ar: 'قلب مفرغ', en: 'Outline Heart' } },
-      /* misc */
-      { id: 'ch-bow', glyph: '🎀', image: '', price: 5, group: 'misc', name: { ar: 'فيونكة', en: 'Bow' } },
-      { id: 'ch-butterfly', glyph: '🦋', image: '', price: 5, group: 'misc', name: { ar: 'فراشة', en: 'Butterfly' } },
-      { id: 'ch-crown', glyph: '👑', image: '', price: 6, group: 'misc', name: { ar: 'تاج', en: 'Crown' } },
-      { id: 'ch-ring', glyph: '💍', image: '', price: 6, group: 'misc', name: { ar: 'خاتم', en: 'Ring' } },
-      { id: 'ch-cherry', glyph: '🍒', image: '', price: 4, group: 'misc', name: { ar: 'كرز', en: 'Cherries' } },
-      { id: 'ch-strawberry', glyph: '🍓', image: '', price: 4, group: 'misc', name: { ar: 'فراولة', en: 'Strawberry' } },
-      { id: 'ch-kiss', glyph: '💋', image: '', price: 4, group: 'misc', name: { ar: 'قبلة', en: 'Kiss' } },
-      { id: 'ch-cloud', glyph: '☁️', image: '', price: 3, group: 'misc', name: { ar: 'غيمة', en: 'Cloud' } },
-      { id: 'ch-snowflake', glyph: '❄️', image: '', price: 3, group: 'misc', name: { ar: 'ندفة ثلج', en: 'Snowflake' } }
+      /* --- stones, pearls and studs ------------------------------------ */
+      { id: 'ch-round', art: 'st-round', glyph: '', image: '', price: 4, group: 'stones', name: { ar: 'كريستالة دائرية', en: 'Round Crystal' } },
+      { id: 'ch-teardrop', art: 'st-pear', glyph: '', image: '', price: 5, group: 'stones', name: { ar: 'حجر دمعة', en: 'Teardrop Crystal' } },
+      { id: 'ch-marquise', art: 'st-marquise', glyph: '', image: '', price: 5, group: 'stones', name: { ar: 'حجر ماركيز', en: 'Marquise Crystal' } },
+      { id: 'ch-princess', art: 'st-princess', glyph: '', image: '', price: 5, group: 'stones', name: { ar: 'حجر مربّع', en: 'Square-cut Crystal' } },
+      { id: 'ch-baguette', art: 'st-baguette', glyph: '', image: '', price: 4, group: 'stones', name: { ar: 'حجر باغيت مستطيل', en: 'Baguette Crystal' } },
+      { id: 'ch-opal', art: 'st-opal', glyph: '', image: '', price: 7, group: 'stones', name: { ar: 'حجر أوبال', en: 'Opal Stone' } },
+      { id: 'ch-pearl', art: 'st-pearl', glyph: '', image: '', price: 3, group: 'stones', name: { ar: 'حبة لؤلؤ', en: 'Pearl Bead' } },
+      { id: 'ch-pearl-color', art: 'st-pearl-color', glyph: '', image: '', price: 4, group: 'stones', name: { ar: 'لؤلؤة ملوّنة', en: 'Coloured Pearl' } },
+      { id: 'ch-caviar', art: 'st-caviar', glyph: '', image: '', price: 4, group: 'stones', name: { ar: 'خرز كافيار', en: 'Caviar Beads' } },
+      { id: 'ch-stud', art: 'mt-ball', glyph: '', image: '', price: 2, group: 'stones', name: { ar: 'حبة معدن', en: 'Metal Stud' } },
+      { id: 'ch-stud-triangle', art: 'mt-triangle', glyph: '', image: '', price: 2, group: 'stones', name: { ar: 'مثلث معدني', en: 'Triangle Stud' } },
+      { id: 'ch-stud-square', art: 'mt-square', glyph: '', image: '', price: 2, group: 'stones', name: { ar: 'مربّع معدني', en: 'Square Stud' } },
+
+      /* --- stars and moons --------------------------------------------- */
+      { id: 'ch-star', art: 'mt-star', glyph: '', image: '', price: 3, group: 'stars', name: { ar: 'نجمة معدنية', en: 'Metal Star' } },
+      { id: 'ch-moon', art: 'mt-moon', glyph: '', image: '', price: 3, group: 'stars', name: { ar: 'هلال معدني', en: 'Metal Crescent' } },
+      { id: 'ch-star-3d', art: 'sh-star', glyph: '', image: '', price: 5, group: 'stars', name: { ar: 'نجمة بارزة', en: 'Puffy Star' } },
+      { id: 'ch-moon-star', art: 'sh-moon-star', glyph: '', image: '', price: 6, group: 'stars', name: { ar: 'هلال ونجمة', en: 'Moon & Star' } },
+
+      /* --- flowers ------------------------------------------------------ */
+      { id: 'ch-daisy', art: 'fl-daisy', glyph: '', image: '', price: 5, group: 'flowers', name: { ar: 'زهرة أقحوان', en: 'Daisy' } },
+      { id: 'ch-rose', art: 'fl-rose', glyph: '', image: '', price: 5, group: 'flowers', name: { ar: 'وردة صغيرة', en: 'Little Rose' } },
+      { id: 'ch-blossom', art: 'fl-blossom', glyph: '', image: '', price: 6, group: 'flowers', name: { ar: 'عنقود زهر', en: 'Blossom Cluster' } },
+      { id: 'ch-leaf', art: 'fl-leaf', glyph: '', image: '', price: 4, group: 'flowers', name: { ar: 'غصن أوراق', en: 'Leaf Sprig' } },
+      { id: 'ch-dried-flower', art: 'fl-dried', glyph: '', image: '', price: 7, group: 'flowers', name: { ar: 'زهرة مجفّفة', en: 'Pressed Dried Flower' } },
+
+      /* --- hearts ------------------------------------------------------- */
+      { id: 'ch-heart-stone', art: 'st-heart', glyph: '', image: '', price: 6, group: 'hearts', name: { ar: 'حجر قلب', en: 'Heart Crystal' } },
+      { id: 'ch-heart', art: 'sh-heart', glyph: '', image: '', price: 5, group: 'hearts', name: { ar: 'قلب بارز', en: 'Puffy Heart' } },
+
+      /* --- initials: gold and silver letters ---------------------------- */
+      { id: 'ch-letter-sheen', art: 'letter:ش', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف ش ذهبي', en: 'Gold Initial ش' } },
+      { id: 'ch-letter-meem', art: 'letter:م', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف م ذهبي', en: 'Gold Initial م' } },
+      { id: 'ch-letter-noon', art: 'letter:ن', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف ن ذهبي', en: 'Gold Initial ن' } },
+      { id: 'ch-letter-seen', art: 'letter:س', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف س ذهبي', en: 'Gold Initial س' } },
+      { id: 'ch-letter-lam', art: 'letter:ل', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف ل ذهبي', en: 'Gold Initial ل' } },
+      { id: 'ch-letter-ra', art: 'letter:ر', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف ر ذهبي', en: 'Gold Initial ر' } },
+      { id: 'ch-letter-a', art: 'letter:A', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف A ذهبي', en: 'Gold Initial A' } },
+      { id: 'ch-letter-m', art: 'letter:M', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف M ذهبي', en: 'Gold Initial M' } },
+      { id: 'ch-letter-s', art: 'letter:S', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف S ذهبي', en: 'Gold Initial S' } },
+      { id: 'ch-letter-sheen-silver', art: 'letter-silver:ش', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف ش فضي', en: 'Silver Initial ش' } },
+      { id: 'ch-letter-a-silver', art: 'letter-silver:A', glyph: '', image: '', price: 6, group: 'letters', name: { ar: 'حرف A فضي', en: 'Silver Initial A' } },
+
+      /* --- shapes, metal work and finishes ------------------------------ */
+      { id: 'ch-bow', art: 'sh-bow', glyph: '', image: '', price: 7, group: 'misc', name: { ar: 'فيونكة بارزة', en: '3D Bow' } },
+      { id: 'ch-butterfly', art: 'sh-butterfly', glyph: '', image: '', price: 7, group: 'misc', name: { ar: 'فراشة', en: 'Butterfly' } },
+      { id: 'ch-bear', art: 'sh-bear', glyph: '', image: '', price: 6, group: 'misc', name: { ar: 'دبدوب صغير', en: 'Tiny Bear' } },
+      { id: 'ch-crown', art: 'sh-crown', glyph: '', image: '', price: 6, group: 'misc', name: { ar: 'تاج ذهبي', en: 'Gold Crown' } },
+      { id: 'ch-cherry', art: 'sh-cherry', glyph: '', image: '', price: 5, group: 'misc', name: { ar: 'حبتا كرز', en: 'Cherry Pair' } },
+      { id: 'ch-evil-eye', art: 'sh-evil-eye', glyph: '', image: '', price: 5, group: 'misc', name: { ar: 'عين زرقاء', en: 'Evil Eye Bead' } },
+      { id: 'ch-cross', art: 'sh-cross', glyph: '', image: '', price: 5, group: 'misc', name: { ar: 'صليب', en: 'Cross' } },
+      { id: 'ch-bolt', art: 'sh-bolt', glyph: '', image: '', price: 5, group: 'misc', name: { ar: 'برق', en: 'Lightning Bolt' } },
+      { id: 'ch-dangle', art: 'mt-charm-dangle', glyph: '', image: '', price: 9, group: 'misc', name: { ar: 'دلاية متحرّكة', en: 'Dangling Charm' } },
+      { id: 'ch-chain', art: 'mt-chain', glyph: '', image: '', price: 7, group: 'misc', name: { ar: 'سلسلة ذهب', en: 'Gold Chain' } },
+      { id: 'ch-frame', art: 'mt-frame', glyph: '', image: '', price: 5, group: 'misc', name: { ar: 'حلقة ذهبية', en: 'Gold Ring Frame' } },
+      { id: 'ch-foil-gold', art: 'mt-foil-gold', glyph: '', image: '', price: 3, group: 'misc', name: { ar: 'رقاقة ذهب', en: 'Gold Foil Flake' } },
+      { id: 'ch-foil-silver', art: 'mt-foil-silver', glyph: '', image: '', price: 3, group: 'misc', name: { ar: 'رقاقة فضة', en: 'Silver Foil Flake' } },
+      { id: 'ch-flake-aurora', art: 'mt-flake-aurora', glyph: '', image: '', price: 3, group: 'misc', name: { ar: 'رقاقة أورورا', en: 'Aurora Flake' } },
+      { id: 'ch-glitter', art: 'fx-glitter', glyph: '', image: '', price: 4, group: 'misc', name: { ar: 'رقعة جليتر', en: 'Glitter Patch' } },
+      { id: 'ch-chrome-smear', art: 'fx-chrome-smear', glyph: '', image: '', price: 5, group: 'misc', name: { ar: 'مسحة كروم', en: 'Chrome Smear' } },
+      { id: 'ch-holo-hex', art: 'fx-holo-hex', glyph: '', image: '', price: 4, group: 'misc', name: { ar: 'ترتر هولوغرافيك', en: 'Holo Sequins' } },
+      { id: 'ch-goldleaf', art: 'fx-goldleaf', glyph: '', image: '', price: 4, group: 'misc', name: { ar: 'ورق ذهب', en: 'Gold Leaf' } }
     ],
 
     /* =====================================================================
@@ -659,11 +688,11 @@
             leftThumb: { c: '#FAF3EE', f: 'gloss', p: ['french', '#FFFFFF', '#F1E7E2', 1] },
             rightRing: {
               c: '#F1E7E2', f: 'chrome', p: ['glazed', '#FFFFFF', '#EDE4E9', 1.1],
-              ch: [['ch-pearl', 0.5, 0.28, 0.85, 0], ['ch-diamond', 0.38, 0.48, 0.7, 0], ['ch-pearl', 0.62, 0.52, 0.6, 0]]
+              ch: [['ch-pearl', 0.5, 0.28, 0.85, 0], ['ch-round', 0.38, 0.48, 0.7, 0], ['ch-pearl', 0.62, 0.52, 0.6, 0]]
             },
             leftRing: {
               c: '#F1E7E2', f: 'chrome', p: ['glazed', '#FFFFFF', '#EDE4E9', 1.1],
-              ch: [['ch-pearl', 0.5, 0.28, 0.85, 0], ['ch-diamond', 0.38, 0.48, 0.7, 0], ['ch-pearl', 0.62, 0.52, 0.6, 0]]
+              ch: [['ch-pearl', 0.5, 0.28, 0.85, 0], ['ch-round', 0.38, 0.48, 0.7, 0], ['ch-pearl', 0.62, 0.52, 0.6, 0]]
             }
           }
         })
@@ -733,11 +762,11 @@
           over: {
             rightRing: {
               c: '#F7DDE2', f: 'glitter', p: ['ombre', '#F4CBD2', '#EE5B94', 1.2],
-              ch: [['ch-sparkles', 0.5, 0.3, 0.8, 0]]
+              ch: [['ch-round', 0.5, 0.3, 0.8, 0]]
             },
             leftRing: {
               c: '#F7DDE2', f: 'glitter', p: ['ombre', '#F4CBD2', '#EE5B94', 1.2],
-              ch: [['ch-sparkles', 0.5, 0.3, 0.8, 0]]
+              ch: [['ch-round', 0.5, 0.3, 0.8, 0]]
             }
           }
         })
@@ -755,8 +784,8 @@
           skin: '#EFCDB6', shape: 'oval', length: 'medium', sizes: mkSizes(2, 5, 4, 6, 8),
           def: { c: '#C2192F', f: 'gloss' },
           over: {
-            rightRing: { c: '#C2192F', f: 'gloss', ch: [['ch-diamond', 0.5, 0.3, 0.7, 0]] },
-            leftRing: { c: '#C2192F', f: 'gloss', ch: [['ch-diamond', 0.5, 0.3, 0.7, 0]] }
+            rightRing: { c: '#C2192F', f: 'gloss', ch: [['ch-round', 0.5, 0.3, 0.7, 0]] },
+            leftRing: { c: '#C2192F', f: 'gloss', ch: [['ch-round', 0.5, 0.3, 0.7, 0]] }
           }
         })
       },
@@ -857,8 +886,8 @@
           over: {
             rightIndex: { c: '#3A3A3E', f: 'matte' },
             leftIndex: { c: '#3A3A3E', f: 'matte' },
-            rightRing: { c: '#17131A', f: 'matte', p: ['stars', '#C2A05E', '#17131A', 0.9], ch: [['ch-star4', 0.5, 0.3, 0.7, 0]] },
-            leftRing: { c: '#17131A', f: 'matte', p: ['stars', '#C2A05E', '#17131A', 0.9], ch: [['ch-star4', 0.5, 0.3, 0.7, 0]] }
+            rightRing: { c: '#17131A', f: 'matte', p: ['stars', '#C2A05E', '#17131A', 0.9], ch: [['ch-star', 0.5, 0.3, 0.7, 0]] },
+            leftRing: { c: '#17131A', f: 'matte', p: ['stars', '#C2A05E', '#17131A', 0.9], ch: [['ch-star', 0.5, 0.3, 0.7, 0]] }
           }
         })
       },
@@ -1025,8 +1054,8 @@
         id: 'fq-shipping-areas', cat: 'shipping',
         q: { ar: 'وين توصلون وكم رسوم الشحن؟', en: 'Where do you deliver and how much is shipping?' },
         a: {
-          ar: 'نوصّل لجميع مدن ومحافظات المملكة عن طريق شركات الشحن المحلية برسوم ثابتة 20 ر.س، والشحن مجاني للطلبات فوق 300 ر.س. داخل الرياض يتوفر أيضًا استلام من الاستوديو بموعد مسبق بدون رسوم.',
-          en: 'We deliver to every city in the Kingdom through local couriers for a flat 20 SAR, free on orders over 300 SAR. Inside Riyadh you can also collect from the studio by appointment at no charge.'
+          ar: 'نوصّل لجميع مدن ومحافظات المملكة عن طريق شركات الشحن المحلية برسوم ثابتة 20 ر.س، والشحن مجاني للطلبات فوق 300 ر.س. كل الطلبات تُشحن للباب — ما عندنا محل ولا استلام باليد — وداخل الرياض غالبًا يوصلك خلال يوم إلى يومين.',
+          en: 'We deliver to every city in the Kingdom through local couriers for a flat 20 SAR, free on orders over 300 SAR. Everything ships to your door — there is no shop and no collection in person — and inside Riyadh it usually arrives within a day or two.'
         }
       },
       {

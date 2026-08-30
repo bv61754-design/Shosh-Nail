@@ -81,9 +81,9 @@
         /* contact card */
         contactEyebrow: 'تواصل مباشر',
         contactTitle: 'بطاقة التواصل',
-        contactLead: 'ما فيه رد آلي — رسالتك توصلنا شخصيًا، وعادة نرد خلال ساعة داخل أوقات العمل.',
+        contactLead: 'ما فيه رد آلي — رسالتك توصلنا شخصيًا، وعادة نرد خلال ساعة داخل أوقات الرد.',
         cardTitle: 'كلّمينا على طول',
-        cardX: 'اختاري القناة اللي تريحك، كلها توصل لنفس الفريق.',
+        cardX: 'اختاري القناة اللي تريحك، كلها توصل لنا مباشرة وإحنا نرد بأنفسنا.',
         waBtn: 'راسلينا على واتساب',
         waMsg: 'هلا شوش نيل، عندي استفسار بخصوص الأظافر المركّبة.',
         callT: 'اتصال مباشر',
@@ -91,9 +91,8 @@
         igT: 'انستقرام',
         scT: 'سناب شات',
         ttT: 'تيك توك',
-        hoursT: 'أوقات العمل',
-        cityT: 'المدينة',
-        addressT: 'العنوان',
+        hoursT: 'أوقات الرد',
+        cityT: 'نشحن من',
         noChannels: 'قنوات التواصل تُضاف من لوحة التحكم.',
 
         /* ask box */
@@ -175,18 +174,17 @@
 
         contactEyebrow: 'Talk to us',
         contactTitle: 'Contact card',
-        contactLead: 'No bots and no ticket queue — your message reaches us personally, and we usually reply within the hour during opening times.',
+        contactLead: 'No bots and no ticket queue — your message reaches us personally, and we usually reply within the hour while we are answering.',
         cardTitle: 'Reach us directly',
-        cardX: 'Pick whichever channel suits you; they all land with the same team.',
+        cardX: 'Pick whichever channel suits you — they all reach us directly, and we answer in person.',
         waBtn: 'Message us on WhatsApp',
         callT: 'Call us',
         mailT: 'Email',
         igT: 'Instagram',
         scT: 'Snapchat',
         ttT: 'TikTok',
-        hoursT: 'Opening hours',
-        cityT: 'City',
-        addressT: 'Address',
+        hoursT: 'When we reply',
+        cityT: 'We ship from',
         waMsg: 'Hi Shosh Nail, I have a question about your press-on sets.',
         noChannels: 'Contact channels are added from the admin panel.',
 
@@ -999,7 +997,6 @@
     var tk = handleOf(sget('settings.tiktok', ''));
     var hours = pick(sget('settings.hours', null));
     var city = pick(sget('settings.city', null));
-    var addr = pick(sget('settings.address', null));
     var wa = waHref(t('faq.waMsg'));
     var links, info;
 
@@ -1037,8 +1034,9 @@
 
     info = el('div', { 'class': 'faq-info' });
     if (hours) info.appendChild(infoRow('clock', t('faq.hoursT'), hours));
+    /* The city is only the base we ship from — this business has no shop
+       address and nothing is ever collected in person. */
     if (city) info.appendChild(infoRow('globe', t('faq.cityT'), city));
-    if (addr) info.appendChild(infoRow('pin', t('faq.addressT'), addr));
     if (info.childNodes.length) dom.card.appendChild(info);
 
     if (!wa && !links.childNodes.length && !info.childNodes.length) {

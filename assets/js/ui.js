@@ -71,6 +71,22 @@
   }
 
   /* ------------------------------------------------------- i18n bridges */
+
+  /* The business is run from home: there is no shop, so the footer never
+     prints an address and the hours line is about when messages get an
+     answer, not when a door opens. 'footer' is a CORE namespace (SPEC 10),
+     and this file is CORE — i18n.js itself is never edited from here. */
+  (function extendDict(){
+    var I = SN.I18n;
+    if (!I || typeof I.extend !== 'function') return;
+    try {
+      I.extend({
+        ar: { footer: { replyHours: 'أوقات الرد' } },
+        en: { footer: { replyHours: 'When we reply' } }
+      });
+    } catch (e){ /* the shell must render even without i18n */ }
+  }());
+
   function lang(){
     var I = SN.I18n;
     return (I && I.lang === 'en') ? 'en' : 'ar';
@@ -662,7 +678,7 @@
   function mountFooter(){
     var f = doc() ? doc().getElementById('sn-footer') : null;
     var brand = brandName();
-    var about, tagline, city, address, hours;
+    var about, tagline, hours;
     var phone, wa, mail, ig, sc, tk;
     var cols = [], contact = [], info = [], socials, inner;
 
@@ -670,8 +686,6 @@
 
     about   = pick(get('settings.about', null));
     tagline = pick(get('settings.tagline', null));
-    city    = pick(get('settings.city', null));
-    address = pick(get('settings.address', null));
     hours   = pick(get('settings.hours', null));
 
     phone = String(get('settings.phone', '') || '').trim();
@@ -712,15 +726,12 @@
       el('div', { 'class': 'ft-rows' }, contact)
     ]));
 
-    /* --- column 4: hours + location ------------------------------------ */
+    /* --- column 4: when messages get answered ---------------------------
+       Deliberately no address / location rows: this is a home business that
+       ships everything, so there is nowhere to visit. */
     if (hours){
-      info.push(el('h2', { 'class': 'ft-head', 'data-i18n': 'footer.hours' }, t('footer.hours')));
-      info.push(contactRow('clock', '', hours, t('footer.hours'), false, false));
-    }
-    if (city || address){
-      info.push(el('h2', { 'class': 'ft-head ft-head-2', 'data-i18n': 'footer.location' }, t('footer.location')));
-      if (city)    info.push(contactRow('globe', '', city, t('common.city'), false, false));
-      if (address) info.push(contactRow('pin', '', address, t('common.address'), false, false));
+      info.push(el('h2', { 'class': 'ft-head', 'data-i18n': 'footer.replyHours' }, t('footer.replyHours')));
+      info.push(contactRow('clock', '', hours, t('footer.replyHours'), false, false));
     }
     if (info.length) cols.push(el('div', { 'class': 'ft-col ft-infocol' }, info));
 

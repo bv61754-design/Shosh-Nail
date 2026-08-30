@@ -57,7 +57,7 @@
         co: {
           title: 'إتمام الطلب',
           lead: 'ثلاث خطوات بسيطة ويوصلنا طلبك.',
-          custom: 'تصميم مخصص من الاستوديو',
+          custom: 'تصميم مخصص من استوديو التصميم',
           customSub: 'طقم مصنوع بمقاسك أنتِ، ظفرًا ظفرًا.',
           readySub: 'تصميم جاهز من المتجر.',
           options: 'خيارات الطلب',
@@ -128,7 +128,7 @@
         co: {
           title: 'Checkout',
           lead: 'Three quick steps and your order is with us.',
-          custom: 'Custom design from the studio',
+          custom: 'Custom design from the design studio',
           customSub: 'A set built to your own measurements, nail by nail.',
           readySub: 'A ready design from the shop.',
           options: 'Order options',

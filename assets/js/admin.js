@@ -93,6 +93,25 @@
           backup: 'النسخ الاحتياطي'
         },
 
+        /* ---- أسماء المجموعات والأنواع (بدل المعرّفات الإنجليزية) ---- */
+        grp: {
+          nude: 'نيود', pink: 'وردي', red: 'أحمر', bold: 'جريء',
+          dark: 'غامق', pastel: 'باستيل', neutral: 'محايد',
+          stones: 'أحجار', stars: 'نجوم', flowers: 'ورود',
+          letters: 'حروف', hearts: 'قلوب', misc: 'متنوعة'
+        },
+        kind: {
+          gloss: 'لمّاع', matte: 'مطفي', glitter: 'جليتر',
+          chrome: 'كروم', velvet: 'مخملي', jelly: 'جيلي',
+          none: 'بدون نقشة', french: 'فرنش', frenchDeep: 'فرنش عميق',
+          tipsGlitter: 'أطراف جليتر', ombre: 'أومبريه', ombreV: 'أومبريه عمودي',
+          half: 'نصفين', diagonal: 'قطري', dots: 'نقاط', stripes: 'خطوط',
+          chevron: 'شيفرون', marble: 'رخام', chrome2: 'كروم',
+          glazed: 'دونات لامع', leopard: 'نمر', checkers: 'مربعات',
+          hearts: 'قلوب', stars: 'نجوم', flames: 'لهب', lace: 'دانتيل',
+          catEye: 'عين القط', aura: 'هالة'
+        },
+
         /* ---- generic list ---- */
         addNew: 'إضافة جديد',
         addTo: 'إضافة إلى {n}',
@@ -147,7 +166,6 @@
           shadow: 'لون الظل',
           group: 'المجموعة',
           glyph: 'الرمز (إيموجي)',
-          image: 'صورة',
           icon: 'الأيقونة',
           cat: 'التصنيف',
           q: 'السؤال',
@@ -173,7 +191,6 @@
           factor: 'نسبة الطول مقارنة بالمتوسط: 0.72 قصير، 1 متوسط، 1.28 طويل، 1.6 طويل جداً.',
           shadow: 'درجة أغمق شوي من لون البشرة — تُستخدم لحواف اليد في الرسم.',
           glyph: 'الصقي أي إيموجي هنا (💎 ⭐ 🌸) أو رمز نصّي قصير.',
-          charmImage: 'اختياري: صورة بدل الإيموجي. الصورة تغلب على الرمز.',
           details: 'تظهر للعميلة لما تختار هذي الطريقة عند الدفع. اكتبي الآيبان أو رقم المحفظة هنا.',
           mm: 'عرض الظفر بالمليمتر لهذا الرقم. الأرقام الصغيرة = مقاس أوسع.',
           sizes: 'الأرقام هي ترتيب المقاس في جدول المقاسات (0 = الأوسع).',
@@ -278,7 +295,12 @@
           depositPctX: 'كنسبة من 0 إلى 1 — 0.5 = نص المبلغ مقدماً. اكتبي 0 لتعطيلها.',
           sample: 'سعر طقم نموذجي',
           sampleX: 'حساب مباشر لطقم متوسط: 3 ألوان، ظفران عليهم نقشة، وزخرفتان — يتحدّث مع كل تعديل فوق.',
-          sampleNo: 'ما قدرنا نحسب المثال الآن.'
+          sampleNo: 'ما قدرنا نحسب المثال الآن.',
+          extras: 'أسعار العناصر (كل سعر إضافي في الموقع)',
+          extrasX: 'هذي أسعار العناصر نفسها: شكل، طول، لمسة، نقشة، زخرفة، وسعر كل تصميم جاهز. عدّلي أي رقم هنا وينحفظ فوراً — ما يحتاج تفتحين تبويب ثاني.',
+          extrasNone: 'ما فيه عناصر في هذي القائمة بعد.',
+          extrasOpen: 'فتح القائمة',
+          extrasShow: '{n} عنصر'
         },
 
         /* ---- designs tab ---- */
@@ -294,19 +316,79 @@
           tagAdd: 'إضافة وسم',
           tagDel: 'حذف الوسم',
           image: 'صورة التصميم',
-          imageX: 'اختيارية. إذا ما فيه صورة نرسم التصميم تلقائياً من إعداداته.',
-          upload: 'رفع صورة',
-          clearImage: 'حذف الصورة',
           openStudio: 'افتحي في الاستوديو',
           capture: 'التقطي من مسودة الاستوديو',
           captureAsk: 'بنستبدل إعدادات هذا التصميم بالمسودة الحالية من الاستوديو. تمام؟',
           captureNone: 'ما فيه مسودة محفوظة في الاستوديو حالياً.',
           captureOk: 'تم نقل المسودة إلى هذا التصميم',
-          imgOk: 'تم رفع الصورة',
-          imgErr: 'ما قدرنا نقرأ الصورة، جرّبي صورة ثانية.',
-          imgBig: 'الصورة كبيرة — يفضّل تصغيرها قبل الرفع حتى لا تمتلئ مساحة التخزين.',
-          imgType: 'الملف لازم يكون صورة.',
           preview: 'معاينة'
+        },
+
+        /* ---- الصور الحقيقية (مشترك بين كل التبويبات) ---- */
+        img: {
+          head: 'الصورة الحقيقية',
+          upload: 'رفع صورة من الجوال',
+          replace: 'تغيير الصورة',
+          clear: 'حذف الصورة والرجوع للرسمة',
+          none: 'ما فيه صورة — نعرض الرسمة المرسومة',
+          meta: '{n} كيلوبايت · {w}×{h}',
+          ok: 'تم رفع الصورة ({n} كيلوبايت)',
+          err: 'ما قدرنا نقرأ الصورة، جرّبي صورة ثانية.',
+          type: 'الملف لازم يكون صورة (JPG أو PNG).',
+          working: 'جاري تجهيز الصورة…',
+          full: 'ما فيه مساحة تكفي: الصورة {n} كيلوبايت والمتبقي {r} كيلوبايت فقط. احذفي صوراً قديمة، أو نزّلي نسخة احتياطية من تبويب «النسخ الاحتياطي».',
+          rejected: 'المتصفح رفض الحفظ لأن المساحة امتلأت — رجّعنا الصورة السابقة.',
+          used: 'المساحة المستخدمة: {n} من {t} كيلوبايت',
+          warnNear: 'المساحة قاربت على الامتلاء — احذفي صوراً كبيرة قبل ما ترفعين غيرها.',
+          urlLbl: 'أو الصقي رابط الصورة',
+          shrink: 'تُصغَّر تلقائياً إلى {n} بكسل وتُحفظ بصيغة JPEG خفيفة (PNG إذا كانت خلفيتها شفافة).',
+          colorX: 'صوّري اللون على ظفر حقيقي تحت إضاءة طبيعية — هذي الصورة هي اللي تشوفها العميلة بدل المربّع الملوّن.',
+          finishX: 'صورة تبيّن لمعة أو مطفأة اللمسة على ظفر حقيقي.',
+          patternX: 'صورة لظفر منفّذ بهذي النقشة فعلياً.',
+          charmX: 'صورة للزخرفة الحقيقية على خلفية فاتحة. الصورة تغلب على الرسمة والإيموجي.',
+          designX: 'صورة الطقم كامل. إذا ما فيه صورة نرسم التصميم من إعداداته.'
+        },
+
+        /* ---- مكتبة الرسومات (SN.Art) ---- */
+        art: {
+          lbl: 'رسمة من المكتبة',
+          x: 'رسومات متجهية مرسومة داخل الموقع — تظهر على الظفر مباشرة بدون صورة.',
+          pick: 'اختاري رسمة',
+          change: 'تغيير الرسمة',
+          none: 'بدون رسمة',
+          clear: 'إزالة الرسمة',
+          title: 'مكتبة الزخارف',
+          searchPh: 'ابحثي عن رسمة…',
+          letter: 'الحرف',
+          letterX: 'حرف واحد بالعربي أو بالإنجليزي — يُرسم بالذهب أو الفضة.',
+          noMatch: 'ما فيه رسمة بهذا الاسم',
+          off: 'مكتبة الرسومات غير متاحة الآن. تقدرين ترفعين صورة حقيقية بدلها.',
+          groups: {
+            stones: 'أحجار',
+            metal: 'معادن',
+            flowers: 'ورود',
+            shapes: 'أشكال',
+            letters: 'حروف',
+            effects: 'لمعة وتأثيرات'
+          }
+        },
+
+        /* ---- إضافة زخرفة جديدة ---- */
+        nd: {
+          add: 'إضافة زخرفة',
+          title: 'زخرفة جديدة',
+          edit: 'مصدر الشكل',
+          nameAr: 'الاسم بالعربي',
+          nameEn: 'الاسم بالإنجليزي',
+          src: 'شكل الزخرفة',
+          srcArt: 'رسمة من المكتبة',
+          srcImg: 'صورة حقيقية',
+          srcGlyph: 'رمز إيموجي',
+          need: 'اختاري رسمة أو ارفعي صورة أو اكتبي إيموجي.',
+          needName: 'اكتبي اسم الزخرفة بالعربي على الأقل.',
+          create: 'إضافة الزخرفة',
+          created: 'تمت إضافة الزخرفة',
+          intro: 'كل زخرفة تظهر للعميلة في خطوة «الزخارف» داخل الاستوديو. تقدرين تختارين لها رسمة من المكتبة، أو ترفعين صورة الزخرفة الحقيقية عشان العميلة تشوف اللي راح يوصلها بالضبط.'
         },
 
         /* ---- orders tab ---- */
@@ -331,7 +413,23 @@
           sum: 'ملخص الطلب',
           csvNo: 'ما فيه طلبات للتصدير.',
           totalLbl: 'الإجمالي',
-          kindLbl: 'النوع'
+          kindLbl: 'النوع',
+          editHead: 'تعديل بيانات الطلب',
+          editX: 'أي تعديل هنا يُحفظ فوراً. تصميم العميلة ما يتأثر إطلاقاً.',
+          priceLbl: 'الإجمالي بعد التعديل',
+          priceX: 'اكتبي المبلغ النهائي المتفق عليه — يظهر في القائمة وفي ملف CSV.',
+          qtyX: 'عدد الأطقم في هذا الطلب.',
+          noteLbl: 'ملاحظة العميلة',
+          noteX: 'تقدرين تكتبين هنا ملاحظاتك أنت كمان (مثلاً: تم التحصيل).',
+          savedOk: 'تم حفظ التعديل',
+          delStatus: 'حذف كل «{n}»',
+          delAll: 'حذف كل الطلبات',
+          delStatusAsk: 'حذف {c} طلب في حالة «{n}»؟ ما راح نقدر نرجّعها.',
+          delAllAsk: 'حذف كل الطلبات ({c})؟ ما راح نقدر نرجّعها.',
+          delAllAsk2: 'تأكيد أخير — بعد الحذف ما فيه رجعة. نكمّل؟',
+          delManyOk: 'تم حذف {c} طلب',
+          delNone: 'ما فيه طلبات في هذي الحالة.',
+          designSafe: 'التصميم محفوظ كما أرسلته العميلة'
         },
 
         /* ---- backup tab ---- */
@@ -389,6 +487,11 @@
           storeUsed: 'المستخدم حالياً: {n} كيلوبايت',
           storeWarn: 'المساحة قاربت الحد — احذفي بعض الصور الكبيرة أو صغّريها قبل الرفع.',
           storeOk: 'المساحة مريحة.',
+          storeCap: 'الحد الآمن في هذا المتصفح: {n} كيلوبايت تقريباً.',
+          storeImgs: 'الصور المرفوعة: {c} صورة تشغل {n} كيلوبايت.',
+          storeImgsNone: 'ما فيه صور مرفوعة — كل شيء مرسوم داخل الموقع.',
+          storeBar: 'مؤشر امتلاء المساحة',
+          storeFullWarn: 'المساحة ممتلئة تقريباً. احذفي صوراً أو نزّلي نسخة احتياطية وأعيدي الضبط.',
           notifyHead: 'إشعار الطلبات على الإيميل',
           notifyX: 'الموقع ثابت وبدون سيرفر، فالإشعارات تمر عبر خدمة مجانية توصّل الطلب لإيميلك. الخدمتان الأشهر: Web3Forms و Formspree.',
           notifyS1: '1) افتحي web3forms.com واكتبي إيميلك واضغطي «Create Access Key» — يوصلك مفتاح على الإيميل.',
@@ -476,6 +579,24 @@
           backup: 'Backup & security'
         },
 
+        grp: {
+          nude: 'Nude', pink: 'Pink', red: 'Red', bold: 'Bold',
+          dark: 'Dark', pastel: 'Pastel', neutral: 'Neutral',
+          stones: 'Stones', stars: 'Stars', flowers: 'Flowers',
+          letters: 'Letters', hearts: 'Hearts', misc: 'Other'
+        },
+        kind: {
+          gloss: 'Glossy', matte: 'Matte', glitter: 'Glitter',
+          chrome: 'Chrome', velvet: 'Velvet', jelly: 'Jelly',
+          none: 'No pattern', french: 'French', frenchDeep: 'Deep french',
+          tipsGlitter: 'Glitter tips', ombre: 'Ombré', ombreV: 'Vertical ombré',
+          half: 'Half and half', diagonal: 'Diagonal', dots: 'Dots', stripes: 'Stripes',
+          chevron: 'Chevron', marble: 'Marble', chrome2: 'Chrome',
+          glazed: 'Glazed donut', leopard: 'Leopard', checkers: 'Checkers',
+          hearts: 'Hearts', stars: 'Stars', flames: 'Flames', lace: 'Lace',
+          catEye: 'Cat eye', aura: 'Aura'
+        },
+
         addNew: 'Add new',
         addTo: 'Add to {n}',
         up: 'Move up',
@@ -528,7 +649,6 @@
           shadow: 'Shadow colour',
           group: 'Group',
           glyph: 'Glyph (emoji)',
-          image: 'Image',
           icon: 'Icon',
           cat: 'Category',
           q: 'Question',
@@ -553,7 +673,6 @@
           factor: 'Length relative to medium: 0.72 short, 1 medium, 1.28 long, 1.6 extra long.',
           shadow: 'A slightly darker shade of the skin tone — used for the hand edges in the drawing.',
           glyph: 'Paste any emoji here (💎 ⭐ 🌸) or a short text symbol.',
-          charmImage: 'Optional image instead of the emoji. An image always wins over the glyph.',
           details: 'Shown to the customer when she picks this method at checkout. Put the IBAN or wallet number here.',
           mm: 'Nail width in millimetres for this size number. Lower numbers are wider.',
           sizes: 'Values are positions in the size chart (0 is the widest).',
@@ -655,7 +774,12 @@
           depositPctX: 'A rate between 0 and 1 — 0.5 asks for half up front. Set 0 to disable.',
           sample: 'Sample set price',
           sampleX: 'A live quote for a typical set: 3 colours, 2 patterned nails and 2 charms — it updates as you edit above.',
-          sampleNo: 'The sample could not be calculated right now.'
+          sampleNo: 'The sample could not be calculated right now.',
+          extras: 'Item prices (every extra price on the site)',
+          extrasX: 'The price carried by the items themselves: each shape, length, finish, pattern, charm, and every ready-made design. Edit any number here and it saves instantly — no need to open another tab.',
+          extrasNone: 'Nothing in this list yet.',
+          extrasOpen: 'Open the list',
+          extrasShow: '{n} items'
         },
 
         d: {
@@ -670,19 +794,76 @@
           tagAdd: 'Add tag',
           tagDel: 'Remove tag',
           image: 'Design photo',
-          imageX: 'Optional. With no photo we render the design from its configuration.',
-          upload: 'Upload image',
-          clearImage: 'Remove image',
           openStudio: 'Open in the studio',
           capture: 'Capture from the studio draft',
           captureAsk: 'This replaces the configuration of this design with your current studio draft. Continue?',
           captureNone: 'There is no saved studio draft right now.',
           captureOk: 'The draft was copied into this design',
-          imgOk: 'Image uploaded',
-          imgErr: 'We could not read that image — please try another one.',
-          imgBig: 'That image is heavy — shrink it before uploading so storage does not fill up.',
-          imgType: 'The file has to be an image.',
           preview: 'Preview'
+        },
+
+        img: {
+          head: 'Real photo',
+          upload: 'Upload a photo',
+          replace: 'Replace photo',
+          clear: 'Remove photo, use the drawing',
+          none: 'No photo — the drawn version is used',
+          meta: '{n} KB · {w}×{h}',
+          ok: 'Photo uploaded ({n} KB)',
+          err: 'We could not read that image — please try another one.',
+          type: 'The file has to be an image (JPG or PNG).',
+          working: 'Preparing the photo…',
+          full: 'Not enough room: the photo is {n} KB and only {r} KB is left. Remove some old photos, or download a backup from the Backup tab.',
+          rejected: 'The browser refused to save — storage is full. The previous photo was put back.',
+          used: 'Storage used: {n} of {t} KB',
+          warnNear: 'Storage is nearly full — remove large photos before uploading more.',
+          urlLbl: 'Or paste an image link',
+          shrink: 'Automatically resized to {n}px and saved as a light JPEG (PNG when the source is transparent).',
+          colorX: 'Photograph the polish on a real nail in daylight — the customer sees this instead of a flat colour square.',
+          finishX: 'A photo showing how glossy or matte this finish looks on a real nail.',
+          patternX: 'A photo of a nail actually painted with this pattern.',
+          charmX: 'A photo of the real charm on a light background. The photo wins over the drawing and the emoji.',
+          designX: 'A photo of the finished set. With no photo we render the design from its configuration.'
+        },
+
+        art: {
+          lbl: 'Drawing from the library',
+          x: 'Vector artwork drawn by the site itself — it appears on the nail with no photo at all.',
+          pick: 'Pick a drawing',
+          change: 'Change the drawing',
+          none: 'No drawing',
+          clear: 'Remove the drawing',
+          title: 'Decoration library',
+          searchPh: 'Search the library…',
+          letter: 'Letter',
+          letterX: 'A single Arabic or Latin character — drawn in gold or silver.',
+          noMatch: 'Nothing matches that name',
+          off: 'The drawing library is not available right now. You can upload a real photo instead.',
+          groups: {
+            stones: 'Stones',
+            metal: 'Metal',
+            flowers: 'Flowers',
+            shapes: 'Shapes',
+            letters: 'Letters',
+            effects: 'Effects'
+          }
+        },
+
+        nd: {
+          add: 'Add a decoration',
+          title: 'New decoration',
+          edit: 'Artwork source',
+          nameAr: 'Arabic name',
+          nameEn: 'English name',
+          src: 'What it looks like',
+          srcArt: 'Drawing from the library',
+          srcImg: 'Real photo',
+          srcGlyph: 'Emoji symbol',
+          need: 'Pick a drawing, upload a photo, or type an emoji.',
+          needName: 'Give the decoration an Arabic name at least.',
+          create: 'Add the decoration',
+          created: 'Decoration added',
+          intro: 'Every decoration shows up for the customer in the charms step of the studio. Give it a drawing from the library, or upload a photo of the real charm so she sees exactly what will arrive.'
         },
 
         o: {
@@ -706,7 +887,23 @@
           sum: 'Order summary',
           csvNo: 'There are no orders to export.',
           totalLbl: 'Total',
-          kindLbl: 'Type'
+          kindLbl: 'Type',
+          editHead: 'Edit the order',
+          editX: 'Every change here saves straight away. The customer’s design is never touched.',
+          priceLbl: 'Adjusted total',
+          priceX: 'The final agreed amount — it shows in the list and in the CSV export.',
+          qtyX: 'How many sets this order is for.',
+          noteLbl: 'Customer note',
+          noteX: 'You can add your own notes here too (for example: paid in cash).',
+          savedOk: 'Change saved',
+          delStatus: 'Delete every “{n}”',
+          delAll: 'Delete every order',
+          delStatusAsk: 'Delete {c} order(s) with the status “{n}”? This cannot be undone.',
+          delAllAsk: 'Delete all {c} orders? This cannot be undone.',
+          delAllAsk2: 'Final check — there is no way back after this. Continue?',
+          delManyOk: '{c} order(s) deleted',
+          delNone: 'There are no orders with that status.',
+          designSafe: 'The design is kept exactly as the customer sent it'
         },
 
         b: {
@@ -763,6 +960,11 @@
           storeUsed: 'Currently used: {n} KB',
           storeWarn: 'You are close to the limit — remove or shrink some large images.',
           storeOk: 'Plenty of room left.',
+          storeCap: 'Safe limit in this browser: about {n} KB.',
+          storeImgs: 'Uploaded photos: {c} photo(s) taking {n} KB.',
+          storeImgsNone: 'No photos uploaded — everything is drawn by the site.',
+          storeBar: 'Storage usage',
+          storeFullWarn: 'Storage is almost full. Remove photos, or download a backup and reset.',
           notifyHead: 'Order notifications by email',
           notifyX: 'The site is static with no server, so notifications go through a free relay that emails you each order. The two best known are Web3Forms and Formspree.',
           notifyS1: '1) Open web3forms.com, type your email and press “Create Access Key” — the key arrives in your inbox.',
@@ -930,21 +1132,39 @@
   }
   function finishKindOpts() {
     var list = (SN.Nail && SN.Nail.FINISH_KINDS) || ['gloss', 'matte', 'glitter', 'chrome', 'velvet', 'jelly'];
-    return optsFrom(list);
+    return namedOpts(list, 'admin.kind.');
   }
   function patternKindOpts() {
     var list = (SN.Nail && SN.Nail.PATTERN_KINDS) || ['none'];
-    return optsFrom(list);
+    return namedOpts(list, 'admin.kind.');
   }
   function shapeIdList() {
     var list = (SN.Nail && SN.Nail.SHAPES) || ['almond'];
     return list.join(' · ');
   }
+  /* one id -> the readable name, wherever a row summary shows it */
+  function named(prefix, id) {
+    var key = prefix + str(id), v = t(key);
+    return v === key ? str(id) : v;
+  }
+  function groupName(g) { return named('admin.grp.', g); }
+  function kindName(k) { return named('admin.kind.', k); }
+
+  /* an id the data model needs, shown under a name the owner reads */
+  function namedOpts(values, prefix) {
+    var out = [], i, key, label;
+    for (i = 0; i < values.length; i++) {
+      key = prefix + values[i];
+      label = t(key);
+      out.push({ v: values[i], l: label === key ? values[i] : label });
+    }
+    return out;
+  }
   function colorGroupOpts() {
-    return optsFrom(['nude', 'pink', 'red', 'bold', 'dark', 'pastel', 'neutral']);
+    return namedOpts(['nude', 'pink', 'red', 'bold', 'dark', 'pastel', 'neutral'], 'admin.grp.');
   }
   function charmGroupOpts() {
-    return optsFrom(['stones', 'stars', 'flowers', 'letters', 'hearts', 'misc']);
+    return namedOpts(['stones', 'stars', 'flowers', 'letters', 'hearts', 'misc'], 'admin.grp.');
   }
   function payIconOpts() {
     return optsFrom(['bank', 'card', 'wallet', 'cod', 'applepay']);
@@ -1321,61 +1541,103 @@
   }
 
   /* image field: preview + upload + url + clear */
+  /* The image control. One implementation behind every photo on the site:
+     a thumbnail, its real weight in KB, an upload, a paste-a-link box, and a
+     clear button that always returns to the drawn/rendered default.
+     `f.maxPx` decides how hard it is shrunk. */
   function imageField(f, ctx) {
+    var maxPx = numOf(f.maxPx, MAX_DESIGN);
     var pv = el('div', { 'class': 'adm-imgpv' });
+    var meta = el('p', { 'class': 'adm-imgmeta hint' });
     var file = el('input', { 'class': 'sr-only adm-file', type: 'file', accept: 'image/*' });
-    var url = el('input', {
-      'class': 'input', type: 'text', dir: 'ltr', placeholder: 'data:image/… , https://…',
-      autocomplete: 'off', value: str(ctx.get(f.p))
-    });
+    var upBtn, clearBtn, url;
+
+    function setMeta(w, h) {
+      var v = str(ctx.get(f.p));
+      if (!v) { meta.textContent = t('admin.img.none'); meta.classList.remove('is-on'); return; }
+      meta.classList.add('is-on');
+      meta.textContent = t('admin.img.meta', {
+        n: Math.max(1, kbOf(v.length)),
+        w: numOf(w, 0) || '?',
+        h: numOf(h, 0) || '?'
+      });
+    }
 
     function paint() {
-      var v = str(ctx.get(f.p));
+      var v = str(ctx.get(f.p)), im;
       empty(pv);
-      if (v) pv.appendChild(el('img', { src: v, alt: '', loading: 'lazy' }));
-      else pv.appendChild(el('span', { 'class': 'adm-imgno', html: icon('image', 22) }));
+      if (v) {
+        im = el('img', { src: v, alt: '', loading: 'lazy' });
+        im.addEventListener('load', function () { setMeta(im.naturalWidth, im.naturalHeight); }, false);
+        pv.appendChild(im);
+        pv.classList.add('is-on');
+      } else {
+        pv.appendChild(el('span', { 'class': 'adm-imgno', html: icon('image', 22) }));
+        pv.classList.remove('is-on');
+      }
+      setMeta(0, 0);
+      if (upBtn) upBtn.querySelector('.adm-blbl').textContent = v ? t('admin.img.replace') : t('admin.img.upload');
+      if (clearBtn) clearBtn.disabled = !v;
     }
-    function put(v) {
-      ctx.set(f.p, v);
-      url.value = v;
+
+    function put(v, quiet) {
+      if (!putImage(ctx, f.p, v)) { url.value = str(ctx.get(f.p)); return false; }
+      url.value = str(ctx.get(f.p));
       paint();
       if (typeof ctx.after === 'function') ctx.after(f.p, v);
+      if (!quiet) savedToast();
+      return true;
     }
-    url.addEventListener('change', function () { put(trim(url.value)); savedToast(); }, false);
+
+    url = el('input', {
+      'class': 'input adm-imgurl', type: 'text', dir: 'ltr',
+      placeholder: 'data:image/… , https://…',
+      'aria-label': t('admin.img.urlLbl'),
+      autocomplete: 'off', value: str(ctx.get(f.p))
+    });
+    url.addEventListener('change', function () { put(trim(url.value)); }, false);
+
     file.addEventListener('change', function () {
       var fl = file.files && file.files[0];
       if (!fl) return;
-      if (!/^image\//.test(str(fl.type))) { toast(t('admin.d.imgType'), 'err'); file.value = ''; return; }
-      downscale(fl, 900).then(function (dataUrl) {
-        put(dataUrl);
-        toast(t('admin.d.imgOk'), 'ok');
-        if (dataUrl.length > 900000) toast(t('admin.d.imgBig'), 'info');
-      }).catch(function () {
-        toast(t('admin.d.imgErr'), 'err');
-      });
       file.value = '';
+      if (!/^image\//.test(str(fl.type))) { toast(t('admin.img.type'), 'err'); return; }
+      meta.textContent = t('admin.img.working');
+      downscale(fl, maxPx).then(function (res) {
+        if (put(res.url, true)) toast(t('admin.img.ok', { n: Math.max(1, kbOf(res.chars)) }), 'ok');
+        else paint();
+      }).catch(function () {
+        toast(t('admin.img.err'), 'err');
+        paint();
+      });
     }, false);
+
+    upBtn = el('button', {
+      'class': 'btn btn-line btn-sm adm-imgup', type: 'button',
+      on: { click: function () { file.click(); } }
+    }, [
+      el('span', { 'class': 'adm-bico', html: icon('image', 15), 'aria-hidden': 'true' }),
+      el('span', { 'class': 'adm-blbl', text: t('admin.img.upload') })
+    ]);
+
+    clearBtn = el('button', {
+      'class': 'btn btn-ghost btn-sm adm-danger-t', type: 'button', text: t('admin.img.clear'),
+      on: { click: function () { put('', true); toast(t('common.deleted'), 'ok'); } }
+    });
+
     paint();
 
     return fieldBox(f, [
       el('div', { 'class': 'adm-imgrow' }, [
         pv,
         el('div', { 'class': 'adm-imgact' }, [
-          el('button', {
-            'class': 'btn btn-line btn-sm', type: 'button',
-            on: { click: function () { file.click(); } }
-          }, [
-            el('span', { 'class': 'adm-bico', html: icon('image', 15), 'aria-hidden': 'true' }),
-            el('span', { text: t('admin.d.upload') })
-          ]),
-          el('button', {
-            'class': 'btn btn-ghost btn-sm adm-danger-t', type: 'button', text: t('admin.d.clearImage'),
-            on: { click: function () { put(''); savedToast(); } }
-          }),
+          meta,
+          el('div', { 'class': 'adm-btnrow' }, [upBtn, clearBtn]),
           file
         ])
       ]),
-      url
+      url,
+      el('p', { 'class': 'hint adm-imgshrink', text: t('admin.img.shrink', { n: maxPx }) })
     ]);
   }
 
@@ -1392,6 +1654,7 @@
       case 'tags': return tagsField(f, ctx);
       case 'tlist': return tlistField(f, ctx);
       case 'image': return imageField(f, ctx);
+      case 'art': return artField(f, ctx);
       default: return null;
     }
   }
@@ -1409,12 +1672,134 @@
   }
 
   /* ====================================================================== */
-  /* 5. Image downscaling                                                    */
+  /* 5. Real photographs: storage budget, downscaling, the image control      */
+  /*                                                                         */
+  /*  «العميلة تستلم اللي شافته» — the whole point of this block. The owner    */
+  /*  can attach a real photograph to a colour, a finish, a pattern, a        */
+  /*  decoration and a ready-made design, so the customer is looking at the   */
+  /*  actual polish and the actual charm, not only at our drawing.            */
+  /*                                                                         */
+  /*  Every photo lives in localStorage as a data-url, alongside the rest of  */
+  /*  the content. That is a small, hard, per-browser box — around 5 MB — so  */
+  /*  three rules apply to every single upload:                               */
+  /*    1. shrink it on a canvas first (240px for swatches and charms, 900px  */
+  /*       for a whole design), re-encoded as JPEG at 0.82, and PNG only when */
+  /*       the source really carries transparency;                            */
+  /*    2. refuse an upload that would not fit, with the numbers spelled out, */
+  /*       instead of letting the browser throw QuotaExceededError;           */
+  /*    3. after writing, verify the browser actually kept it, and roll the   */
+  /*       old value back if it did not.                                      */
   /* ====================================================================== */
+
+  var LS_KEY      = 'shosh-nail-v1';
+  var BUDGET_MAX  = 4700 * 1024;   /* an upload past this is refused outright */
+  var BUDGET_WARN = 4096 * 1024;   /* ~4 MB: start warning him               */
+  var JPEG_Q      = 0.82;
+  var MAX_SWATCH  = 240;           /* colours, finishes, patterns, charms    */
+  var MAX_DESIGN  = 900;           /* a whole ready-made set                 */
+
+  function kbOf(chars) { return Math.round(numOf(chars, 0) / 1024); }
+
+  /* how many characters the whole content weighs right now */
+  function stateChars() {
+    try { return str(JSON.stringify(SN.Store.state)).length; }
+    catch (e) { return 0; }
+  }
+
+  /* how many characters actually made it into localStorage */
+  function lsChars() {
+    var v;
+    try { v = window.localStorage.getItem(LS_KEY); }
+    catch (e) { return 0; }
+    return v ? String(v).length : 0;
+  }
+
+  function budgetLeft() { return BUDGET_MAX - stateChars(); }
+
+  function isDataImage(v) { return typeof v === 'string' && v.slice(0, 11) === 'data:image/'; }
+
+  /* Walks the saved content and totals every embedded photo, so the backup
+     tab can tell him what the photos actually cost him. Depth-limited: the
+     content tree is shallow, and a cycle must never hang the panel. */
+  function imageAudit() {
+    var out = { count: 0, chars: 0 };
+    function walk(v, depth) {
+      var i, k;
+      if (depth > 8 || !v) return;
+      if (typeof v === 'string') {
+        if (isDataImage(v)) { out.count++; out.chars += v.length; }
+        return;
+      }
+      if (Array.isArray(v)) {
+        for (i = 0; i < v.length; i++) walk(v[i], depth + 1);
+        return;
+      }
+      if (typeof v === 'object') {
+        for (k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) walk(v[k], depth + 1); }
+      }
+    }
+    try { walk(SN.Store.state, 0); }
+    catch (e) { /* a corrupt branch must not break the meter */ }
+    return out;
+  }
+
+  /* True when the last save really landed. A browser that refuses to store
+     (quota, or Safari private mode) leaves the old, shorter string behind.
+     When localStorage is unavailable altogether we cannot verify anything —
+     say yes rather than punish an upload we have no evidence against. */
+  function writeLanded() {
+    var got = lsChars();
+    if (!got) return true;
+    return got >= stateChars() - 64;
+  }
+
+  /* THE one way a photograph is written. Returns true when it stuck. */
+  function putImage(ctx, path, url) {
+    var old = str(ctx.get(path));
+    var need, free;
+    url = str(url);
+    if (url === old) return true;
+    if (url) {
+      need = url.length - old.length;
+      free = budgetLeft();
+      if (need > free) {
+        toast(t('admin.img.full', { n: kbOf(url.length), r: Math.max(0, kbOf(free)) }), 'err');
+        return false;
+      }
+    }
+    ctx.set(path, url);
+    if (url && !writeLanded()) {
+      ctx.set(path, old);
+      toast(t('admin.img.rejected'), 'err');
+      return false;
+    }
+    if (url && stateChars() > BUDGET_WARN) toast(t('admin.img.warnNear'), 'info');
+    return true;
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Downscaling. -> Promise<{url, chars, w, h, png}>                         */
+  /*                                                                         */
+  /*  Transparency decides the format, not the file extension: a PNG shot on  */
+  /*  a phone is opaque and becomes a JPEG a quarter of the size, while a cut- */
+  /*  out charm on a transparent background stays a PNG so it does not gain a */
+  /*  white box on the nail.                                                  */
+  /* ---------------------------------------------------------------------- */
+
+  function hasAlpha(cx, w, h) {
+    var data, i, step;
+    try { data = cx.getImageData(0, 0, w, h).data; }
+    catch (e) { return true; }   /* cannot look: keep the safe format */
+    /* every 7th pixel is plenty to spot a cut-out, and stays fast on a phone */
+    step = 4 * 7;
+    for (i = 3; i < data.length; i += step) { if (data[i] < 250) return true; }
+    return false;
+  }
 
   function downscale(file, maxPx) {
     return new Promise(function (resolve, reject) {
       var fr;
+      maxPx = numOf(maxPx, MAX_DESIGN);
       if (!file || typeof FileReader === 'undefined') { reject(new Error('no-file')); return; }
       fr = new FileReader();
       fr.onerror = function () { reject(new Error('read')); };
@@ -1425,7 +1810,7 @@
           try {
             var w = img.naturalWidth || img.width;
             var h = img.naturalHeight || img.height;
-            var sc = 1, cw, ch, cv, cx, png;
+            var sc = 1, cw, ch, cv, cx, maybeAlpha, png, url;
             if (!w || !h) { reject(new Error('size')); return; }
             if (Math.max(w, h) > maxPx) sc = maxPx / Math.max(w, h);
             cw = Math.max(1, Math.round(w * sc));
@@ -1434,10 +1819,23 @@
             cv.width = cw; cv.height = ch;
             cx = cv.getContext ? cv.getContext('2d') : null;
             if (!cx) { reject(new Error('canvas')); return; }
-            png = /png/i.test(str(file.type));
-            if (!png) { cx.fillStyle = '#FFFFFF'; cx.fillRect(0, 0, cw, ch); }
+
+            /* only these can carry an alpha channel at all */
+            maybeAlpha = /png|webp|gif|svg|avif/i.test(str(file.type));
             cx.drawImage(img, 0, 0, cw, ch);
-            resolve(cv.toDataURL(png ? 'image/png' : 'image/jpeg', 0.85));
+            png = maybeAlpha ? hasAlpha(cx, cw, ch) : false;
+
+            if (!png) {
+              /* JPEG has no alpha: composite on white first, or Chrome and
+                 Safari disagree about what shows through. */
+              cx.clearRect(0, 0, cw, ch);
+              cx.fillStyle = '#FFFFFF';
+              cx.fillRect(0, 0, cw, ch);
+              cx.drawImage(img, 0, 0, cw, ch);
+            }
+            url = cv.toDataURL(png ? 'image/png' : 'image/jpeg', JPEG_Q);
+            if (!isDataImage(url)) { reject(new Error('encode')); return; }
+            resolve({ url: url, chars: url.length, w: cw, h: ch, png: png });
           } catch (e) { reject(e); }
         };
         img.src = String(fr.result);
@@ -1445,6 +1843,267 @@
       try { fr.readAsDataURL(file); }
       catch (e) { reject(e); }
     });
+  }
+
+
+  /* ====================================================================== */
+  /* 5b. SN.Art — the drawn decoration library                               */
+  /*                                                                         */
+  /*  A decoration can be three things, and the render engine tries them in   */
+  /*  this order: `art` (a vector id drawn by SN.Art), `image` (a real photo) */
+  /*  and `glyph` (the emoji fallback). This block gives the owner a visual   */
+  /*  picker over the vector library, so «add a new decoration» never means   */
+  /*  «type an id you had to read out of a source file».                      */
+  /* ====================================================================== */
+
+  var NS_SVG = 'http://www.w3.org/2000/svg';
+  var artTried = false;
+  var artDefsDone = false;
+
+  function artOn() {
+    return !!(SN.Art && typeof SN.Art.node === 'function' &&
+      Array.isArray(SN.Art.LIST) && SN.Art.LIST.length);
+  }
+
+  /* nail-art.js is a first-party file in this repository, but admin.html is
+     not ours to edit. Pull it in on demand: same origin, no build step, no
+     module, and a complete no-op the moment the page already carries the
+     <script> tag itself. Loading it lazily also keeps it off every other tab. */
+  function artLoad(cb) {
+    var s;
+    if (artOn()) { cb(true); return; }
+    if (artTried) { cb(false); return; }
+    artTried = true;
+    try {
+      s = D.createElement('script');
+      s.src = 'assets/js/nail-art.js';
+      s.async = false;
+      s.onload = function () { cb(artOn()); };
+      s.onerror = function () { cb(false); };
+      D.head.appendChild(s);
+    } catch (e) { cb(false); }
+  }
+
+  /* SN.Art draws its bevels with a block of SHARED gradients whose ids are
+     stable. One copy anywhere in the document resolves every url(#sna-…) on
+     the page, so the picker grid costs one block, not one per tile. */
+  function ensureArtDefs() {
+    var svg, defs;
+    if (artDefsDone || !artOn() || typeof SN.Art.defs !== 'function' || !D.body) return;
+    try {
+      defs = SN.Art.defs();
+      if (!defs) return;
+      svg = D.createElementNS(NS_SVG, 'svg');
+      svg.setAttribute('class', 'adm-artdefs');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.setAttribute('width', '0');
+      svg.setAttribute('height', '0');
+      svg.appendChild(defs);
+      D.body.appendChild(svg);
+      artDefsDone = true;
+    } catch (e) { /* flat art is still art */ }
+  }
+
+  /* 'letter:ش' / 'letter-silver:A' carry their character inside the id */
+  var ART_LETTER = /^(letter|letter-silver):([\s\S]{1,2})$/;
+  function artBase(id) { var m = ART_LETTER.exec(str(id)); return m ? m[1] : str(id); }
+  function artChar(id) { var m = ART_LETTER.exec(str(id)); return m ? m[2] : ''; }
+
+  function artEntry(id) {
+    var list = artOn() ? SN.Art.LIST : [], base = artBase(id), i;
+    for (i = 0; i < list.length; i++) {
+      if (isObj(list[i]) && str(list[i].id) === base) return list[i];
+    }
+    return null;
+  }
+  function artIsLetter(id) { return artBase(id).indexOf('letter') === 0; }
+  function artName(id) {
+    var e = artEntry(id), ch = artChar(id);
+    if (!e) return str(id);
+    return pick(e.name) + (ch ? ' « ' + ch + ' »' : '');
+  }
+  function artGroupName(g) {
+    var k = 'admin.art.groups.' + g, v = t(k);
+    return v === k ? g : v;
+  }
+
+  /* one library drawing as a standalone <svg>, sized in CSS pixels */
+  function artSVG(id, px) {
+    var svg = D.createElementNS(NS_SVG, 'svg'), node;
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.setAttribute('width', String(px));
+    svg.setAttribute('height', String(px));
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    if (!artOn()) return svg;
+    ensureArtDefs();
+    try {
+      node = SN.Art.node(artBase(id), { char: artChar(id) || 'ش', seed: str(id) });
+      if (node) svg.appendChild(node);
+    } catch (e) { /* a broken id must never break the grid */ }
+    return svg;
+  }
+
+  /* -------------------------------------------------------- picker modal */
+  function buildArtPicker(current, onPick) {
+    var grid   = el('div', { 'class': 'adm-artgrid' });
+    var chips  = el('div', { 'class': 'chips adm-artchips' });
+    var q      = el('input', { 'class': 'input', type: 'search', placeholder: t('admin.art.searchPh') });
+    var ch     = el('input', {
+      'class': 'input adm-artchar', type: 'text', maxlength: '2',
+      value: artChar(current) || 'ش', 'aria-label': t('admin.art.letter')
+    });
+    var letterBox;
+    var group = artIsLetter(current) ? 'letters' : 'all';
+    var m;
+
+    /* the character box only makes sense for the two letter generators, so it
+       stays out of the way until he is actually looking at them */
+    function syncLetter() {
+      if (!letterBox) return;
+      if (group === 'letters') letterBox.classList.remove('adm-hide');
+      else letterBox.classList.add('adm-hide');
+    }
+
+    function idFor(item) {
+      var base = str(item.id);
+      if (base.indexOf('letter') !== 0) return base;
+      return base + ':' + (trim(ch.value).slice(0, 2) || 'ش');
+    }
+
+    function paintGrid() {
+      var list = artOn() ? SN.Art.LIST : [], needle = trim(q.value).toLowerCase(), i, it, shown = 0;
+      empty(grid);
+      for (i = 0; i < list.length; i++) {
+        it = list[i];
+        if (!isObj(it)) continue;
+        if (group !== 'all' && str(it.group) !== group) continue;
+        if (needle && (pick(it.name) + ' ' + str(it.id)).toLowerCase().indexOf(needle) === -1) continue;
+        shown++;
+        (function (item) {
+          var id = idFor(item);
+          grid.appendChild(el('button', {
+            'class': 'adm-arttile' + (artBase(current) === str(item.id) ? ' is-on' : ''),
+            type: 'button', title: pick(item.name),
+            on: { click: function () { onPick(idFor(item)); if (m && m.close) m.close(); } }
+          }, [
+            artSVG(id, 46),
+            el('span', { 'class': 'adm-arttl', text: pick(item.name) })
+          ]));
+        }(it));
+      }
+      if (!shown) grid.appendChild(emptyBox(t('admin.art.noMatch'), ''));
+    }
+
+    (function () {
+      var groups = ['all'].concat((artOn() && SN.Art.GROUPS) || []), i;
+      for (i = 0; i < groups.length; i++) {
+        (function (g) {
+          chips.appendChild(el('button', {
+            'class': 'chip' + (group === g ? ' chip-on' : ''), type: 'button',
+            text: g === 'all' ? t('common.all') : artGroupName(g),
+            on: { click: function () {
+              group = g;
+              var bs = chips.querySelectorAll('.chip'), i2;
+              for (i2 = 0; i2 < bs.length; i2++) bs[i2].classList.remove('chip-on');
+              this.classList.add('chip-on');
+              syncLetter();
+              paintGrid();
+            } }
+          }));
+        }(groups[i]));
+      }
+    }());
+
+    letterBox = el('div', { 'class': 'field adm-artletter adm-hide' }, [
+      el('span', { 'class': 'label', text: t('admin.art.letter') }),
+      ch,
+      el('p', { 'class': 'hint', text: t('admin.art.letterX') })
+    ]);
+    syncLetter();
+
+    q.addEventListener('input', SN.UI.debounce(paintGrid, 180), false);
+    ch.addEventListener('input', SN.UI.debounce(paintGrid, 180), false);
+    paintGrid();
+
+    m = SN.UI.modal({
+      size: 'lg',
+      title: t('admin.art.title'),
+      body: el('div', { 'class': 'adm-artpick' }, [
+        el('div', { 'class': 'search adm-artsearch' }, [
+          el('span', { 'class': 'search-ico', html: icon('search', 16), 'aria-hidden': 'true' }),
+          q
+        ]),
+        chips,
+        letterBox,
+        grid
+      ]),
+      actions: [{ label: t('common.cancel'), cls: 'btn-ghost' }]
+    });
+    return m;
+  }
+
+  function openArtPicker(current, onPick) {
+    artLoad(function (ok) {
+      if (!ok) { toast(t('admin.art.off'), 'err'); return; }
+      ensureArtDefs();
+      buildArtPicker(current, onPick);
+    });
+  }
+
+  /* --------------------------------------------------------- art control */
+  function artControl(get, set) {
+    var pv      = el('span', { 'class': 'adm-artpv' });
+    var nameEl  = el('span', { 'class': 'adm-artname' });
+    var pickBtn, clearBtn, box;
+
+    function paint() {
+      var v = str(get());
+      empty(pv);
+      if (v && artOn()) pv.appendChild(artSVG(v, 40));
+      else pv.appendChild(el('span', { 'class': 'adm-imgno', html: icon('sparkle', 18) }));
+      nameEl.textContent = v ? artName(v) : t('admin.art.none');
+      pickBtn.querySelector('.adm-blbl').textContent = v ? t('admin.art.change') : t('admin.art.pick');
+      clearBtn.disabled = !v;
+    }
+
+    pickBtn = el('button', {
+      'class': 'btn btn-line btn-sm', type: 'button',
+      on: { click: function () {
+        openArtPicker(str(get()), function (id) { set(id); paint(); });
+      } }
+    }, [
+      el('span', { 'class': 'adm-bico', html: icon('gem', 15), 'aria-hidden': 'true' }),
+      el('span', { 'class': 'adm-blbl', text: t('admin.art.pick') })
+    ]);
+
+    clearBtn = el('button', {
+      'class': 'btn btn-ghost btn-sm adm-danger-t', type: 'button', text: t('admin.art.clear'),
+      on: { click: function () { set(''); paint(); } }
+    });
+
+    box = el('div', { 'class': 'adm-artf' }, [
+      pv,
+      el('div', { 'class': 'adm-artinfo' }, [
+        nameEl,
+        el('div', { 'class': 'adm-btnrow' }, [pickBtn, clearBtn])
+      ])
+    ]);
+    paint();
+    /* the library is lazy: repaint the tile once it has actually arrived */
+    if (str(get())) artLoad(function () { paint(); });
+    return box;
+  }
+
+  function artField(f, ctx) {
+    return fieldBox(f, artControl(
+      function () { return ctx.get(f.p); },
+      function (v) {
+        ctx.set(f.p, v);
+        savedToast();
+        if (typeof ctx.after === 'function') ctx.after(f.p, v);
+      }
+    ));
   }
 
   /* ====================================================================== */
@@ -1515,6 +2174,23 @@
     });
   }
 
+  /* a real photograph, cropped square — the row preview for anything the
+     owner has photographed himself */
+  function photoChip(url) {
+    return el('span', { 'class': 'adm-sw adm-sw-img' },
+      el('img', { src: str(url), alt: '', loading: 'lazy' }));
+  }
+
+  /* a decoration shown the way the render engine will actually draw it:
+     photo first, then the vector library, then the emoji fallback */
+  function charmChip(it) {
+    if (str(it.image)) return photoChip(it.image);
+    if (str(it.art) && artOn()) {
+      return el('span', { 'class': 'adm-sw adm-sw-art' }, artSVG(str(it.art), 30));
+    }
+    return el('span', { 'class': 'adm-glyph', text: str(it.glyph) || '•' });
+  }
+
   /* ====================================================================== */
   /* 7. Collection schemas                                                   */
   /* ====================================================================== */
@@ -1552,13 +2228,15 @@
         fields: [
           F('name', 't', 'admin.f.name'),
           F('kind', 'select', 'admin.f.kind', { opts: finishKindOpts }),
-          F('price', 'num', 'admin.f.price', { step: 1, min: 0, hint: 'admin.h.price' })
+          F('price', 'num', 'admin.f.price', { step: 1, min: 0, hint: 'admin.h.price' }),
+          F('image', 'image', 'admin.img.head', { wide: true, maxPx: MAX_SWATCH, hint: 'admin.img.finishX' })
         ],
-        blank: function () { return { id: '', name: { ar: '', en: '' }, kind: 'gloss', price: 0 }; },
+        blank: function () { return { id: '', name: { ar: '', en: '' }, kind: 'gloss', price: 0, image: '' }; },
         preview: function (it) {
+          if (str(it.image)) return photoChip(it.image);
           return nailChip(baseNail({ color: '#D9BCC4', finish: str(it.kind) || 'gloss' }), { shape: 'almond' });
         },
-        sub: function (it) { return str(it.kind) + ' · ' + money(numOf(it.price, 0)); }
+        sub: function (it) { return kindName(it.kind) + ' · ' + money(numOf(it.price, 0)); }
       };
 
       case 'patterns': return {
@@ -1566,16 +2244,18 @@
         fields: [
           F('name', 't', 'admin.f.name'),
           F('kind', 'select', 'admin.f.kind', { opts: patternKindOpts }),
-          F('price', 'num', 'admin.f.price', { step: 1, min: 0, hint: 'admin.h.price' })
+          F('price', 'num', 'admin.f.price', { step: 1, min: 0, hint: 'admin.h.price' }),
+          F('image', 'image', 'admin.img.head', { wide: true, maxPx: MAX_SWATCH, hint: 'admin.img.patternX' })
         ],
-        blank: function () { return { id: '', name: { ar: '', en: '' }, kind: 'none', price: 0 }; },
+        blank: function () { return { id: '', name: { ar: '', en: '' }, kind: 'none', price: 0, image: '' }; },
         preview: function (it) {
+          if (str(it.image)) return photoChip(it.image);
           return nailChip(baseNail({
             color: '#E9C2C0',
             pattern: { kind: str(it.kind) || 'none', color: '#FFFFFF', color2: '#C08BA6', scale: 1 }
           }), { shape: 'almond' });
         },
-        sub: function (it) { return str(it.kind) + ' · ' + money(numOf(it.price, 0)); }
+        sub: function (it) { return kindName(it.kind) + ' · ' + money(numOf(it.price, 0)); }
       };
 
       case 'colors': return {
@@ -1584,11 +2264,15 @@
         fields: [
           F('name', 't', 'admin.f.name'),
           F('hex', 'color', 'admin.f.hex'),
-          F('group', 'select', 'admin.f.group', { opts: colorGroupOpts })
+          F('group', 'select', 'admin.f.group', { opts: colorGroupOpts }),
+          F('image', 'image', 'admin.img.head', { wide: true, maxPx: MAX_SWATCH, hint: 'admin.img.colorX' })
         ],
-        blank: function () { return { id: '', name: { ar: '', en: '' }, hex: '#E9C2C0', group: 'nude' }; },
-        preview: function (it) { return swatchChip(it.hex); },
-        sub: function (it) { return str(it.group) + ' · ' + str(it.hex); }
+        blank: function () { return { id: '', name: { ar: '', en: '' }, hex: '#E9C2C0', group: 'nude', image: '' }; },
+        preview: function (it) {
+          if (str(it.image)) return photoChip(it.image);
+          return swatchChip(it.hex);
+        },
+        sub: function (it) { return groupName(it.group) + ' · ' + str(it.hex); }
       };
 
       case 'skinTones': return {
@@ -1608,19 +2292,19 @@
         searchable: true,
         fields: [
           F('name', 't', 'admin.f.name'),
-          F('glyph', 'text', 'admin.f.glyph', { hint: 'admin.h.glyph' }),
           F('price', 'num', 'admin.f.price', { step: 1, min: 0, hint: 'admin.h.price' }),
           F('group', 'select', 'admin.f.group', { opts: charmGroupOpts }),
-          F('image', 'image', 'admin.f.image', { wide: true, hint: 'admin.h.charmImage' })
+          F('art', 'art', 'admin.art.lbl', { wide: true, hint: 'admin.art.x' }),
+          F('image', 'image', 'admin.img.head', { wide: true, maxPx: MAX_SWATCH, hint: 'admin.img.charmX' }),
+          F('glyph', 'text', 'admin.f.glyph', { hint: 'admin.h.glyph' })
         ],
         blank: function () {
-          return { id: '', name: { ar: '', en: '' }, glyph: '✨', image: '', price: 0, group: 'misc' };
+          return { id: '', name: { ar: '', en: '' }, glyph: '✨', art: '', image: '', price: 0, group: 'misc' };
         },
-        preview: function (it) {
-          if (str(it.image)) return el('span', { 'class': 'adm-sw adm-sw-img' }, el('img', { src: str(it.image), alt: '' }));
-          return el('span', { 'class': 'adm-glyph', text: str(it.glyph) || '•' });
-        },
-        sub: function (it) { return str(it.group) + ' · ' + money(numOf(it.price, 0)); }
+        addForm: function (done) { openCharmForm(done); },
+        addLabel: 'admin.nd.add',
+        preview: charmChip,
+        sub: function (it) { return groupName(it.group) + ' · ' + money(numOf(it.price, 0)); }
       };
 
       case 'payments': return {
@@ -1812,8 +2496,13 @@
     }
 
     function addItem() {
-      var blank = typeof def.blank === 'function' ? def.blank() : {};
-      var made;
+      var blank, made;
+      /* a collection may prefer a guided form over an empty row */
+      if (typeof def.addForm === 'function') {
+        def.addForm(function () { repaint(); sideCounts(); });
+        return;
+      }
+      blank = typeof def.blank === 'function' ? def.blank() : {};
       if (blank && blank.id === '') delete blank.id;
       made = SN.Store.add(def.key, blank);
       if (made && made.id) S.open[def.key + '/' + made.id] = true;
@@ -1846,13 +2535,16 @@
         on: { click: addItem }
       }, [
         el('span', { 'class': 'adm-bico', html: icon('plus', 16), 'aria-hidden': 'true' }),
-        el('span', { text: t('admin.addNew') })
+        el('span', { text: def.addLabel ? t(def.addLabel) : t('admin.addNew') })
       ])
     ]));
 
     if (o.help) host.appendChild(el('p', { 'class': 'hint adm-crud-help', text: o.help }));
     host.appendChild(rowsBox);
     repaint();
+    /* a tab that has to wait for something async (the art library) repaints
+       through this instead of rebuilding itself */
+    host.snRepaint = repaint;
     return host;
   }
 
@@ -1989,6 +2681,82 @@
     if (open) fillBody();
 
     return el('article', { 'class': 'adm-row', 'data-id': str(it.id) }, [head, bodyBox]);
+  }
+
+
+  /* ====================================================================== */
+  /* 8b. Adding a decoration without touching code                           */
+  /*                                                                         */
+  /*  Name in both languages, a group, a price, and then the one decision     */
+  /*  that matters: what it looks like. Either a drawing picked out of the    */
+  /*  SN.Art library — shown as the real vectors, never as an id to type —    */
+  /*  or a photograph of the actual charm.                                    */
+  /* ====================================================================== */
+
+  function openCharmForm(done) {
+    var draft = {
+      name: { ar: '', en: '' }, group: 'misc', price: 0,
+      art: '', image: '', glyph: ''
+    };
+    var err = el('p', { 'class': 'field-err adm-ndErr' });
+    var m;
+
+    var ctx = {
+      get: function (p) { return getIn(draft, p); },
+      set: function (p, v) { setIn(draft, p, v); err.textContent = ''; }
+    };
+
+    function create() {
+      var made;
+      err.textContent = '';
+      if (!trim(draft.name.ar) && !trim(draft.name.en)) {
+        err.textContent = t('admin.nd.needName');
+        return;
+      }
+      if (!trim(draft.art) && !trim(draft.image) && !trim(draft.glyph)) {
+        err.textContent = t('admin.nd.need');
+        return;
+      }
+      if (draft.image && draft.image.length > budgetLeft()) {
+        toast(t('admin.img.full', {
+          n: kbOf(draft.image.length), r: Math.max(0, kbOf(budgetLeft()))
+        }), 'err');
+        return;
+      }
+      made = SN.Store.add('charms', clone(draft));
+      if (!made) { toast(t('common.error'), 'err'); return; }
+      if (draft.image && !writeLanded()) {
+        SN.Store.remove('charms', made.id);
+        toast(t('admin.img.rejected'), 'err');
+        return;
+      }
+      S.open['charms/' + made.id] = true;
+      toast(t('admin.nd.created'), 'ok');
+      if (typeof done === 'function') done();
+      if (m && m.close) m.close();
+    }
+
+    m = SN.UI.modal({
+      size: 'lg',
+      title: t('admin.nd.title'),
+      body: el('div', { 'class': 'adm-ndform' }, [
+        el('p', { 'class': 'hint', text: t('admin.nd.intro') }),
+        renderFields([
+          F('name', 't', 'admin.f.name', { wide: true }),
+          F('group', 'select', 'admin.f.group', { opts: charmGroupOpts }),
+          F('price', 'num', 'admin.f.price', { step: 1, min: 0, hint: 'admin.h.price' }),
+          F('art', 'art', 'admin.nd.srcArt', { wide: true, hint: 'admin.art.x' }),
+          F('image', 'image', 'admin.nd.srcImg', { wide: true, maxPx: MAX_SWATCH, hint: 'admin.img.charmX' }),
+          F('glyph', 'text', 'admin.nd.srcGlyph', { hint: 'admin.h.glyph' })
+        ], ctx),
+        err
+      ]),
+      actions: [
+        { label: t('common.cancel'), cls: 'btn-ghost' },
+        { label: t('admin.nd.create'), cls: 'btn-pri', onClick: function () { create(); } }
+      ]
+    });
+    return m;
   }
 
   /* ====================================================================== */
@@ -2213,6 +2981,82 @@
     return el('div', { 'class': 'table-wrap' }, el('table', { 'class': 'table table-sum' }, body));
   }
 
+
+  /* ---------------------------------------------------------------------- */
+  /*  Every price on the site, in one place.                                 */
+  /*                                                                         */
+  /*  The rates above are only half the story: a shape, a length, a finish,  */
+  /*  a pattern, a charm and each ready-made design all carry a price of      */
+  /*  their own, and they live in six different tabs. He asked to edit ALL    */
+  /*  prices, so they are all repeated here, grouped and collapsed, writing   */
+  /*  straight back to the same store the other tabs use.                     */
+  /* ---------------------------------------------------------------------- */
+
+  var PRICE_GROUPS = [
+    { key: 'shapes', lbl: 'admin.tab.shapes' },
+    { key: 'lengths', lbl: 'admin.tab.lengths' },
+    { key: 'finishes', lbl: 'admin.tab.finishes' },
+    { key: 'patterns', lbl: 'admin.tab.patterns' },
+    { key: 'charms', lbl: 'admin.tab.charms' },
+    { key: 'designs', lbl: 'admin.tab.designs' }
+  ];
+
+  function priceRow(key, it, onChange) {
+    var ctx = {
+      get: function (p) { return getIn(it, p); },
+      set: function (p, v) {
+        var patch = {};
+        setIn(it, p, v);
+        patch[str(p).split('.')[0]] = it[str(p).split('.')[0]];
+        SN.Store.update(key, it.id, patch);
+      },
+      after: onChange
+    };
+    return numField(
+      F('price', 'num', trim(pick(it.name)) || str(it.id), { min: 0, step: 1, def: 0 }),
+      ctx
+    );
+  }
+
+  function priceGroupBlock(g, onChange) {
+    var items = sList(g.key);
+    var fields = el('div', { 'class': 'adm-fields adm-pgbody adm-hide' });
+    var head, filled = false, i;
+
+    function fill() {
+      if (filled) return;
+      filled = true;
+      if (!items.length) {
+        fields.appendChild(el('p', { 'class': 'hint', text: t('admin.p.extrasNone') }));
+        return;
+      }
+      for (i = 0; i < items.length; i++) {
+        if (isObj(items[i])) fields.appendChild(priceRow(g.key, items[i], onChange));
+      }
+    }
+
+    head = el('button', {
+      'class': 'adm-pghead', type: 'button', 'aria-expanded': 'false',
+      on: { click: function () {
+        var open = !fields.classList.contains('adm-hide');
+        if (open) {
+          fields.classList.add('adm-hide');
+          head.setAttribute('aria-expanded', 'false');
+        } else {
+          fill();
+          fields.classList.remove('adm-hide');
+          head.setAttribute('aria-expanded', 'true');
+        }
+      } }
+    }, [
+      el('span', { 'class': 'adm-pgt', text: t(g.lbl) }),
+      el('span', { 'class': 'pill adm-count', text: t('admin.p.extrasShow', { n: items.length }) }),
+      el('span', { 'class': 'adm-row-chev', html: icon('chevron', 15), 'aria-hidden': 'true' })
+    ]);
+
+    return el('div', { 'class': 'adm-pgroup' }, [head, fields]);
+  }
+
   function renderPricing() {
     var box = el('div', { 'class': 'adm-tabbody' });
     var sampleBox = el('div', { 'class': 'adm-sample' });
@@ -2254,6 +3098,15 @@
       sectionHead(t('admin.p.sample'), t('admin.p.sampleX')),
       sampleBox
     ]));
+
+    box.appendChild(card((function () {
+      var kids = [sectionHead(t('admin.p.extras'), t('admin.p.extrasX'))], i;
+      for (i = 0; i < PRICE_GROUPS.length; i++) {
+        kids.push(priceGroupBlock(PRICE_GROUPS[i], paintSample));
+      }
+      return kids;
+    }())));
+
     paintSample();
     return box;
   }
@@ -2330,7 +3183,7 @@
         F('active', 'bool', 'admin.d.active'),
         F('desc', 'tarea', 'admin.f.desc', { wide: true, rows: 4 }),
         F('tags', 'tags', 'admin.d.tags', { wide: true }),
-        F('image', 'image', 'admin.d.image', { wide: true, hint: 'admin.d.imageX' })
+        F('image', 'image', 'admin.d.image', { wide: true, maxPx: MAX_DESIGN, hint: 'admin.img.designX' })
       ],
       blank: function () {
         var cfg = null;
@@ -2424,28 +3277,51 @@
     return wrap;
   }
 
+  /* An order is the one record on the site the owner did not write himself,
+     so editing it is deliberately careful: the customer's DESIGN is never in
+     the field list, and every patch names only the branch it touched
+     (`customer`, `qty`, `price`, `status`). SN.Store.update merges shallowly,
+     so `design` / `item` come through untouched. */
   function openOrder(o, repaint) {
     var body = el('div', { 'class': 'adm-omodal' });
-    var text = '';
-    var sel;
+    var sumBox = el('pre', { 'class': 'adm-pre' });
+    var sel, m;
 
-    try {
-      if (SN.Checkout && typeof SN.Checkout.summary === 'function') text = SN.Checkout.summary(o, lang());
-    } catch (e) { text = ''; }
+    if (!isObj(o.customer)) o.customer = {};
+    if (!isObj(o.price)) o.price = { total: 0 };
+
+    function summaryText() {
+      try {
+        if (SN.Checkout && typeof SN.Checkout.summary === 'function') {
+          return str(SN.Checkout.summary(o, lang()));
+        }
+      } catch (e) { /* a summary is a convenience, never a blocker */ }
+      return '';
+    }
+    function paintSummary() { sumBox.textContent = summaryText(); }
+
+    var octx = {
+      get: function (p) { return getIn(o, p); },
+      set: function (p, v) {
+        var top = str(p).split('.')[0], patch = {};
+        setIn(o, p, v);
+        patch[top] = o[top];
+        SN.Store.update('orders', o.id, patch);
+      },
+      after: function () {
+        paintSummary();
+        if (typeof repaint === 'function') repaint();
+      }
+    };
 
     body.appendChild(orderPreviewNode(o));
 
+    /* the facts that identify the order and must not drift */
     body.appendChild(el('dl', { 'class': 'adm-ometa' }, [
-      el('dt', { text: t('order.number') }), el('dd', { text: str(o.no) || '—' }),
+      el('dt', { text: t('order.number') }), el('dd', { 'class': 'ltr', text: str(o.no) || '—' }),
       el('dt', { text: t('common.date') }), el('dd', { text: orderStamp(o.ts) }),
-      el('dt', { text: t('order.name') }), el('dd', { text: str(o.customer && o.customer.name) || '—' }),
-      el('dt', { text: t('order.phone') }), el('dd', { 'class': 'ltr', text: str(o.customer && o.customer.phone) || '—' }),
-      el('dt', { text: t('order.city') }), el('dd', { text: str(o.customer && o.customer.city) || '—' }),
-      el('dt', { text: t('order.address') }), el('dd', { text: str(o.customer && o.customer.address) || '—' }),
-      el('dt', { text: t('pay.title') }), el('dd', { text: str(o.payment && o.payment.name) || '—' }),
       el('dt', { text: t('admin.o.kindLbl') }), el('dd', { text: t(o.kind === 'ready' ? 'order.ready' : 'order.custom') }),
-      el('dt', { text: t('order.qty') }), el('dd', { text: String(numOf(o.qty, 1)) }),
-      el('dt', { text: t('admin.o.totalLbl') }), el('dd', { text: money(orderTotal(o)) })
+      el('dt', { text: t('pay.title') }), el('dd', { text: str(o.payment && o.payment.name) || '—' })
     ]));
 
     sel = el('select', { 'class': 'select' });
@@ -2468,16 +3344,35 @@
       sel
     ]));
 
+    /* ---- the editable half ---- */
+    body.appendChild(el('div', { 'class': 'adm-oedit' }, [
+      sectionHead(t('admin.o.editHead'), t('admin.o.editX')),
+      renderFields([
+        F('customer.name', 'text', 'order.name'),
+        F('customer.phone', 'text', 'order.phone', { dir: 'ltr' }),
+        F('customer.city', 'text', 'order.city'),
+        F('customer.address', 'text', 'order.address', { wide: true }),
+        F('qty', 'num', 'order.qty', { min: 1, step: 1, int: true, def: 1, hint: 'admin.o.qtyX' }),
+        F('price.total', 'num', 'admin.o.priceLbl', { min: 0, step: 1, def: 0, hint: 'admin.o.priceX' }),
+        F('customer.note', 'area', 'admin.o.noteLbl', { wide: true, rows: 3, hint: 'admin.o.noteX' })
+      ], octx),
+      el('div', { 'class': 'note' }, [
+        el('span', { 'class': 'ico', html: icon('shield', 16), 'aria-hidden': 'true' }),
+        el('span', { text: t('admin.o.designSafe') })
+      ])
+    ]));
+
     body.appendChild(el('div', { 'class': 'adm-osum' }, [
       el('h4', { 'class': 'label', text: t('admin.o.sum') }),
-      el('pre', { 'class': 'adm-pre', text: text })
+      sumBox
     ]));
+    paintSummary();
 
     body.appendChild(el('div', { 'class': 'adm-obtns' }, [
       el('button', {
         'class': 'btn btn-line btn-sm', type: 'button', text: t('admin.o.copySum'),
         on: { click: function () {
-          SN.UI.copy(text).then(function (ok) {
+          SN.UI.copy(summaryText()).then(function (ok) {
             toast(t(ok ? 'common.copied' : 'common.error'), ok ? 'ok' : 'err');
           });
         } }
@@ -2485,7 +3380,7 @@
       el('button', {
         'class': 'btn btn-pri btn-sm', type: 'button', text: t('admin.o.waReply'),
         on: { click: function () {
-          var link = custWaLink(o.customer && o.customer.phone, text);
+          var link = custWaLink(o.customer && o.customer.phone, summaryText());
           if (!link) { toast(t('admin.o.waNo'), 'err'); return; }
           window.open(link, '_blank', 'noopener');
         } }
@@ -2505,7 +3400,7 @@
       })
     ]));
 
-    var m = SN.UI.modal({
+    m = SN.UI.modal({
       size: 'lg',
       title: t('admin.o.detail') + ' — ' + (str(o.no) || ''),
       body: body,
@@ -2571,7 +3466,7 @@
           chips.appendChild(el('button', {
             'class': 'chip' + (S.orderStatus === id ? ' chip-on' : ''), type: 'button',
             'aria-pressed': S.orderStatus === id ? 'true' : 'false',
-            on: { click: function () { S.orderStatus = id; paintChips(); paintRows(); } }
+            on: { click: function () { S.orderStatus = id; paintChips(); paintRows(); syncBulk(); } }
           }, [
             el('span', { text: id === 'all' ? t('admin.o.all') : t('order.status.' + id) }),
             el('span', { 'class': 'tab-n', text: String(numOf(c[id], 0)) })
@@ -2596,7 +3491,54 @@
       else if (!shown) listBox.appendChild(emptyBox(t('admin.o.noMatch'), t('common.emptyHint')));
     }
 
-    function repaint() { paintChips(); paintRows(); sideCounts(); }
+    /* «امسح كل الطلبات القديمة» — deleting one at a time is not a workflow.
+       Acts on whatever the chips are currently filtering to. */
+    function bulkDelete() {
+      var list = sList('orders'), target = [], i, o, st, ask;
+      for (i = 0; i < list.length; i++) {
+        o = list[i];
+        if (!isObj(o)) continue;
+        st = STATUSES.indexOf(str(o.status)) === -1 ? 'new' : str(o.status);
+        if (S.orderStatus === 'all' || st === S.orderStatus) target.push(str(o.id));
+      }
+      if (!target.length) { toast(t('admin.o.delNone'), 'err'); return; }
+
+      function wipe() {
+        var k;
+        for (k = 0; k < target.length; k++) SN.Store.remove('orders', target[k]);
+        toast(t('admin.o.delManyOk', { c: target.length }), 'ok');
+        repaint();
+      }
+
+      ask = S.orderStatus === 'all'
+        ? t('admin.o.delAllAsk', { c: target.length })
+        : t('admin.o.delStatusAsk', { c: target.length, n: t('order.status.' + S.orderStatus) });
+
+      confirmBox(ask).then(function (yes) {
+        if (!yes) return;
+        /* wiping the whole book is the one action worth asking twice */
+        if (S.orderStatus !== 'all') { wipe(); return; }
+        confirmBox(t('admin.o.delAllAsk2')).then(function (yes2) { if (yes2) wipe(); });
+      });
+    }
+
+    var bulkBtn = el('button', {
+      'class': 'btn btn-ghost btn-sm adm-danger-t adm-obulk', type: 'button',
+      on: { click: bulkDelete }
+    }, [
+      el('span', { 'class': 'adm-bico', html: icon('trash', 15), 'aria-hidden': 'true' }),
+      el('span', { 'class': 'adm-blbl', text: t('admin.o.delAll') })
+    ]);
+
+    function syncBulk() {
+      var lbl = bulkBtn.querySelector('.adm-blbl');
+      if (!lbl) return;
+      lbl.textContent = S.orderStatus === 'all'
+        ? t('admin.o.delAll')
+        : t('admin.o.delStatus', { n: t('order.status.' + S.orderStatus) });
+    }
+
+    function repaint() { paintChips(); paintRows(); syncBulk(); sideCounts(); }
 
     function orderRow(o) {
       var st = STATUSES.indexOf(str(o.status)) === -1 ? 'new' : str(o.status);
@@ -2638,10 +3580,13 @@
           el('span', { 'class': 'search-ico', html: icon('search', 16), 'aria-hidden': 'true' }),
           search
         ]),
-        el('button', {
-          'class': 'btn btn-line btn-sm toolbar-end', type: 'button', text: t('admin.o.exportCsv'),
-          on: { click: exportOrders }
-        })
+        el('div', { 'class': 'adm-btnrow toolbar-end' }, [
+          el('button', {
+            'class': 'btn btn-line btn-sm', type: 'button', text: t('admin.o.exportCsv'),
+            on: { click: exportOrders }
+          }),
+          bulkBtn
+        ])
       ]),
       chips,
       listBox
@@ -2649,6 +3594,7 @@
 
     paintChips();
     paintRows();
+    syncBulk();
     return box;
   }
 
@@ -2656,17 +3602,47 @@
   /* 16. Tab: backup                                                         */
   /* ====================================================================== */
 
-  function storageKb() {
-    var n = 0;
-    try { n = str(JSON.stringify(SN.Store.state)).length; }
-    catch (e) { n = 0; }
-    return Math.round(n / 1024);
+  /* The photo budget, in one honest picture: how full the box is, what the
+     photos alone cost, and the one sentence that tells him what to do. */
+  function storageMeter() {
+    var used  = stateChars();
+    var pics  = imageAudit();
+    var pct   = Math.min(100, Math.round(used / BUDGET_MAX * 100));
+    var full  = used > BUDGET_MAX * 0.92;
+    var near  = used > BUDGET_WARN;
+    var bar   = el('span', {
+      'class': 'adm-meter-i' + (full ? ' is-full' : (near ? ' is-warn' : '')),
+      style: { inlineSize: pct + '%' }
+    });
+
+    return el('div', { 'class': 'adm-storefigs' }, [
+      el('p', { 'class': 'strong', text: t('admin.b.storeUsed', { n: kbOf(used) }) }),
+      el('div', {
+        'class': 'adm-meter', role: 'img',
+        'aria-label': t('admin.b.storeBar') + ' — ' + pct + '%'
+      }, bar),
+      el('p', { 'class': 'hint', text: t('admin.b.storeCap', { n: kbOf(BUDGET_MAX) }) }),
+      el('p', {
+        'class': 'hint',
+        text: pics.count
+          ? t('admin.b.storeImgs', { c: pics.count, n: kbOf(pics.chars) })
+          : t('admin.b.storeImgsNone')
+      }),
+      el('div', { 'class': 'note ' + (full ? 'note-err' : (near ? 'note-warn' : 'note-ok')) }, [
+        el('span', {
+          'class': 'ico', 'aria-hidden': 'true',
+          html: icon(near ? 'shield' : 'check', 16)
+        }),
+        el('span', {
+          text: full ? t('admin.b.storeFullWarn') : (near ? t('admin.b.storeWarn') : t('admin.b.storeOk'))
+        })
+      ])
+    ]);
   }
 
   function renderBackup() {
     var box = el('div', { 'class': 'adm-tabbody' });
     var fileIn = el('input', { 'class': 'sr-only adm-file', type: 'file', accept: 'application/json,.json' });
-    var kb = storageKb();
     var testOut = el('p', { 'class': 'hint adm-testout' });
 
     /* ---- data ---- */
@@ -2731,11 +3707,7 @@
     /* ---- storage ---- */
     box.appendChild(card([
       sectionHead(t('admin.b.storeHead'), t('admin.b.storeX')),
-      el('p', { 'class': 'strong', text: t('admin.b.storeUsed', { n: kb }) }),
-      el('div', { 'class': 'note ' + (kb > 4096 ? 'note-warn' : 'note-ok') }, [
-        el('span', { 'class': 'ico', html: icon(kb > 4096 ? 'shield' : 'check', 16), 'aria-hidden': 'true' }),
-        el('span', { text: kb > 4096 ? t('admin.b.storeWarn') : t('admin.b.storeOk') })
-      ])
+      storageMeter()
     ]));
 
     /* ---- notification explainer ---- */
@@ -3064,6 +4036,20 @@
     };
   }
 
+  /* the charms tab waits for the vector library before it can draw the row
+     previews, so it repaints once instead of rebuilding the whole tab */
+  function renderCharms() {
+    var box = el('div', { 'class': 'adm-tabbody' });
+    var list = crud(schema('charms'), {
+      title: t('admin.tab.charms'), help: t('admin.nd.intro'), onChange: sideCounts
+    });
+    box.appendChild(card([list]));
+    artLoad(function (ok) {
+      if (ok && typeof list.snRepaint === 'function') list.snRepaint();
+    });
+    return box;
+  }
+
   var RENDER = {
     general: renderGeneral,
     home: renderHome,
@@ -3073,7 +4059,7 @@
     colors: simpleTab('colors'),
     finishes: simpleTab('finishes'),
     patterns: simpleTab('patterns'),
-    charms: simpleTab('charms'),
+    charms: renderCharms,
     skinTones: simpleTab('skinTones'),
     sizes: renderSizes,
     designs: renderDesigns,

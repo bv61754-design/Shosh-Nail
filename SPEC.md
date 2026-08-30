@@ -45,6 +45,7 @@ assets/js/data.js   seed content      (owner: DATA)
 assets/js/store.js  state+storage     (owner: CORE)
 assets/js/i18n.js   language          (owner: CORE)
 assets/js/ui.js     shell+widgets     (owner: CORE)
+assets/js/nail-art.js     nail-art decorations (owner: ART)
 assets/js/nail-render.js  SVG engine  (owner: RENDER)
 assets/js/checkout.js  price+order    (owner: CHECKOUT)
 assets/js/home.js                     (owner: HOME)
@@ -60,6 +61,7 @@ assets/js/admin.js                    (owner: ADMIN)
 <script defer src="assets/js/data.js"></script>
 <script defer src="assets/js/store.js"></script>
 <script defer src="assets/js/i18n.js"></script>
+<script defer src="assets/js/nail-art.js"></script>
 <script defer src="assets/js/nail-render.js"></script>
 <script defer src="assets/js/ui.js"></script>
 <script defer src="assets/js/checkout.js"></script>
