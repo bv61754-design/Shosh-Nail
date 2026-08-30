@@ -347,6 +347,19 @@
   }
   function lighten(c, t) { return mix(c, '#FFFFFF', t); }
   function darken(c, t) { return mix(c, '#1A0F14', t); }
+  /* Skin in shadow is NOT skin plus grey. The light that finds its way back
+     out of a shaded piece of skin has travelled through blood on the way, so
+     as skin darkens it also turns toward red-orange and GAINS saturation.
+     Multiplying the tone through a warm filter does exactly that; mixing it
+     toward black, grey or plum does the opposite and is why shaded skin ends
+     up looking bruised or dirty. t: 0 = lit, 1 = deepest. Every shadow tone
+     on the hand comes from here. */
+  function bloodShade(c, t) {
+    var A = parseHex(c);
+    if (!A) return '#000000';
+    t = clamp(num(t, 0), 0, 1);
+    return toHex(A.r * (1 - 0.21 * t), A.g * (1 - 0.55 * t), A.b * (1 - 0.65 * t));
+  }
   function lum(c) {
     var p = parseHex(c);
     if (!p) return 0.5;
@@ -2184,11 +2197,42 @@
        range has to be WIDE — a hand rendered inside a five percent band of one
        colour is a paper cut-out, whatever else you do to it. Tested against
        the lightest and the deepest tone in the store. */
-    var hi   = mix(skin, '#FFF6EC', 0.42);       /* knuckles, tendons, lit side */
-    var sh1  = mix(sh, darken(skin, 0.16), 0.5); /* the turn away from the light */
-    var sh2  = mix(darken(skin, 0.36), '#6A4553', 0.32);  /* the shaded side    */
-    var occ  = mix(darken(skin, 0.56), '#38202C', 0.36);  /* where light cannot get */
-    var warm = mix(skin, '#EE8A66', 0.30);       /* fingertips, knuckles      */
+    var hi   = mix(skin, '#FFF3E0', 0.40);                   /* knuckles, tendons, lit side */
+    var sh1  = mix(bloodShade(skin, 0.26), sh, 0.22);        /* the turn away from the light */
+    var sh2  = bloodShade(skin, 0.54);                       /* the shaded side  */
+    var occ  = mix(bloodShade(skin, 0.95), '#3C2028', 0.30); /* where light cannot get */
+    var warm = mix(skin, '#E8734A', 0.30);                   /* fingertips, knuckles */
+
+    /* A crease painted as a uniform stroke reads as a band of grey paint laid
+       ON the skin. A real crease is a hair-fine dark line that dies away at
+       both ends, with a faint LIT ridge just below it where the skin bulges
+       over the joint. Two shared gradients taper every crease on the hand —
+       one along the stroke for the finger folds, one down it for the long
+       creases — and they are memoised like every other def, so ten nails
+       still cost one of each. */
+    function taperX(c) {
+      return grad(defs, 'linearGradient',
+        [[0, c, 0], [0.2, c, 0.66], [0.5, c, 1], [0.8, c, 0.66], [1, c, 0]],
+        { x1: 0, y1: 0, x2: 1, y2: 0 });
+    }
+    function taperY(c, head) {
+      return grad(defs, 'linearGradient',
+        [[0, c, head], [0.22, c, 1], [0.62, c, 0.4], [1, c, 0]],
+        { x1: 0, y1: 0, x2: 0, y2: 1 });
+    }
+    /* every paint that repeats per finger is resolved ONCE per hand: grad()
+       hashes its stop list on every call, so asking five times for the same
+       gradient costs five hashes and buys nothing */
+    var CREASE_INK = taperX(occ), CREASE_LIT = taperX(hi);
+    var VALLEY_INK = taperY(occ, 0.85);
+    var KNUCKLE_FILL = radGrad(defs, [
+      [0, mix(hi, warm, 0.22), 0.52], [0.55, hi, 0.2], [1, skin, 0]
+    ]);
+    var TIP_WARM = radGrad(defs, [[0, warm, 0.55], [0.55, warm, 0.24], [1, warm, 0]]);
+    var BED_FILL = radGrad(defs, [
+      [0, mix(skin, '#E48C90', 0.34), 0.75], [0.7, mix(skin, '#E48C90', 0.22), 0.4],
+      [1, skin, 0]
+    ]);
 
     add(defs, E('clipPath', { id: clipId, clipPathUnits: 'userSpaceOnUse' },
       skinShapes(geom)));
@@ -2218,7 +2262,7 @@
     clipped([rect(0, 0, W, HB, {
       fill: grad(defs, 'linearGradient', [
         [0, mix(hi, '#FFFFFF', 0.25)], [0.18, hi], [0.42, mix(hi, skin, 0.4)],
-        [0.62, skin], [0.84, sh1], [1, mix(sh2, occ, 0.45)]
+        [0.62, skin], [0.84, mix(sh1, sh2, 0.45)], [1, mix(sh2, occ, 0.5)]
       ], {
         x1: f(LX(28)), y1: 20, x2: f(LX(292)), y2: 330,
         gradientUnits: 'userSpaceOnUse'
@@ -2267,12 +2311,13 @@
       }, [
         rect(0, 0, W, H + 120, {
           fill: grad(dd, 'linearGradient',
-            [[0, '#FFFFFF'], [0.44, '#FFFFFF'], [0.60, '#000000'], [1, '#000000']],
+            [[0, '#FFFFFF'], [0.42, '#FFFFFF'], [0.55, '#000000'], [1, '#000000']],
             { x1: 0, y1: 0, x2: 0, y2: f(H), gradientUnits: 'userSpaceOnUse' })
         })
       ]));
       return 'url(#' + id + ')';
     });
+    var CYL_FILL = grad(defs, 'linearGradient', cyl(mirror, CYL), { x1: 0, y1: 0, x2: 1, y2: 0 });
     kn = clipped([], { mask: fadeMask });
     for (i = 0; i < FINGERS.length; i++) {
       fk = FINGERS[i].key;
@@ -2281,7 +2326,7 @@
       add(kn, E('rect', {
         x: f(-gm.width * 0.62), y: f(-gm.length * 1.15),
         width: f(gm.width * 1.24), height: f(gm.length * 1.9),
-        fill: grad(defs, 'linearGradient', cyl(mirror, CYL), { x1: 0, y1: 0, x2: 1, y2: 0 }),
+        fill: CYL_FILL,
         transform: fingerTF(gm)
       }));
     }
@@ -2306,8 +2351,8 @@
     add(kn, E('path', {
       d: spinePath(geom.thumb.spine),
       fill: grad(defs, 'linearGradient', cyl(mirror, [
-        [0.00, occ, 0.42], [0.15, sh2, 0.26], [0.44, '#FFFFFF', 0.18],
-        [0.58, '#FFFFFF', 0.06], [0.80, sh1, 0.14], [1.00, occ, 0.45]
+        [0.00, occ, 0.32], [0.15, sh2, 0.2], [0.44, '#FFFFFF', 0.18],
+        [0.58, '#FFFFFF', 0.06], [0.80, sh1, 0.14], [1.00, occ, 0.4]
       ]), {
         x1: f(LX(202)), y1: 264, x2: f(LX(248)), y2: 302, gradientUnits: 'userSpaceOnUse'
       })
@@ -2321,27 +2366,29 @@
       fk = FINGERS[i].key;
       gm = geom[fk];
       if (gm.spine) continue;
-      /* the knuckle itself */
+      /* the knuckle itself. Its core is WARM, not just bright: the skin over
+         a knuckle is thin and the blood sits right under it. */
       add(kn, E('ellipse', {
         cx: f(gm.x - SX(gm.width * 0.14)), cy: f(gm.y + 8),
         rx: f(gm.width * 0.56), ry: f(gm.width * 0.46),
-        fill: radGrad(defs, [[0, hi, 0.5], [0.6, hi, 0.2], [1, skin, 0]])
+        fill: KNUCKLE_FILL
       }));
-      /* and the crease under it */
+      /* the crease under it, plus the lit bulge of skin just below the
+         crease. The valley that used to sit beside every knuckle is gone —
+         it landed on the same spot as the web shadow and the crevice
+         shadow, and three subtle washes stacked into one visible patch. */
       add(kn, E('path', {
-        d: pb().M(gm.x - gm.width * 0.34, gm.y + 20)
-          .Q(gm.x, gm.y + 26, gm.x + gm.width * 0.34, gm.y + 20).d(),
-        fill: 'none', stroke: occ, 'stroke-width': 2.6, opacity: 0.24,
+        d: pb().M(gm.x - gm.width * 0.32, gm.y + 20)
+          .Q(gm.x, gm.y + 25.5, gm.x + gm.width * 0.32, gm.y + 20).d(),
+        fill: 'none', stroke: CREASE_INK, 'stroke-width': 2.2, opacity: 0.15,
         'stroke-linecap': 'round'
       }));
-      /* the valley beside it */
-      if (i < FINGERS.length - 1) {
-        add(kn, E('ellipse', {
-          cx: f((gm.x + geom[FINGERS[i + 1].key].x) / 2), cy: f(gm.y + 58),
-          rx: 15, ry: 50,
-          fill: radGrad(defs, [[0, sh2, 0.10], [0.55, sh2, 0.045], [1, sh2, 0]])
-        }));
-      }
+      add(kn, E('path', {
+        d: pb().M(gm.x - gm.width * 0.28, gm.y + 24.5)
+          .Q(gm.x, gm.y + 29.5, gm.x + gm.width * 0.28, gm.y + 24.5).d(),
+        fill: 'none', stroke: CREASE_LIT, 'stroke-width': 2.4, opacity: 0.2,
+        'stroke-linecap': 'round'
+      }));
     }
     /* the whole back of the hand domes up over the metacarpals */
     add(kn, E('ellipse', {
@@ -2365,8 +2412,31 @@
       gm = nailLimbOf(geom, FINGERS[i].key);
       add(kn, E('ellipse', {
         cx: 0, cy: f(-gm.length * 0.95), rx: f(gm.width * 0.5), ry: f(gm.width * 0.66),
-        fill: radGrad(defs, [[0, warm, 0.55], [0.55, warm, 0.24], [1, warm, 0]]),
+        fill: TIP_WARM,
         transform: fingerTF(gm)
+      }));
+    }
+
+    var CAST_FILL = grad(defs, 'linearGradient',
+      cyl(mirror, [[0, occ, 0], [0.5, occ, 0.45], [1, occ, 1]]),
+      { x1: 0, y1: 0, x2: 1, y2: 0 });
+
+    /* one joint crease, in the finger's own frame: a fine tapered dark line
+       and, just below it, the lit ridge of skin the fold pushes up */
+    function crease(parent, gm, yc, ymid, sp, w, o) {
+      var tf = fingerTF(gm);
+      add(parent, E('path', {
+        d: pb().M(-gm.width * sp, -gm.length * yc)
+          .Q(0, -gm.length * ymid, gm.width * sp, -gm.length * yc).d(),
+        fill: 'none', stroke: CREASE_INK, 'stroke-width': f(w), opacity: o,
+        'stroke-linecap': 'round', transform: tf
+      }));
+      if (q < 0.5) return;
+      add(parent, E('path', {
+        d: pb().M(-gm.width * (sp - 0.03), -gm.length * (yc - 0.024))
+          .Q(0, -gm.length * (ymid - 0.024), gm.width * (sp - 0.03), -gm.length * (yc - 0.024)).d(),
+        fill: 'none', stroke: CREASE_LIT, 'stroke-width': f(w * 0.85), opacity: f(o * 0.8),
+        'stroke-linecap': 'round', transform: tf
       }));
     }
 
@@ -2374,54 +2444,47 @@
        touch and where each finger leaves the palm is what glues the pieces
        into one hand instead of a bundle of separate shapes. */
     kn = clipped([], { filter: blurF(defs, 1.6) });
-    for (i = 0; i < FINGERS.length - 1; i++) {
-      gm = geom[FINGERS[i].key];
+    /* ONE soft wedge per gap, running from the deepest point of the web down
+       the valley between the metacarpals and fading out into the back of the
+       hand. It replaces three overlapping layers (crevice stroke, web
+       ellipse, knuckle valley) that between them made a grey bruise. */
+    wp = webs(geom);
+    for (i = 0; i < wp.length - 1; i++) {
       add(kn, E('path', {
-        d: pb().M(gm.x, gm.y + 4).Q(gm.x + SX(2), gm.y + 34, gm.x + SX(4), gm.y + 64).d(),
-        fill: 'none', stroke: occ, 'stroke-width': 17, opacity: 0.13,
+        d: pb().M(wp[i].cx - SX(1), wp[i].cy - 7)
+          .Q(wp[i].cx + SX(3), wp[i].cy + 14, wp[i].cx + SX(5), wp[i].cy + 33).d(),
+        fill: 'none', stroke: VALLEY_INK, 'stroke-width': 9, opacity: 0.13,
         'stroke-linecap': 'round'
       }));
     }
-    wp = webs(geom);
-    for (i = 0; i < wp.length; i++) {
-      add(kn, E('ellipse', {
-        cx: f(wp[i].cx), cy: f(wp[i].cy), rx: 14, ry: 11, fill: occ, opacity: 0.16
-      }));
-    }
+    /* The crook between thumb and index. It has to HUG the notch — a radial
+       blob sitting in open skin here is read as a thumbprint of dirt, which
+       is exactly what it looked like — so it is a thin crescent lying along
+       the line where the thumb leaves the hand. */
+    var crook = wp[wp.length - 1];
+    add(kn, E('ellipse', {
+      cx: f(crook.cx), cy: f(crook.cy - 4), rx: 15, ry: 7,
+      fill: radGrad(defs, [[0, occ, 0.2], [0.55, occ, 0.09], [1, occ, 0]]),
+      transform: 'rotate(' + f(SX(-38)) + ' ' + f(crook.cx) + ' ' + f(crook.cy - 4) + ')'
+    }));
     for (i = 0; i < FINGERS.length; i++) {
       fk = FINGERS[i].key;
       gm = nailLimbOf(geom, fk);
       /* two knuckle creases — a real finger folds, twice */
-      add(kn, E('path', {
-        d: pb().M(-gm.width * 0.36, -gm.length * 0.585)
-          .Q(0, -gm.length * 0.55, gm.width * 0.36, -gm.length * 0.585).d(),
-        fill: 'none', stroke: occ, 'stroke-width': 2.4, opacity: 0.30,
-        transform: fingerTF(gm)
-      }));
-      if (q >= 0.5) {
-        add(kn, E('path', {
-          d: pb().M(-gm.width * 0.34, -gm.length * 0.545)
-            .Q(0, -gm.length * 0.515, gm.width * 0.34, -gm.length * 0.545).d(),
-          fill: 'none', stroke: hi, 'stroke-width': 2, opacity: 0.35,
-          transform: fingerTF(gm)
-        }));
-      }
-      add(kn, E('path', {
-        d: pb().M(-gm.width * 0.40, -gm.length * 0.26)
-          .Q(0, -gm.length * 0.215, gm.width * 0.40, -gm.length * 0.26).d(),
-        fill: 'none', stroke: occ, 'stroke-width': 3, opacity: 0.22,
-        transform: fingerTF(gm)
-      }));
-      /* the shadow one finger drops on the next */
+      crease(kn, gm, 0.585, 0.55, 0.36, 2.2, 0.19);
+      crease(kn, gm, 0.26, 0.215, 0.4, 2.6, 0.15);
+      /* the shadow one finger drops on the next — darkest where the two
+         touch, gone by the middle of the finger */
       add(kn, E('rect', {
-        x: f(SX(1) > 0 ? gm.width * 0.30 : -gm.width * 0.64),
-        y: f(-gm.length * 1.02), width: f(gm.width * 0.34), height: f(gm.length * 1.1),
-        fill: occ, opacity: 0.13, transform: fingerTF(gm)
+        x: f(SX(1) > 0 ? gm.width * 0.3 : -gm.width * 0.64),
+        y: f(-gm.length * 1.02), width: f(gm.width * 0.34), height: f(gm.length * 1.02),
+        fill: CAST_FILL, opacity: 0.12, transform: fingerTF(gm)
       }));
     }
     /* tendons running from the knuckles back toward the wrist */
     for (i = 0; i < FINGERS.length - 1; i++) {
       gm = geom[FINGERS[i].key];
+      if (gm.spine) continue;
       add(kn, E('path', {
         d: pb().M(gm.x, gm.y + 10)
           .C(gm.x + (148 - gm.x) * 0.34, gm.y + 56, gm.x + (150 - gm.x) * 0.6, gm.y + 92,
@@ -2436,11 +2499,19 @@
         fill: 'none', stroke: occ, 'stroke-width': 4, opacity: 0.035, 'stroke-linecap': 'round'
       }));
     }
-    /* the crease where the thumb mound meets the palm */
+    /* the crease where the thumb mound meets the palm: tapered away at both
+       ends, with the lit edge of the mound running alongside it */
     add(kn, E('path', {
       d: 'M' + f(LX(192)) + ' 214 C' + f(LX(210)) + ' 240 ' + f(LX(216)) + ' 280 ' +
          f(LX(205)) + ' 316',
-      fill: 'none', stroke: occ, 'stroke-width': 3.4, opacity: 0.22
+      fill: 'none', stroke: taperY(occ, 0), 'stroke-width': 3, opacity: 0.15,
+      'stroke-linecap': 'round'
+    }));
+    add(kn, E('path', {
+      d: 'M' + f(LX(197)) + ' 217 C' + f(LX(215)) + ' 242 ' + f(LX(221)) + ' 280 ' +
+         f(LX(210)) + ' 313',
+      fill: 'none', stroke: taperY(hi, 0), 'stroke-width': 3.4, opacity: 0.16,
+      'stroke-linecap': 'round'
     }));
     /* the wrist reads as sitting behind the hand */
 
@@ -2471,10 +2542,7 @@
       /* the bed: a hair wider than the plate, pinker than the finger */
       add(kn, E('ellipse', {
         cx: 0, cy: f(-dist + nhMed * 0.34), rx: f(nw * 0.56), ry: f(nhMed * 0.48),
-        fill: radGrad(defs, [
-          [0, mix(skin, '#E48C90', 0.34), 0.75], [0.7, mix(skin, '#E48C90', 0.22), 0.4],
-          [1, skin, 0]
-        ]),
+        fill: BED_FILL,
         transform: fingerTF(gm)
       }));
       /* the fold of skin along each side wall */
