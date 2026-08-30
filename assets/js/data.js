@@ -241,7 +241,7 @@
         },
         {
           id: 'st-4',
-          title: { ar: 'الّبسيها في دقائق', en: 'Wear them in minutes' },
+          title: { ar: 'البسيها في دقائق', en: 'Wear them in minutes' },
           text: {
             ar: 'العلبة توصلك بكل شي: اللاصقات، المبرد، عود الجلد ومنديل التنظيف — مع كرت شرح خطوة بخطوة.',
             en: 'The box arrives with everything: adhesive tabs, a file, a cuticle stick, a prep wipe and a step-by-step card.'
@@ -253,16 +253,16 @@
           id: 'ts-1',
           name: { ar: 'رهف', en: 'Rahaf' },
           text: {
-            ar: 'أول مرة أطلب أظافر مركّبة وتطلع بمقاسي بالضبط. لبستها في عرس أختي وصمدت أسبوعين كاملين بدون ما يطيح ولا واحد.',
+            ar: 'أول مرة أطلب أظافر مركّبة وتطلع بمقاسي بالضبط. لبستها في عرس أختي وصمدت أسبوعين كاملين من غير ما يقع ولا واحد.',
             en: 'First time press-ons have actually fit me properly. I wore them at my sister’s wedding and not one nail lifted in two whole weeks.'
           },
           stars: 5
         },
         {
           id: 'ts-2',
-          name: { ar: 'جواهر', en: 'Jawaher' },
+          name: { ar: 'نور', en: 'Noor' },
           text: {
-            ar: 'الشي اللي عجبني إني شفت التصميم قدامي قبل ما أطلب. غيّرت اللون والنقشة كم مرة لين طلع زي ما في بالي.',
+            ar: 'الشي اللي عجبني إني شفت التصميم قدامي قبل ما أطلب. غيّرت اللون والنقشة كم مرة حتى صار تمامًا زي ما في بالي.',
             en: 'What sold me was seeing the design live before ordering. I changed the colour and pattern a few times until it matched exactly what was in my head.'
           },
           stars: 5
@@ -291,9 +291,9 @@
       { id: 'st-porcelain', name: { ar: 'فاتح جداً', en: 'Porcelain' }, hex: '#F6DFD0', shadow: '#E2C2B0' },
       { id: 'st-fair', name: { ar: 'فاتح', en: 'Fair' }, hex: '#EFCDB6', shadow: '#D8AF95' },
       { id: 'st-wheat', name: { ar: 'حنطي', en: 'Wheatish' }, hex: '#E3B48F', shadow: '#C7946F' },
-      { id: 'st-golden', name: { ar: 'قمحي', en: 'Golden Tan' }, hex: '#D19A6E', shadow: '#B27B51' },
+      { id: 'st-golden', name: { ar: 'برونزي', en: 'Golden Tan' }, hex: '#D19A6E', shadow: '#B27B51' },
       { id: 'st-honey', name: { ar: 'عسلي', en: 'Honey' }, hex: '#B87A4E', shadow: '#985E36' },
-      { id: 'st-deep', name: { ar: 'غامق', en: 'Deep Cocoa' }, hex: '#7E4B2D', shadow: '#5F341B' }
+      { id: 'st-deep', name: { ar: 'بني عميق', en: 'Deep Cocoa' }, hex: '#7E4B2D', shadow: '#5F341B' }
     ],
 
     /* =====================================================================
@@ -389,10 +389,10 @@
       { id: 'c-caramel', hex: '#C08A5E', group: 'nude', name: { ar: 'كراميل', en: 'Caramel' } },
       { id: 'c-mocha', hex: '#9A6B52', group: 'nude', name: { ar: 'موكا', en: 'Mocha' } },
       /* pink */
-      { id: 'c-ballet', hex: '#F7DDE2', group: 'pink', name: { ar: 'بالية', en: 'Ballet Slipper' } },
+      { id: 'c-ballet', hex: '#F7DDE2', group: 'pink', name: { ar: 'وردي باليه', en: 'Ballet Slipper' } },
       { id: 'c-blush', hex: '#F4CBD2', group: 'pink', name: { ar: 'بلاش', en: 'Blush' } },
       { id: 'c-peony', hex: '#E88AA5', group: 'pink', name: { ar: 'فاوانيا', en: 'Peony' } },
-      { id: 'c-bubblegum', hex: '#F58FB2', group: 'pink', name: { ar: 'علكة وردية', en: 'Bubblegum' } },
+      { id: 'c-bubblegum', hex: '#F58FB2', group: 'pink', name: { ar: 'وردي علكة', en: 'Bubblegum' } },
       { id: 'c-hot-pink', hex: '#EE5B94', group: 'pink', name: { ar: 'وردي صارخ', en: 'Hot Pink' } },
       { id: 'c-fuchsia', hex: '#D6417E', group: 'pink', name: { ar: 'فوشيا', en: 'Fuchsia' } },
       { id: 'c-dusty-rose', hex: '#C98A93', group: 'pink', name: { ar: 'وردي مغبّر', en: 'Dusty Rose' } },
@@ -485,12 +485,12 @@
       { id: 'ch-teardrop', art: 'st-pear', glyph: '', image: '', price: 5, group: 'stones', name: { ar: 'حجر دمعة', en: 'Teardrop Crystal' } },
       { id: 'ch-marquise', art: 'st-marquise', glyph: '', image: '', price: 5, group: 'stones', name: { ar: 'حجر ماركيز', en: 'Marquise Crystal' } },
       { id: 'ch-princess', art: 'st-princess', glyph: '', image: '', price: 5, group: 'stones', name: { ar: 'حجر مربّع', en: 'Square-cut Crystal' } },
-      { id: 'ch-baguette', art: 'st-baguette', glyph: '', image: '', price: 4, group: 'stones', name: { ar: 'حجر باغيت مستطيل', en: 'Baguette Crystal' } },
+      { id: 'ch-baguette', art: 'st-baguette', glyph: '', image: '', price: 4, group: 'stones', name: { ar: 'حجر مستطيل', en: 'Baguette Crystal' } },
       { id: 'ch-opal', art: 'st-opal', glyph: '', image: '', price: 7, group: 'stones', name: { ar: 'حجر أوبال', en: 'Opal Stone' } },
       { id: 'ch-pearl', art: 'st-pearl', glyph: '', image: '', price: 3, group: 'stones', name: { ar: 'حبة لؤلؤ', en: 'Pearl Bead' } },
       { id: 'ch-pearl-color', art: 'st-pearl-color', glyph: '', image: '', price: 4, group: 'stones', name: { ar: 'لؤلؤة ملوّنة', en: 'Coloured Pearl' } },
       { id: 'ch-caviar', art: 'st-caviar', glyph: '', image: '', price: 4, group: 'stones', name: { ar: 'خرز كافيار', en: 'Caviar Beads' } },
-      { id: 'ch-stud', art: 'mt-ball', glyph: '', image: '', price: 2, group: 'stones', name: { ar: 'حبة معدن', en: 'Metal Stud' } },
+      { id: 'ch-stud', art: 'mt-ball', glyph: '', image: '', price: 2, group: 'stones', name: { ar: 'حبة معدنية', en: 'Metal Stud' } },
       { id: 'ch-stud-triangle', art: 'mt-triangle', glyph: '', image: '', price: 2, group: 'stones', name: { ar: 'مثلث معدني', en: 'Triangle Stud' } },
       { id: 'ch-stud-square', art: 'mt-square', glyph: '', image: '', price: 2, group: 'stones', name: { ar: 'مربّع معدني', en: 'Square Stud' } },
 
@@ -539,7 +539,7 @@
       { id: 'ch-foil-gold', art: 'mt-foil-gold', glyph: '', image: '', price: 3, group: 'misc', name: { ar: 'رقاقة ذهب', en: 'Gold Foil Flake' } },
       { id: 'ch-foil-silver', art: 'mt-foil-silver', glyph: '', image: '', price: 3, group: 'misc', name: { ar: 'رقاقة فضة', en: 'Silver Foil Flake' } },
       { id: 'ch-flake-aurora', art: 'mt-flake-aurora', glyph: '', image: '', price: 3, group: 'misc', name: { ar: 'رقاقة أورورا', en: 'Aurora Flake' } },
-      { id: 'ch-glitter', art: 'fx-glitter', glyph: '', image: '', price: 4, group: 'misc', name: { ar: 'رقعة جليتر', en: 'Glitter Patch' } },
+      { id: 'ch-glitter', art: 'fx-glitter', glyph: '', image: '', price: 4, group: 'misc', name: { ar: 'رشّة جليتر', en: 'Glitter Patch' } },
       { id: 'ch-chrome-smear', art: 'fx-chrome-smear', glyph: '', image: '', price: 5, group: 'misc', name: { ar: 'مسحة كروم', en: 'Chrome Smear' } },
       { id: 'ch-holo-hex', art: 'fx-holo-hex', glyph: '', image: '', price: 4, group: 'misc', name: { ar: 'ترتر هولوغرافيك', en: 'Holo Sequins' } },
       { id: 'ch-goldleaf', art: 'fx-goldleaf', glyph: '', image: '', price: 4, group: 'misc', name: { ar: 'ورق ذهب', en: 'Gold Leaf' } }
@@ -609,7 +609,7 @@
         id: 'kit',
         name: { ar: 'عدّة القياس', en: 'Sizing kit' },
         text: {
-          ar: 'لو ما تبين تخاطرين بالقياس، نرسل لك عدّة قياس فيها كل المقاسات الاثني عشر تجرّبينها على أظافرك مثل الخواتم. تحتفظين بأرقامك للطلبات الجاية، وقيمة العدّة تُخصم من طلبك الأول.',
+          ar: 'إذا ما تريدين المجازفة بالقياس، نرسل لك عدّة قياس فيها كل المقاسات الاثني عشر تجرّبينها على أظافرك مثل الخواتم. تحتفظين بأرقامك للطلبات الجاية، وقيمة العدّة تُخصم من طلبك الأول.',
           en: 'If you would rather not guess, we post you a sizing kit with all twelve sizes to try on like rings. You keep your numbers for every future order, and the kit price is deducted from your first set.'
         },
         steps: [
@@ -969,13 +969,13 @@
         id: 'fq-apply-steps', cat: 'install',
         q: { ar: 'كيف أركّب الطقم خطوة بخطوة؟', en: 'How do I apply the set, step by step?' },
         a: {
-          ar: 'خذي وقتك، العملية كلها ما تاخذ أكثر من عشر دقائق:\n1) اغسلي يديك بالماء والصابون وجفّفيها زين، وتأكدي إن الظفر خالي من أي كريم أو زيت.\n2) ادفعي الجلد الزائد للخلف بلطف بعود الجلد الموجود في العلبة.\n3) ابردي سطح الظفر ببرد خفيف حتى تروح اللمعة — هذي الخطوة هي سر الثبات الطويل.\n4) امسحي كل ظفر بمنديل الكحول المرفق واتركيه يجف نص دقيقة.\n5) رتّبي الأظافر العشرة قدامك من الإبهام للخنصر وجرّبيها بدون لاصق قبل لا تبدئين.\n6) الصقي اللاصقة على ظهر الظفر المركّب واضغطيها زين، أو حطي نقطة جل لاصق بحجم حبة العدس.\n7) ركّبي الظفر من عند الجلد بزاوية 45 درجة ثم نزّليه للأمام، واضغطي 15–20 ثانية بقوة ثابتة.\n8) تجنّبي الماء أول ساعة حتى يتماسك اللاصق تمامًا.',
+          ar: 'خذي وقتك، العملية كلها ما تاخذ أكثر من عشر دقائق:\n1) اغسلي يديك بالماء والصابون وجفّفيها جيدًا، وتأكدي إن الظفر خالي من أي كريم أو زيت.\n2) ادفعي الجلد الزائد للخلف بلطف بعود الجلد الموجود في العلبة.\n3) ابردي سطح الظفر ببرد خفيف حتى تختفي اللمعة — هذي الخطوة هي سر الثبات الطويل.\n4) امسحي كل ظفر بمنديل الكحول المرفق واتركيه يجف نصف دقيقة.\n5) رتّبي الأظافر العشرة أمامك من الإبهام للخنصر وجرّبيها بدون لاصق قبل أن تبدئي.\n6) الصقي اللاصقة على ظهر الظفر المركّب واضغطي عليها جيدًا، أو ضعي نقطة جل لاصق بحجم حبة العدس.\n7) ركّبي الظفر من عند الجلد بزاوية 45 درجة ثم نزّليه للأمام، واضغطي 15–20 ثانية بقوة ثابتة.\n8) تجنّبي الماء أول ساعة حتى يتماسك اللاصق تمامًا.',
           en: 'Take your time — the whole thing takes under ten minutes:\n1) Wash and dry your hands well, and make sure the nail is free of any cream or oil.\n2) Gently push the cuticle back with the wooden stick in the box.\n3) Lightly buff the nail surface until the shine is gone — this single step is the secret to a long hold.\n4) Wipe each nail with the alcohol pad provided and let it dry for thirty seconds.\n5) Lay all ten nails out from thumb to pinky and dry-fit them before you glue anything.\n6) Press an adhesive tab onto the back of the press-on, or add a lentil-sized drop of nail glue.\n7) Place the nail at the cuticle at a 45 degree angle, roll it down flat, and press firmly for 15–20 seconds.\n8) Keep your hands out of water for the first hour so the adhesive can fully set.'
         }
       },
       {
         id: 'fq-box-contents', cat: 'install',
-        q: { ar: 'وش الموجود داخل العلبة؟', en: 'What comes inside the box?' },
+        q: { ar: 'ما الذي تجدينه داخل العلبة؟', en: 'What comes inside the box?' },
         a: {
           ar: 'كل طلب يوصلك فيه: الأظافر العشرة مرتبة على كرت بأرقام الأصابع، شريط لاصقات بمقاسات متنوعة، أنبوب جل لاصق، مبرد صغير، عود جلد خشبي، ومنديل كحول للتنظيف — بالإضافة لكرت شرح مصوّر بالعربي والإنجليزي.',
           en: 'Every order arrives with: your ten nails laid out on a labelled card, a strip of adhesive tabs in assorted sizes, a tube of nail glue, a mini file, a wooden cuticle stick and an alcohol prep pad — plus an illustrated instruction card in Arabic and English.'
@@ -985,7 +985,7 @@
         id: 'fq-tabs-or-glue', cat: 'install',
         q: { ar: 'أستخدم اللاصقات ولا الجل؟', en: 'Should I use the adhesive tabs or the glue?' },
         a: {
-          ar: 'اللاصقات مناسبة للاستخدام القصير من يوم إلى ثلاثة أيام، وميزتها إنك تشيلينها بسهولة وتعيدين استخدام الطقم مرة ثانية. الجل اللاصق يعطيك ثبات من أسبوع إلى ثلاثة أسابيع لكنه يحتاج نقع بالماء الدافئ عند الإزالة. لو أول مرة تجربين، ابدئي باللاصقات.',
+          ar: 'اللاصقات مناسبة للاستخدام القصير من يوم إلى ثلاثة أيام، وميزتها إنك تزيلينها بسهولة وتعيدين استخدام الطقم مرة ثانية. الجل اللاصق يعطيك ثبات من أسبوع إلى ثلاثة أسابيع لكنه يحتاج نقع بالماء الدافئ عند الإزالة. لو أول مرة تجربين، ابدئي باللاصقات.',
           en: 'Adhesive tabs are for shorter wear of one to three days; they peel off easily and let you reuse the set. Nail glue gives you one to three weeks of hold but needs a warm-water soak to remove. If this is your first time, start with the tabs.'
         }
       },
@@ -999,9 +999,9 @@
       },
       {
         id: 'fq-fix-crooked', cat: 'install',
-        q: { ar: 'ركّبت ظفر مايل أو ما التصق زين — وش أسوي؟', en: 'A nail went on crooked or is not sticking — what now?' },
+        q: { ar: 'ركّبت ظفرًا مائلًا أو ما التصق جيدًا — ماذا أفعل؟', en: 'A nail went on crooked or is not sticking — what now?' },
         a: {
-          ar: 'لا تشدّينه أبدًا. لو لسه اللاصق طري، ارفعيه بلطف بعود الجلد من الطرف وأعيدي تركيبه مباشرة. لو جف، انقعي الإصبع في ماء دافئ مع قطرات صابون لمدة خمس دقائق وبيرتخي لحاله. نظّفي بقايا اللاصق عن الظفر المركّب بالكحول قبل ما تعيدين الاستخدام.',
+          ar: 'لا تشدّينه أبدًا. لو ما زال اللاصق طريًا، ارفعيه بلطف بعود الجلد من الطرف وأعيدي تركيبه مباشرة. لو جف، انقعي الإصبع في ماء دافئ مع قطرات صابون لمدة خمس دقائق ويرتخي لحاله. نظّفي بقايا اللاصق عن الظفر المركّب بالكحول قبل ما تعيدين الاستخدام.',
           en: 'Never pull it off. If the adhesive is still soft, lift the edge gently with the cuticle stick and reposition straight away. If it has set, soak that finger in warm soapy water for five minutes and it will release on its own. Clean any adhesive residue off the press-on with alcohol before reusing it.'
         }
       },
@@ -1016,9 +1016,9 @@
       /* ---------------- care & removal ---------------- */
       {
         id: 'fq-care-daily', cat: 'care',
-        q: { ar: 'كيف أعتني فيها عشان تدوم أطول؟', en: 'How do I care for them so they last?' },
+        q: { ar: 'كيف أعتني فيها حتى تدوم أطول؟', en: 'How do I care for them so they last?' },
         a: {
-          ar: 'استخدمي بطن أصابعك بدل أطرافها عند فتح العلب أو الكتابة، وحطي قفازات عند التنظيف بالمواد الكيميائية، ومرّري زيت الجلد حول الظفر يوميًا. وإذا حسّيتي بحافة بدت ترتفع، ثبّتيها بنقطة جل صغيرة فورًا قبل ما تدخل الماء تحتها.',
+          ar: 'استخدمي بطن أصابعك بدل أطرافها عند فتح العلب أو الكتابة، والبسي قفازات عند التنظيف بالمواد الكيميائية، ومرّري زيت الجلد حول الظفر يوميًا. وإذا حسّيتي بحافة بدت ترتفع، ثبّتيها بنقطة جل صغيرة فورًا قبل ما تدخل الماء تحتها.',
           en: 'Use the pads of your fingers rather than the tips when opening things or typing, wear gloves for chemical cleaning, and massage cuticle oil around the nail daily. If you feel an edge starting to lift, seal it with a tiny dot of glue right away before water gets underneath.'
         }
       },
@@ -1026,7 +1026,7 @@
         id: 'fq-water', cat: 'care',
         q: { ar: 'أقدر أغسل الصحون أو أسبح وأنا لابستها؟', en: 'Can I wash dishes or swim while wearing them?' },
         a: {
-          ar: 'نعم، بس بحذر. الماء العادي ما يضر بعد أول ساعة، لكن الماء الحار جدًا والنقع الطويل يرخّي اللاصق. للغسيل والتنظيف الأفضل تلبسين قفازات، وبعد السباحة جفّفي يديك زين وتفقّدي الحواف.',
+          ar: 'نعم، بس بحذر. الماء العادي ما يضر بعد أول ساعة، لكن الماء الحار جدًا والنقع الطويل يرخّي اللاصق. للغسيل والتنظيف الأفضل تلبسين قفازات، وبعد السباحة جفّفي يديك جيدًا وتفقّدي الحواف.',
           en: 'Yes, but carefully. Normal water is fine after the first hour, though very hot water and long soaks will soften the adhesive. Wear gloves for dishes and cleaning, and after swimming dry your hands well and check the edges.'
         }
       },
@@ -1058,7 +1058,7 @@
         id: 'fq-storage', cat: 'care',
         q: { ar: 'كيف أخزّنها بين الاستخدامات؟', en: 'How should I store them between wears?' },
         a: {
-          ar: 'رجّعيها لنفس العلبة على الكرت المرقّم عشان ما تختلط المقاسات، وخليها بعيدة عن الشمس المباشرة والحرارة العالية مثل داخل السيارة، لأن الحرارة تقدر تلوي الظفر وتغيّر انحناءه.',
+          ar: 'رجّعيها لنفس العلبة على الكرت المرقّم حتى لا تختلط المقاسات، واحفظيها بعيدًا عن الشمس المباشرة والحرارة العالية مثل داخل السيارة، لأن الحرارة تقدر تلوي الظفر وتغيّر انحناءه.',
           en: 'Put them back on the numbered card in their box so the sizes do not get mixed up, and keep them out of direct sun and high heat such as a parked car — heat can warp the curve of the nail.'
         }
       },
@@ -1066,13 +1066,13 @@
         id: 'fq-file-shorter', cat: 'care',
         q: { ar: 'أقدر أقص الطول أو أغيّر الشكل؟', en: 'Can I file them shorter or reshape them?' },
         a: {
-          ar: 'تقدرين تبردين الطول وتخفّفينه بالمبرد المرفق، والأفضل تسوّينها قبل التركيب وبحركة باتجاه واحد. تغيير الشكل بالكامل (مثلاً من كوفن إلى لوز) ممكن لكنه يقصّر الظفر كثير، فلو ما أنتِ متأكدة من الشكل اطلبيه أقصر من البداية.',
+          ar: 'تقدرين تبردين الطول وتخفّفينه بالمبرد المرفق، والأفضل يكون ذلك قبل التركيب وبحركة باتجاه واحد. تغيير الشكل بالكامل (مثلاً من كوفن إلى لوز) ممكن لكنه يقصّر الظفر كثيرًا، فإذا ما كنتِ متأكدة من الشكل اطلبيه أقصر من البداية.',
           en: 'You can file the length down with the file provided — do it before applying and always in one direction. Changing the shape completely, say coffin to almond, is possible but costs a lot of length, so if you are unsure it is better to order shorter from the start.'
         }
       },
       {
         id: 'fq-lost-one', cat: 'care',
-        q: { ar: 'طاح ظفر واحد بس — أقدر أستبدله؟', en: 'I lost a single nail — can I replace it?' },
+        q: { ar: 'وقع ظفر واحد فقط — أقدر أستبدله؟', en: 'I lost a single nail — can I replace it?' },
         a: {
           ar: 'نعم. أرسلي لنا رقم طلبك واسم الإصبع والمقاس على الواتساب ونجهّز لك ظفر بديل بنفس التصميم. الظفر الواحد البديل بـ 25 ر.س شامل الشحن العادي.',
           en: 'Yes. Send us your order number, the finger and the size on WhatsApp and we will make a replacement in the same design. A single replacement nail is 25 SAR including standard shipping.'
@@ -1089,7 +1089,7 @@
       },
       {
         id: 'fq-shipping-areas', cat: 'shipping',
-        q: { ar: 'وين توصلون وكم رسوم الشحن؟', en: 'Where do you deliver and how much is shipping?' },
+        q: { ar: 'أين توصلون وكم رسوم الشحن؟', en: 'Where do you deliver and how much is shipping?' },
         a: {
           ar: 'نوصّل لجميع مدن ومحافظات المملكة عن طريق شركات الشحن المحلية برسوم ثابتة 20 ر.س، والشحن مجاني للطلبات فوق 300 ر.س. كل الطلبات تُشحن للباب — ما عندنا محل ولا استلام باليد — وداخل الرياض غالبًا يوصلك خلال يوم إلى يومين.',
           en: 'We deliver to every city in the Kingdom through local couriers for a flat 20 SAR, free on orders over 300 SAR. Everything ships to your door — there is no shop and no collection in person — and inside Riyadh it usually arrives within a day or two.'
@@ -1106,7 +1106,7 @@
       /* ---------------- payment ---------------- */
       {
         id: 'fq-pay-methods', cat: 'payment',
-        q: { ar: 'وش طرق الدفع المتاحة؟', en: 'What payment methods do you accept?' },
+        q: { ar: 'ما طرق الدفع المتاحة؟', en: 'What payment methods do you accept?' },
         a: {
           ar: 'نستقبل التحويل البنكي، ومدى والبطاقات الائتمانية عبر رابط دفع آمن، و Apple Pay، و STC Pay، بالإضافة للدفع عند الاستلام داخل الرياض برسوم إضافية 15 ر.س.',
           en: 'We accept bank transfer, Mada and credit cards through a secure payment link, Apple Pay, STC Pay, and cash on delivery inside Riyadh for an extra 15 SAR.'
@@ -1130,10 +1130,34 @@
       },
       /* ---------------- general ---------------- */
       {
+        id: 'fq-what-you-see', cat: 'general',
+        q: { ar: 'هل الطقم اللي يوصلني يطلع مثل الصورة اللي أشوفها في الموقع؟', en: 'Will the set I receive look like the picture on the site?' },
+        a: {
+          ar: 'هذا أهم شي عندنا. الصورة اللي تشوفينها في الاستوديو ما هي صورة جاهزة لطقم ثاني، هي رسم مباشر لاختياراتك أنتِ: نفس الشكل، نفس الطول، نفس اللون واللمسة والنقشة، ومكان كل زخرفة بالضبط. ننفّذ الطقم على هذا الأساس، وقبل ما نشحنه نرسل لك صورة الطقم نفسه على الواتساب تشوفينه وتوافقين عليه. وإذا وصلك شي مختلف عن اللي اخترتيه نعيد تنفيذه لك مجانًا. الفرق الوحيد المتوقع هو اختلاف بسيط في درجة اللون بين شاشة وأخرى.',
+          en: 'This matters to us more than anything else. What you see in the studio is not a stock photo of somebody else’s set — it is a live drawing of your own choices: the same shape, the same length, the same colour, finish and pattern, and the exact position of every charm. We build the set from that, and before it ships we send you a photograph of the real thing on WhatsApp for your approval. If what arrives is not what you chose, we remake it free of charge. The only difference to expect is a small shift in shade from one screen to another.'
+        }
+      },
+      {
+        id: 'fq-where-to-start', cat: 'general',
+        q: { ar: 'ما أعرف أي تصميم يناسبني — من أين أبدأ؟', en: 'I have no idea what suits me — where do I start?' },
+        a: {
+          ar: 'ابدئي باختبار الستايل في الصفحة الرئيسية: ست أسئلة كلها صور، ولا سؤال يحتاج كتابة، وفي آخره يطلع لك طقم مبني على إجاباتك — تطلبينه على طول أو تفتحينه في الاستوديو وتغيّرين فيه براحتك. وإذا حبيتي تختصرين أكثر، افتحي «تصاميم جاهزة» واختاري واحدًا يعجبك ثم اضغطي «خصّصي هذا التصميم» وعدّلي عليه.',
+          en: 'Start with the style quiz on the home page: six questions, all pictures, nothing to type — and at the end it builds a set from your answers that you can order as it is or open in the studio and change however you like. If you want an even shorter route, open Ready Designs, pick one you like and tap “Customise this design”.'
+        }
+      },
+      {
+        id: 'fq-save-share', cat: 'general',
+        q: { ar: 'أقدر أحفظ تصميمي وأرجع له بعدين أو أرسله لصديقتي؟', en: 'Can I save my design and come back to it, or send it to a friend?' },
+        a: {
+          ar: 'نعم. في خطوة «لمسات أخيرة» فيه زر «احفظ تصميمي» يخزّن الطقم على جهازك ويرجع لك في أي وقت تفتحين فيه الموقع، وفيه زر مشاركة ينسخ لك رابطًا يحمل التصميم كامل — ترسلينه لصديقتك ويفتح عندها بنفس الألوان والزخارف. وإذا سكّرتي الصفحة في نص التصميم، الموقع يحفظ لك مسودة تلقائيًا ويسألك تكملين عليها لما ترجعين.',
+          en: 'Yes. On the “Finishing touches” step there is a “Save my design” button that keeps the set on your device and brings it back whenever you open the site, and a share button that copies a link carrying the whole design — send it to a friend and it opens on her phone with the same colours and charms. And if you close the page halfway through, the site keeps a draft and offers to pick up where you left off.'
+        }
+      },
+      {
         id: 'fq-know-size', cat: 'general',
         q: { ar: 'كيف أعرف مقاس أظافري؟', en: 'How do I find my nail size?' },
         a: {
-          ar: 'عندك ثلاث طرق داخل الاستوديو: مقاس جاهز S أو M أو L لو تبين تختصرين، أو قياس بالمسطرة حيث تقيسين عرض كل ظفر بالمليمتر عند أوسع نقطة وندخل الرقم لك، أو عدّة القياس اللي نرسلها لك بالبريد وتجرّبينها مثل الخواتم. وإذا طلع قياسك بين رقمين، اختاري الأوسع دائمًا.',
+          ar: 'عندك ثلاث طرق داخل الاستوديو: مقاس جاهز S أو M أو L لو تريدين الاختصار، أو قياس بالمسطرة حيث تقيسين عرض كل ظفر بالمليمتر عند أوسع نقطة وندخل الرقم لك، أو عدّة القياس اللي نرسلها لك بالبريد وتجرّبينها مثل الخواتم. وإذا طلع قياسك بين رقمين، اختاري الأوسع دائمًا.',
           en: 'There are three routes inside the studio: a ready preset (S, M or L) if you want it quick; the ruler method, where you measure each nail in millimetres at its widest point; or a sizing kit we post out that you try on like rings. And whenever you land between two numbers, always take the wider one.'
         }
       },
@@ -1149,7 +1173,7 @@
         id: 'fq-change-cancel', cat: 'general',
         q: { ar: 'أقدر أعدّل أو ألغي طلبي؟', en: 'Can I change or cancel my order?' },
         a: {
-          ar: 'تقدرين تعدّلين أو تلغين مجانًا خلال 12 ساعة من تأكيد الطلب، لأن التجهيز يبدأ بعدها مباشرة. بعد بدء التنفيذ صعب نلغي لأن الطقم مفصّل بمقاسك أنتِ وما ينباع لغيرك، لكن راسلينا ونشوف وش نقدر نسوي.',
+          ar: 'تقدرين تعدّلين أو تلغين مجانًا خلال 12 ساعة من تأكيد الطلب، لأن التجهيز يبدأ بعدها مباشرة. بعد بدء التنفيذ صعب نلغي لأن الطقم مفصّل بمقاسك أنتِ وما ينباع لغيرك، لكن راسلينا ونشوف كيف نقدر نساعدك.',
           en: 'You can change or cancel free of charge within 12 hours of confirming, since crafting starts right after that. Once we have begun we usually cannot cancel, because the set is cut to your own measurements and cannot be sold to anyone else — but message us and we will see what we can do.'
         }
       },
@@ -1157,7 +1181,7 @@
         id: 'fq-from-photo', cat: 'general',
         q: { ar: 'أقدر أطلب تصميم من صورة عندي؟', en: 'Can I order a design from a photo I have?' },
         a: {
-          ar: 'أكيد. أرسلي الصورة على الواتساب مع المقاس والطول اللي تبينه، ونرد عليك بالسعر ومدة التنفيذ خلال ساعات. بعض التصاميم المرسومة يدويًا تحتاج وقت أطول قليلاً، وبنوضّح لك ذلك قبل التأكيد.',
+          ar: 'أكيد. أرسلي الصورة على الواتساب مع المقاس والطول اللي تريدينه، ونرد عليك بالسعر ومدة التنفيذ خلال ساعات. بعض التصاميم المرسومة يدويًا تحتاج وقتًا أطول قليلاً، ونوضّح لك ذلك قبل التأكيد.',
           en: 'Of course. Send the photo on WhatsApp with the length and sizes you want, and we will come back with a price and a timeline within hours. Some hand-painted designs need a little longer, and we will tell you before you confirm.'
         }
       },

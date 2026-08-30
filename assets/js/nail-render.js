@@ -1015,27 +1015,42 @@
          x.w * 1.28, depth * (1 - curve)).d();
   }
 
+  /* A French tip is a SECOND COAT lying on top of the first, and everything
+     that makes one look painted rather than printed is about that edge:
+       · the coat is THICKEST at the smile line and thins toward the free
+         edge, where light passes through it — so it is brightest and most
+         opaque along the smile, not palest there. Getting this backwards is
+         what makes a rendered French read as a grey wedge.
+       · its edge stands a hair proud of the base, so it catches a fine lip
+         of light along the top of the line
+       · and it drops a hairline of shadow onto the colour just below it.
+     Those three, at a fraction of a millimetre each, are the whole trick. */
   PATTERNS.french = function (g, x) {
     var d = x.h * 0.185 * x.S;
     var line = smile(x, d, 0.42);
-    /* the tip itself, faintly deeper where it meets the smile line */
     add(g, E('path', {
       d: line + ' L' + f(x.w * 1.28) + ' ' + f(-x.h * 0.3) +
          ' L' + f(-x.w * 0.28) + ' ' + f(-x.h * 0.3) + ' Z',
+      /* the path's own box runs from well above the free edge down to the
+         belly of the smile, so the free edge sits near the middle of it */
       fill: vGrad(x.defs, [
-        [0, cTip(x.c1)], [0.45, x.c1], [1, mix(x.c1, cWall(x.c1), 0.55)]
-      ]), opacity: 0.94
+        [0.42, mix(x.c1, cTip(x.c1), 0.75)],
+        [0.60, mix(x.c1, cTip(x.c1), 0.34)],
+        [0.82, x.c1],
+        [1.00, mix(x.c1, cLit(x.c1), 0.45)]
+      ]), opacity: 0.96
     }));
-    /* a real French tip is a SECOND layer: it has a lip that catches light on
-       top of the smile line and drops a hairline of shadow below it */
+    /* the shadow the lip drops onto the colour below it */
     add(g, E('path', {
-      d: line, fill: 'none', stroke: lighten(x.c1, 0.55),
-      'stroke-width': f(x.u * 0.9), opacity: 0.75
+      d: line, fill: 'none', stroke: darken(x.base, 0.34),
+      'stroke-width': f(Math.max(x.u * 1.4, 0.7)), opacity: 0.26,
+      transform: 'translate(0 ' + f(x.u * 1.1) + ')'
     }));
+    /* and the lip itself, sitting just inside the tip */
     add(g, E('path', {
-      d: line, fill: 'none', stroke: darken(x.base, 0.28),
-      'stroke-width': f(x.u * 1.5), opacity: 0.20,
-      transform: 'translate(0 ' + f(x.u * 1.3) + ')'
+      d: line, fill: 'none', stroke: cTip(x.c1),
+      'stroke-width': f(Math.max(x.u * 0.8, 0.5)), opacity: 0.85,
+      transform: 'translate(0 ' + f(-x.u * 0.45) + ')'
     }));
   };
 
@@ -1045,14 +1060,27 @@
     add(g, E('path', {
       d: line + ' L' + f(x.w * 1.28) + ' ' + f(-x.h * 0.3) +
          ' L' + f(-x.w * 0.28) + ' ' + f(-x.h * 0.3) + ' Z',
-      fill: vGrad(x.defs, [[0, cTip(x.c1)], [0.5, x.c1], [1, mix(x.c1, cWall(x.c1), 0.55)]])
+      fill: vGrad(x.defs, [
+        [0.34, mix(x.c1, cTip(x.c1), 0.70)],
+        [0.56, mix(x.c1, cTip(x.c1), 0.30)],
+        [0.84, x.c1],
+        [1.00, mix(x.c1, cLit(x.c1), 0.40)]
+      ])
+    }));
+    /* the deep French is drawn with a contrast liner along the smile */
+    add(g, E('path', {
+      d: line, fill: 'none', stroke: x.c2,
+      'stroke-width': f(Math.max(x.u * 1.5, 0.7)), opacity: 0.7
     }));
     add(g, E('path', {
-      d: line, fill: 'none', stroke: x.c2, 'stroke-width': f(x.u * 1.6), opacity: 0.7
+      d: line, fill: 'none', stroke: darken(x.base, 0.32),
+      'stroke-width': f(Math.max(x.u * 1.3, 0.6)), opacity: 0.22,
+      transform: 'translate(0 ' + f(x.u * 1.5) + ')'
     }));
     add(g, E('path', {
-      d: line, fill: 'none', stroke: lighten(x.c1, 0.5), 'stroke-width': f(x.u * 0.7),
-      opacity: 0.6, transform: 'translate(0 ' + f(-x.u * 1.1) + ')'
+      d: line, fill: 'none', stroke: cTip(x.c1),
+      'stroke-width': f(Math.max(x.u * 0.7, 0.45)), opacity: 0.7,
+      transform: 'translate(0 ' + f(-x.u * 1.2) + ')'
     }));
   };
 
@@ -1185,58 +1213,119 @@
      colour, then veins that are thick where they start and thin to nothing.
      The organic wobble comes from one shared turbulence filter, not from the
      path data — hand drawn bezier veins always read as drawn. */
+  /* ------------------------------------------------------------- marble */
+  /*  A vein in stone is not a line. It is a SEAM, so it has a width that     */
+  /*  swells and dies, it branches, and it fades out where the mineral ran    */
+  /*  out — it never simply stops. A stroked path cannot do any of that: a    */
+  /*  stroke has one width and two ends, and a dash to hide the ends only     */
+  /*  trades a drawn line for a dotted one. So every vein here is a FILLED    */
+  /*  ribbon whose half-width is a curve that starts at nothing and returns   */
+  /*  to nothing, which is the whole difference between marble and a squiggle */
+  /*  drawn on a nail.                                                        */
+  /* ---------------------------------------------------------------------- */
+
+  /* the spine of one seam: a drifting line down the plate, sampled */
+  function veinSpine(x, x0, y0, y1, drift, n) {
+    var pts = [], i, t, dx = 0, vx = 0;
+    for (i = 0; i <= n; i++) {
+      t = i / n;
+      /* a random walk with momentum reads as geology; a fresh random offset
+         at every step reads as noise */
+      vx = vx * 0.68 + x.rnd.r(-1, 1) * drift;
+      dx += vx;
+      pts.push([x0 + dx + Math.sin(t * 4.3 + x0) * drift * 1.4, y0 + (y1 - y0) * t]);
+    }
+    return pts;
+  }
+
+  /* that spine, given a body: half-width rises from nothing, wanders, and
+     returns to nothing, so both ends come to a point on their own */
+  function veinRibbon(x, pts, wMax, bias) {
+    var n = pts.length - 1, i, t, hw, L = [], R = [], a;
+    for (i = 0; i <= n; i++) {
+      t = i / n;
+      /* sin gives a clean taper at both ends; the exponent slides the belly
+         of the seam up or down its length */
+      hw = wMax * Math.pow(Math.sin(Math.PI * Math.pow(t, bias)), 0.72) *
+        (0.55 + 0.45 * (0.5 + 0.5 * Math.sin(t * 11 + pts[0][0])));
+      /* offset perpendicular to the local direction */
+      a = Math.atan2(pts[Math.min(n, i + 1)][1] - pts[Math.max(0, i - 1)][1],
+                     pts[Math.min(n, i + 1)][0] - pts[Math.max(0, i - 1)][0]);
+      L.push([pts[i][0] + Math.sin(a) * hw, pts[i][1] - Math.cos(a) * hw]);
+      R.push([pts[i][0] - Math.sin(a) * hw, pts[i][1] + Math.cos(a) * hw]);
+    }
+    for (i = n; i >= 0; i--) L.push(R[i]);
+    /* the same corner-rounding the hand silhouette uses: a ribbon assembled
+       from straight segments has facets, and a faceted vein is a drawing */
+    return smoothClosed(L);
+  }
+
   PATTERNS.marble = function (g, x) {
     var warp = marbleF(x.defs, x.u * 2.2 * x.S, 0.026 / x.S, (hash32(String(x.key)) % 90) + 1);
-    var i, j, p, px, py, dx, wob, cloud;
+    var q = clamp(num(x.q, 1), 0.25, 1);
+    var i, j, cloud, wob, pts, sub, k, wMax, tone, halo, y0;
+    var nV = Math.max(2, Math.round(3 * q));
 
+    /* 1. the stone. Soft overlapping fields of the secondary colour, warped
+          by one shared turbulence so no two nails cloud the same way. */
     cloud = add(g, E('g', { filter: warp }));
-    add(cloud, rect(-2, -2, x.w + 4, x.h + 4, { fill: x.c2, opacity: 0.14 }));
-    for (i = 0; i < 3; i++) {
+    add(cloud, rect(-2, -2, x.w + 4, x.h + 4, { fill: x.c2, opacity: 0.16 }));
+    for (i = 0; i < 4; i++) {
       add(cloud, E('ellipse', {
-        cx: f(x.rnd() * x.w), cy: f(x.rnd() * x.h),
-        rx: f(x.w * x.rnd.r(0.34, 0.62) * x.S),
-        ry: f(x.h * x.rnd.r(0.16, 0.30) * x.S),
+        cx: f(x.rnd.r(0.05, 0.95) * x.w), cy: f(x.rnd.r(0.05, 0.95) * x.h),
+        rx: f(x.w * x.rnd.r(0.30, 0.58) * x.S),
+        ry: f(x.h * x.rnd.r(0.14, 0.28) * x.S),
         fill: radGrad(x.defs, [
-          [0, i === 1 ? lighten(x.c2, 0.4) : x.c2, 0.7],
-          [0.55, i === 1 ? lighten(x.c2, 0.4) : x.c2, 0.34],
+          [0, i === 1 ? lighten(x.c2, 0.42) : mix(x.c2, x.c1, 0.22), 0.52],
+          [0.52, i === 1 ? lighten(x.c2, 0.42) : x.c2, 0.26],
           [1, x.c2, 0]
-        ])
+        ]),
+        transform: 'rotate(' + f(x.rnd.r(-40, 40)) + ' ' +
+          f(x.rnd() * x.w) + ' ' + f(x.rnd() * x.h) + ')'
       }));
     }
 
+    /* 2. the seams. Three passes per vein: a wide soft bleed where the
+          mineral stained the stone around it, the seam itself, and a fine
+          bright thread of light along its crown. All three are ribbons, so
+          all three come to a point. */
     wob = add(g, E('g', { filter: warp }));
-    for (i = 0; i < 4; i++) {
-      p = pb();
-      px = x.rnd.r(-0.15, 1.15) * x.w;
-      py = -x.h * 0.12;
-      p.M(px, py);
-      for (j = 0; j < 4; j++) {
-        dx = x.rnd.r(-0.34, 0.34) * x.w;
-        p.Q(px + dx, py + x.h * 0.17, px + dx * 0.55, py + x.h * 0.33);
-        px += dx * 0.55;
-        py += x.h * 0.33;
+    halo = mix(x.c1, x.base, 0.42);
+    for (i = 0; i < nV; i++) {
+      wMax = x.u * x.rnd.r(1.6, 3.2) * x.S;
+      /* A seam that runs the whole plate is a hair lying on the nail: the
+         taper has nowhere to happen. Every one of these starts and finishes
+         INSIDE the stone, over between half and all of its length. */
+      y0 = x.rnd.r(-0.14, 0.34) * x.h;
+      pts = veinSpine(x, x.rnd.r(0.08, 0.92) * x.w, y0,
+                      y0 + x.rnd.r(0.52, 1.10) * x.h, x.w * 0.10 * x.S, 12);
+      tone = i % 2 ? mix(x.c1, x.c2, 0.34) : x.c1;
+      add(wob, E('path', {
+        d: veinRibbon(x, pts, wMax * 3.6, x.rnd.r(0.75, 1.35)),
+        fill: halo, opacity: 0.19
+      }));
+      add(wob, E('path', {
+        d: veinRibbon(x, pts, wMax, x.rnd.r(0.8, 1.3)), fill: tone, opacity: 0.36
+      }));
+      add(wob, E('path', {
+        d: veinRibbon(x, pts, wMax * 0.32, x.rnd.r(0.7, 1.4)),
+        fill: lighten(tone, 0.46), opacity: 0.42
+      }));
+      /* one branch, leaving the seam part way down and dying out quickly —
+         a seam that never forks is a drawn line however well it tapers */
+      if (i < 2) {
+        k = 2 + (i % 4);
+        sub = [];
+        for (j = 0; j < 6; j++) {
+          sub.push([pts[Math.min(pts.length - 1, k)][0] +
+                    (j * j) * x.w * 0.020 * (i % 2 ? -1 : 1) * x.S,
+                    pts[Math.min(pts.length - 1, k)][1] +
+                    j * x.h * 0.048 * x.S * x.rnd.r(0.8, 1.2)]);
+        }
+        add(wob, E('path', {
+          d: veinRibbon(x, sub, wMax * 0.58, 1), fill: tone, opacity: 0.34
+        }));
       }
-      /* A vein is thick where it starts and thins to nothing. Three passes,
-         each shorter and finer than the last, with a dash that runs out —
-         that is what stops it looking like a drawn line. */
-      add(wob, E('path', {
-        d: p.d(), fill: 'none', stroke: x.c1,
-        'stroke-width': f(x.u * (3.2 - i * 0.55) * x.S),
-        'stroke-linecap': 'round', opacity: f(0.20 - i * 0.03),
-        'stroke-dasharray': f(x.h * (1.1 - i * 0.2)) + ' ' + f(x.h * 2)
-      }));
-      add(wob, E('path', {
-        d: p.d(), fill: 'none', stroke: x.c1,
-        'stroke-width': f(x.u * (1.5 - i * 0.26) * x.S),
-        'stroke-linecap': 'round', opacity: f(0.44 - i * 0.06),
-        'stroke-dasharray': f(x.h * (0.85 - i * 0.16)) + ' ' + f(x.h * 2)
-      }));
-      add(wob, E('path', {
-        d: p.d(), fill: 'none', stroke: lighten(x.c1, 0.3),
-        'stroke-width': f(x.u * (0.6 - i * 0.09) * x.S),
-        'stroke-linecap': 'round', opacity: f(0.5 - i * 0.08),
-        'stroke-dasharray': f(x.h * (0.5 - i * 0.09)) + ' ' + f(x.h * 2)
-      }));
     }
   };
 
@@ -1271,30 +1360,44 @@
        reach black and the lights white without going muddy or candied */
     var m = mix(col(c, '#C9CDD6'), tint ? col(tint, c) : c, 0.30);
     var g0 = mix(m, '#8E8792', 0.20);
-    var sky = mix(g0, '#FFFFFF', 0.86);
-    var lit = mix(g0, '#FFFFFF', 0.52);
-    var flr = mix(darken(g0, 0.72), '#0A0A0D', 0.42);
+    var sky = mix(g0, '#FFFFFF', 0.90);
+    var lit = mix(g0, '#FFFFFF', 0.55);
+    var flr = mix(darken(g0, 0.74), '#09090C', 0.46);
     var st = [];
-    /* beyond the fingertip: the dark of the room, with the metal's tint in it */
-    st.push([0.00, mix(flr, g0, 0.30)]);
-    st.push([0.10, darken(g0, 0.44)]);
-    /* THE HORIZON */
-    edgeAt(st, 0.215, darken(g0, 0.40), sky);
-    st.push([0.30, mix(sky, lit, 0.45)]);
-    st.push([0.40, lit]);
-    /* the far wall: a second, weaker step down */
-    edgeAt(st, 0.48, mix(lit, g0, 0.6), darken(g0, 0.30));
-    st.push([0.58, darken(g0, 0.52)]);
-    st.push([0.66, darken(g0, 0.58)]);
-    /* a window in that wall */
-    edgeAt(st, 0.705, darken(g0, 0.56), mix(sky, lit, 0.2));
-    st.push([0.80, mix(g0, '#FFFFFF', 0.42)]);
-    st.push([0.88, g0]);
-    /* and at the cuticle the mirror is looking back at the hand */
-    st.push([1.00, flr]);
-    /* Off vertical by a few degrees: a hand is never square to the room, and
-       a dead level band is the other big tell that this is a gradient. */
-    return grad(defs, 'linearGradient', st, { x1: 0.40, y1: 0, x2: 0.60, y2: 1 });
+    /* the room, read from the cuticle outward. The bands are DELIBERATELY
+       uneven — a room is not a flag — and each one carries a ramp of its own,
+       because a reflected surface is lit across its own width too. */
+    /* the mirror is looking back down at the hand that wears it, so the very
+       bottom of the reflection is warm and dark, not neutral */
+    st.push([0.00, mix(darken(g0, 0.44), '#7A5044', 0.28)]);
+    st.push([0.11, mix(darken(g0, 0.30), '#7A5044', 0.16)]);
+    /* a window low in the wall behind the hand */
+    edgeAt(st, 0.205, darken(g0, 0.34), mix(sky, lit, 0.30));
+    st.push([0.265, mix(g0, '#FFFFFF', 0.42)]);
+    st.push([0.325, mix(g0, '#FFFFFF', 0.10)]);
+    st.push([0.385, darken(g0, 0.32)]);
+    st.push([0.45, darken(g0, 0.56)]);
+    /* THE HORIZON. One hard edge between a dark band and a near white one is
+       worth more than every soft stop in this list put together. */
+    edgeAt(st, 0.505, darken(g0, 0.60), sky);
+    st.push([0.575, mix(sky, lit, 0.35)]);
+    st.push([0.655, lit]);
+    /* the far wall meeting the ceiling: a second step, weaker */
+    edgeAt(st, 0.715, mix(lit, g0, 0.55), darken(g0, 0.36));
+    st.push([0.79, darken(g0, 0.54)]);
+    st.push([0.855, darken(g0, 0.44)]);
+    st.push([0.90, mix(g0, '#FFFFFF', 0.30)]);
+    /* and beyond the fingertip, the dark of the room again */
+    st.push([1.00, mix(flr, g0, 0.18)]);
+    /* A nail is a section of a CYLINDER, so it does not reflect the room in
+       straight bands: every horizontal in the room comes back as a shallow
+       arc. A radial ramp centred well below the cuticle and stretched wide
+       gives exactly that arc, and it is the single change that stops chrome
+       reading as a striped decal. */
+    return radGrad(defs, st, {
+      cx: 0.5, cy: 1.15, r: 1.2,
+      gradientTransform: 'translate(0.5 1.15) scale(1.85 1) translate(-0.5 -1.15)'
+    });
   }
 
   /* The curvature. A cylinder compresses everything it reflects toward its
@@ -1305,22 +1408,26 @@
     var peak = clamp(0.46 - num(lx, -0.4) * 0.16, 0.28, 0.68);
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: hGrad(x.defs, [
-        [0.00, '#08070A', 0.72],
-        [0.055, '#08070A', 0.40],
-        [0.11, '#FFFFFF', 0.30],
-        [0.16, '#08070A', 0.16],
-        [f(Math.max(0.20, peak - 0.16)), '#08070A', 0.02],
-        [f(peak), '#FFFFFF', 0.20],
-        [f(Math.min(0.86, peak + 0.17)), '#08070A', 0.04],
-        [0.87, '#08070A', 0.20],
-        [0.925, '#FFFFFF', 0.26],
-        [0.965, '#08070A', 0.42],
-        [1.00, '#08070A', 0.74]
+        [0.00, '#08070A', 0.70],
+        [0.06, '#08070A', 0.34],
+        [0.115, '#FFFFFF', 0.20],
+        [0.175, '#08070A', 0.10],
+        [f(Math.max(0.22, peak - 0.16)), '#08070A', 0.02],
+        [f(peak), '#FFFFFF', 0.14],
+        [f(Math.min(0.85, peak + 0.17)), '#08070A', 0.03],
+        [0.875, '#08070A', 0.14],
+        [0.925, '#FFFFFF', 0.17],
+        [0.965, '#08070A', 0.38],
+        [1.00, '#08070A', 0.72]
       ])
     }));
-    /* the ridge line: the seam of the reflection, and hard */
-    add(g, rect(f(peak * x.w), -1, Math.max(0.6, x.u * 0.7), x.h + 2, {
-      fill: '#FFFFFF', opacity: 0.30
+    /* the seam down the ridge, where the two halves of the reflection meet.
+       Narrow and soft-shouldered, not a drawn line. */
+    add(g, rect(f((peak - 0.035) * x.w), -1, f(x.w * 0.07), x.h + 2, {
+      fill: hGrad(x.defs, [
+        [0, '#FFFFFF', 0], [0.46, '#FFFFFF', 0.18],
+        [0.54, '#FFFFFF', 0.18], [1, '#FFFFFF', 0]
+      ])
     }));
   }
 
@@ -1335,44 +1442,94 @@
     }));
   };
 
-  /* Glazed donut: a pearlescent veil, NOT a white wash. Fine shimmer plus a
-     hue that travels across the surface — pink into blue into gold. */
+  /* ------------------------------------------------------------- glazed */
+  /*  The glazed donut is a NUDE NAIL YOU CAN STILL SEE, with a pearl powder  */
+  /*  buffed over it. Everything that goes wrong with it goes wrong the same  */
+  /*  way: the veil is painted too strong, the base disappears, and what is   */
+  /*  left is a white nail with a rainbow on it. So the base is barely        */
+  /*  touched through the middle, and the effect lives in three thin things:  */
+  /*    · a milky sheen that builds toward the free edge, where the powder    */
+  /*      is buffed hardest and the plate is thinnest                          */
+  /*    · an iridescent SHIFT that is strongest at grazing angles — at the     */
+  /*      side walls and across the ridge — pink one side, ice the other       */
+  /*    · a pearl shimmer fine enough that you read it as a sheen and not as   */
+  /*      glitter, which is one shared tile plus a dozen bright ones           */
+  /* ---------------------------------------------------------------------- */
   PATTERNS.glazed = function (g, x) {
-    var i, n = Math.round(60 * x.q), r;
-    /* The glazed donut is an IRIDESCENT veil, not a white wash: the hue has
-       to travel across the surface — warm pink into violet into ice blue into
-       gold — or it just looks like someone breathed on the nail. */
+    var S = clamp(num(x.S, 1), 0.5, 1.6);
+    var q = clamp(num(x.q, 1), 0.25, 1);
+    var i, n, cx, cy, rr;
+    /* pearl powder is never a cold white — it is bone, with the base's own
+       warmth still in it, which is what keeps a nude nail a nude nail */
+    var pearl = mix(mix(col(x.c1, '#FFFFFF'), '#FFF7F3', 0.5), lighten(x.base, 0.6), 0.24);
+    var warm = mix(col(x.c2, '#E8B4C8'), '#FFCFE0', 0.55);
+    var cool = mix(col(x.c2, '#E8B4C8'), '#CDE8FF', 0.80);
+    var peak = clamp(0.5 + num(x.L && x.L.x, -0.4) * 0.18, 0.26, 0.74);
+
+    /* 1. the milk. Weakest at the cuticle — you are meant to see the nude
+          through it — and heaviest at the free edge. */
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      opacity: f(0.55 + x.S * 0.35),
-      fill: dGrad(x.defs, [
-        [0.00, mix(x.c1, '#FF9EC8', 0.55), 0.85],
-        [0.20, mix(x.c2, '#B79BFF', 0.6), 0.7],
-        [0.42, mix(x.c1, '#8ED6FF', 0.62), 0.72],
-        [0.62, mix(x.c1, '#A8FFD5', 0.5), 0.62],
-        [0.82, mix(x.c2, '#FFD98A', 0.6), 0.7],
-        [1.00, mix(x.c1, '#FFB0D8', 0.55), 0.85]
-      ], 0, 1, 1, 0)
+      fill: vGrad(x.defs, [
+        [0.00, pearl, f(0.46 * S)],
+        [0.16, pearl, f(0.34 * S)],
+        [0.42, pearl, f(0.21 * S)],
+        [0.72, pearl, f(0.13 * S)],
+        [1.00, pearl, f(0.07 * S)]
+      ])
     }));
-    /* the pearl itself: a hard-edged bloom, the way a chrome powder buffs up */
+
+    /* 2. the shift. Pearl is interference, so it does its work where the
+          light leaves at a shallow angle: the two walls and the crown of the
+          ridge. Across the nail one way, along it the other, both weak — it
+          is a hue TRAVELLING, never a coat of colour. */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, [
+        [0.00, warm, f(0.52 * S)],
+        [0.14, warm, f(0.30 * S)],
+        [f(Math.max(0.22, peak - 0.16)), warm, f(0.06 * S)],
+        [f(peak), '#FFFFFF', f(0.10 * S)],
+        [f(Math.min(0.80, peak + 0.18)), cool, f(0.10 * S)],
+        [0.88, cool, f(0.34 * S)],
+        [1.00, cool, f(0.56 * S)]
+      ])
+    }));
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: dGrad(x.defs, [
-        [0.10, '#FFFFFF', 0], [0.30, '#FFFFFF', 0.55],
-        [0.44, '#FFFFFF', 0.15], [0.70, '#FFFFFF', 0]
-      ], 0, 0, 1, 0.55)
+        [0.00, mix(warm, '#FFC7A8', 0.5), f(0.30 * S)],
+        [0.34, mix(x.c1, '#C9AEFF', 0.62), f(0.16 * S)],
+        [0.62, mix(cool, '#9FE8FF', 0.4), f(0.18 * S)],
+        [1.00, mix(warm, '#FFE7A8', 0.55), f(0.30 * S)]
+      ], 0.08, 1, 0.92, 0.06)
     }));
-    /* the pearl bloom sits where the light is */
+
+    /* 3. the bloom, where the powder was buffed hardest */
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: radGrad(x.defs, [
-        [0, '#FFFFFF', 0.8], [0.30, mix(x.c1, '#FFFFFF', 0.6), 0.5],
-        [0.66, mix(x.c2, '#FFFFFF', 0.35), 0.2], [1, x.c2, 0]
-      ], { cx: f(0.5 + x.L.x * 0.16), cy: f(0.34 + x.L.y * 0.10), r: 0.82 })
+        [0, '#FFFFFF', f(0.66 * S)], [0.26, '#FFFFFF', f(0.34 * S)],
+        [0.60, pearl, f(0.10 * S)], [1, pearl, 0]
+      ], {
+        cx: f(clamp(peak - 0.04, 0.2, 0.8)),
+        cy: f(clamp(0.30 + num(x.L && x.L.y, 0.5) * 0.10, 0.12, 0.48)), r: 0.52
+      })
     }));
+
+    /* 4. the shimmer. Fine enough to read as a sheen: one shared tile for the
+          field, and a dozen that are actually catching the light. */
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: flakeP(x.defs, '#FFFFFF', x.u * 11, nd(52, q), 0.014, 0.034, 12, 11),
+      opacity: 0.72
+    }));
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: flakeP(x.defs, mix(warm, '#FFFFFF', 0.25), x.u * 15, nd(38, q), 0.015, 0.036, -29, 12),
+      opacity: 0.55
+    }));
+    n = Math.round(14 * q);
     for (i = 0; i < n; i++) {
-      r = x.rnd.r(0.2, 0.8) * x.u;
+      cx = x.rnd() * x.w; cy = x.rnd() * x.h; rr = x.rnd.r(0.30, 0.85) * x.u;
       add(g, E('circle', {
-        cx: f(x.rnd() * x.w), cy: f(x.rnd() * x.h), r: f(r),
-        fill: x.rnd.pick(['#FFFFFF', '#FFD8EC', '#CFE6FF', '#FFF0C8', '#D9FFEC']),
-        opacity: f(x.rnd.r(0.35, 0.9))
+        cx: f(cx), cy: f(cy), r: f(rr),
+        fill: x.rnd.pick(['#FFFFFF', '#FFE4F0', '#DCEEFF', '#FFF4D8']),
+        opacity: f(x.rnd.r(0.45, 0.9))
       }));
     }
   };
@@ -2312,23 +2469,88 @@
     }));
   };
 
-  /* Flocked pile: light goes in and comes back diffused, the silhouette is
-     slightly fuzzy, and there is a broad sheen instead of a highlight. */
+  /* ------------------------------------------------------------- velvet */
+  /*  A flocked pile is not matte paint. Light does not bounce off it, it     */
+  /*  goes IN, rattles around a forest of fibres and comes back out having    */
+  /*  forgotten where it came from — so there is no specular anywhere on it.  */
+  /*  What there is instead, and what makes velvet unmistakable:               */
+  /*    · a broad diffuse BLOOM, far wider and far softer than a highlight     */
+  /*    · a bright fringe just inside the silhouette on the side AWAY from     */
+  /*      the light: at a grazing angle you are looking along the fibres and   */
+  /*      every one of them is lit. This is the single loudest velvet cue and  */
+  /*      the one a matte finish never has.                                    */
+  /*    · the pile CRUSHED where it is pressed — the near rim and the cuticle  */
+  /*      — which always goes darker than the field                            */
+  /*    · and a silhouette that is not quite a hard edge, because the fibres   */
+  /*      stand up past it                                                     */
+  /* ---------------------------------------------------------------------- */
   FINISHES.velvet = function (g, x) {
+    var q = clamp(num(x.q, 1), 0.25, 1);
+    var lit = mix(lighten(x.color, 0.55), '#FFF6F2', 0.22);
+    var cx = clamp(0.5 + x.L.x * 0.16, 0.22, 0.78);
+    var cy = clamp(0.40 + x.L.y * 0.10, 0.14, 0.70);
+    /* the far side, where the pile is seen end on */
+    var far = clamp(0.5 - x.L.x * 0.5, 0.08, 0.92);
+    var dk;
+
+    /* 1. the bloom — broad, soft, and nowhere near white */
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: radGrad(x.defs, [
-        [0, lighten(x.color, 0.42), 0.62], [0.45, lighten(x.color, 0.22), 0.28],
-        [0.8, x.color, 0.05], [1, x.color, 0]
-      ], { cx: f(clamp(0.5 + x.L.x * 0.14, 0.24, 0.76)), cy: f(clamp(0.4 + x.L.y * 0.1, 0.14, 0.7)), r: 0.72 })
+        [0, lit, 0.62], [0.30, lighten(x.color, 0.34), 0.38],
+        [0.68, lighten(x.color, 0.14), 0.13], [1, x.color, 0]
+      ], { cx: f(cx), cy: f(cy), r: 0.88 })
     }));
-    /* pile crushed at the rim always goes dark */
+
+    /* 2. the grazing fringe, across the nail: bright where you are looking
+          ALONG the fibres, dark where the pile is pressed toward you. Both
+          sit a little inboard of the silhouette — the last few percent of the
+          plate is already the wall turning away, and putting the fringe out
+          there just cancels against it. */
+    dk = darken(x.color, 0.44);
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, far > 0.5 ? [
+        [0.00, dk, 0.52], [0.07, dk, 0.34], [0.22, x.color, 0],
+        [0.68, x.color, 0], [0.82, lit, 0.34], [0.915, lit, 0.72],
+        [0.975, lit, 0.52], [1.00, lit, 0.24]
+      ] : [
+        [0.00, lit, 0.24], [0.025, lit, 0.52], [0.085, lit, 0.72],
+        [0.18, lit, 0.34], [0.32, x.color, 0], [0.78, x.color, 0],
+        [0.93, dk, 0.34], [1.00, dk, 0.52]
+      ])
+    }));
+    /* and along it: the free edge stands the fibres up, the cuticle presses
+       them flat */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: vGrad(x.defs, [
+        [0.00, lit, 0.42], [0.09, lit, 0.18], [0.24, x.color, 0],
+        [0.74, x.color, 0], [0.90, darken(x.color, 0.40), 0.24],
+        [1.00, darken(x.color, 0.48), 0.46]
+      ])
+    }));
+
+    /* 3. the fuzz. One blurred stroke of the pile's own light tone straddling
+          the outline: inside the clip it lands as a soft band that has no
+          edge of its own, which is what a fibre fringe looks like. */
     add(g, E('path', {
-      d: x.d, fill: 'none', stroke: darken(x.color, 0.45),
-      'stroke-width': f(x.u * 8), opacity: 0.42, filter: blurF(x.defs, x.u * 2.2)
+      d: x.d, fill: 'none', stroke: lighten(x.color, 0.34),
+      'stroke-width': f(Math.max(x.u * 3.2, 1)), opacity: 0.42,
+      filter: blurF(x.defs, x.u * 2.6)
     }));
-    if (x.q >= 0.7) {
+    /* the pile crushed hard against the wall, under the fuzz */
+    add(g, E('path', {
+      d: x.d, fill: 'none', stroke: darken(x.color, 0.50),
+      'stroke-width': f(Math.max(x.u * 9, 2)), opacity: 0.34,
+      filter: blurF(x.defs, x.u * 3.5)
+    }));
+
+    /* 4. the pile itself. Two grains at different scales, because a flocked
+          surface is fibres in clumps, not a single frequency. */
+    if (q >= 0.5) {
       add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-        fill: grainP(x.defs, lighten(x.color, 0.8), 0.55, x.u * 11), opacity: 0.4
+        fill: grainP(x.defs, lit, 0.6, x.u * 8), opacity: 0.42
+      }));
+      add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+        fill: grainP(x.defs, darken(x.color, 0.62), 0.55, x.u * 12.5), opacity: 0.36
       }));
     }
   };
