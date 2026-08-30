@@ -196,7 +196,43 @@
         badShared: 'الرابط المشترك غير صالح، فبدأنا بتصميم جديد',
         newDesign: 'تصميم جديد',
         newConfirm: 'نبدأ تصميم جديد؟ اللي سوّيتيه راح ينمسح.',
-        stepDone: 'تمت'
+        stepDone: 'تمت',
+
+        /* progress — the journey line under the step strip */
+        progStart: 'ست خطوات قصيرة وطقمك يصير جاهز.',
+        progLeft: 'باقي {n} خطوات وتخلصين.',
+        progLeft2: 'باقي خطوتين وتخلصين.',
+        progLeft1: 'باقي خطوة وحدة — قرّبتي!',
+        progAll: 'كل الخطوات تمّت — طقمك جاهز للطلب.',
+        progOf: 'خلّصتي {n} من {total}',
+
+        /* gentle invitations when a step is still on its defaults */
+        nudge1: 'اخترنا لك بشرة ويدين مبدئيًا — عدّليها عشان الطقم يطلع على لون يدك بالضبط.',
+        nudge2: 'الشكل والطول لسا على المبدئي — جرّبي شكل ثاني وشوفيه على يدك فوق.',
+        nudge3: 'المقاسات الحين على الوسط — لو تعرفين مقاسك عدّليه ويجيك مضبوط.',
+        nudge4: 'كل الأظافر بلون واحد — جرّبي لون على البنصر أو نقشة خفيفة، وترجعين بضغطة وحدة.',
+
+        /* step-4 shortcuts */
+        applyLook: 'طبّقي الشكل على الكل',
+        mirrorLook: 'انسخي لليد الثانية',
+        appliedLook: 'انطبّق الشكل على كل الأظافر',
+        mirroredLook: 'انتسخ الشكل لليد الثانية',
+        undoSafe: 'جرّبي براحتك — أي شي تسوّينه ترجّعينه بزر التراجع.',
+
+        /* the randomiser */
+        randHint: 'كل ضغطة تعطيك تركيبة ألوان منسّقة جاهزة للتصوير.',
+        randRoll: 'نخلط الألوان…',
+        randDone: 'لوك {name}',
+
+        /* review + sharing */
+        reviewProud: 'هذا طقمك',
+        reviewOwn: 'كل تفصيلة فيه اخترتيها بنفسك.',
+        reviewTotal: 'الإجمالي',
+        priceHonest: 'كل بند فوق محسوب من اختياراتك — ما فيه رسوم مخفية.',
+        shareImg: 'مشاركة الصورة',
+        shareImgText: 'أرسلي صورة طقمك لصديقتك أو انشريها في ستوريك.',
+        sharedOk: 'انشاركت صورة تصميمك',
+        preparing: 'نجهّز الصورة…'
       }
     },
 
@@ -361,7 +397,38 @@
         badShared: 'That shared link was not valid, so we started a new design',
         newDesign: 'New design',
         newConfirm: 'Start a new design? Everything you did will be cleared.',
-        stepDone: 'done'
+        stepDone: 'done',
+
+        progStart: 'Six short steps and your set is ready.',
+        progLeft: '{n} steps to go.',
+        progLeft2: 'Two steps to go.',
+        progLeft1: 'One step to go — almost there!',
+        progAll: 'Every step done — your set is ready to order.',
+        progOf: '{n} of {total} done',
+
+        nudge1: 'We started you on a default tone and both hands — set yours so the preview matches your real hand.',
+        nudge2: 'Shape and length are still the defaults — try another shape and see it on your hand above.',
+        nudge3: 'Sizes are on the medium preset — set yours and the fit comes out right.',
+        nudge4: 'Every nail is still one colour — try a shade on the ring finger or a light pattern. One tap brings it back.',
+
+        applyLook: 'Apply this look to all',
+        mirrorLook: 'Copy to the other hand',
+        appliedLook: 'That look is on every nail now',
+        mirroredLook: 'Copied to the other hand',
+        undoSafe: 'Play freely — undo brings anything back.',
+
+        randHint: 'Every tap gives you a styled colour set, ready to photograph.',
+        randRoll: 'Mixing your shades…',
+        randDone: '{name} look',
+
+        reviewProud: 'This is your set',
+        reviewOwn: 'Every detail on it is your own choice.',
+        reviewTotal: 'Total',
+        priceHonest: 'Every line above comes from your own choices — no hidden fees.',
+        shareImg: 'Share the image',
+        shareImgText: 'Send your set to a friend or post it to your story.',
+        sharedOk: 'Your design image was shared',
+        preparing: 'Preparing the image…'
       }
     }
   };
@@ -485,6 +552,164 @@
   function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { window.localStorage.setItem(k, v); return true; } catch (e) { return false; } }
   function lsDel(k) { try { window.localStorage.removeItem(k); return true; } catch (e) { return false; } }
+
+  /* ====================================================================== */
+  /* 1b. Motion — every effect in this file goes through here                */
+  /* ====================================================================== */
+  /* The studio owns no stylesheet, so its motion is scripted with the Web
+     Animations API instead of invented class names. That buys one thing that
+     matters more than tidiness: a SINGLE gate. `reduced()` is read live on
+     every call, so switching the OS setting takes effect without a reload, and
+     nothing below can animate behind its back. Only `transform` and `opacity`
+     are ever animated, and nothing loops. */
+
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var EASE_OUT = 'cubic-bezier(.22,1,.36,1)';
+  var EASE_POP = 'cubic-bezier(.34,1.4,.64,1)';
+
+  var motionMQ = null;
+  try {
+    motionMQ = (window.matchMedia) ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  } catch (e) { motionMQ = null; }
+
+  function reduced() { return !!(motionMQ && motionMQ.matches); }
+
+  function play(node, frames, opts) {
+    if (!node || reduced() || typeof node.animate !== 'function') return null;
+    try { return node.animate(frames, opts); }
+    catch (e) { return null; }
+  }
+
+  /* A rendered nail carries its own `transform` attribute (position + finger
+     angle). A CSS transform would REPLACE it, so anything we animate gets a
+     plain wrapper <g> of its own to scale inside. */
+  function fxWrap(node) {
+    var parent = node ? node.parentNode : null, g;
+    if (!parent || !D.createElementNS) return null;
+    if (parent.getAttribute && parent.getAttribute('data-fx') === '1') return parent;
+    try {
+      g = D.createElementNS(SVGNS, 'g');
+      g.setAttribute('data-fx', '1');
+      g.style.transformBox = 'fill-box';
+      g.style.transformOrigin = '50% 50%';
+      parent.insertBefore(g, node);
+      g.appendChild(node);
+      return g;
+    } catch (e) { return null; }
+  }
+
+  /* the acknowledgement: a nail that was just changed gives one small bounce */
+  function popNails(list, host) {
+    var stage = host || refs.stage, i, node, wrap;
+    if (!stage || reduced() || !Array.isArray(list)) return;
+    if (!onScreen(rectOf(stage))) return;      /* nothing to acknowledge off-screen */
+    for (i = 0; i < list.length && i < 10; i++) {
+      node = stage.querySelector ? stage.querySelector('g.nail[data-key="' + fk(list[i]) + '"]') : null;
+      wrap = node ? fxWrap(node) : null;
+      if (!wrap) continue;
+      play(wrap, [
+        { transform: 'scale(1)' },
+        { transform: 'scale(1.075)', offset: 0.42 },
+        { transform: 'scale(1)' }
+      ], { duration: 300, delay: Math.min(i * 34, 240), easing: EASE_POP });
+    }
+  }
+
+  /* ---- the sparkle ----------------------------------------------------- */
+  /* Fixed to the viewport rather than parented into the preview: the mobile
+     stage is a clipped strip, and a burst that gets cut in half is worse than
+     none. It is removed the moment it finishes. */
+
+  function starMark(size, color, opacity) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" ' +
+      'fill="' + color + '" opacity="' + opacity + '" aria-hidden="true" focusable="false" ' +
+      'style="display:block"><path d="M12 0c.72 6.5 4.78 10.56 12 12-7.22 1.44-11.28 5.5-12 12' +
+      '-.72-6.5-4.78-10.56-12-12C7.22 10.56 11.28 6.5 12 0Z"/></svg>';
+  }
+
+  var SPARK_SEATS = [
+    { a: -90, d: 34, s: 13 }, { a: -30, d: 30, s: 10 }, { a: 30, d: 33, s: 8 },
+    { a: 96, d: 28, s: 11 }, { a: 158, d: 31, s: 9 }, { a: -152, d: 29, s: 12 }
+  ];
+
+  /* rect: a DOMRect-ish. scale: 1 = the standard charm burst.
+     The layer is forced to `direction:ltr` so its logical insets resolve to the
+     same physical corner a DOMRect is measured from, in Arabic and English
+     alike — no `left`/`top` needed anywhere. */
+  function sparkleAt(rect, scale) {
+    var host, cx, cy, k = num(scale, 1), i, seat, node, rad, dx, dy;
+    if (!rect || reduced() || !D.body) return;
+    if (!onScreen(rect)) return;            /* never burst off the visible page */
+    cx = rect.left + rect.width / 2;
+    cy = rect.top + rect.height / 2;
+    if (!isFinite(cx) || !isFinite(cy)) return;
+
+    host = el('div', { 'aria-hidden': 'true' });
+    host.style.cssText = 'direction:ltr;position:fixed;z-index:70;pointer-events:none;' +
+      'inline-size:0;block-size:0;inset-block-start:' + cy + 'px;inset-inline-start:' + cx + 'px;';
+    D.body.appendChild(host);
+
+    for (i = 0; i < SPARK_SEATS.length; i++) {
+      seat = SPARK_SEATS[i];
+      rad = seat.a * Math.PI / 180;
+      dx = Math.cos(rad) * seat.d * k;
+      dy = Math.sin(rad) * seat.d * k;
+      node = el('span', { html: starMark(Math.round(seat.s * k), i % 2 ? '#C2A05E' : '#FFFFFF', i % 2 ? 0.95 : 0.85) });
+      node.style.cssText = 'position:absolute;inset-block-start:0;inset-inline-start:0;' +
+        'will-change:transform,opacity;';
+      host.appendChild(node);
+      play(node, [
+        { transform: 'translate(-50%,-50%) scale(.2) rotate(0deg)', opacity: 0 },
+        { transform: 'translate(calc(-50% + ' + (dx * 0.55) + 'px),calc(-50% + ' + (dy * 0.55) + 'px)) scale(1) rotate(40deg)', opacity: 1, offset: 0.38 },
+        { transform: 'translate(calc(-50% + ' + dx + 'px),calc(-50% + ' + dy + 'px)) scale(.35) rotate(95deg)', opacity: 0 }
+      ], { duration: 620, delay: i * 26, easing: EASE_OUT });
+    }
+
+    window.setTimeout(function () {
+      if (host && host.parentNode) host.parentNode.removeChild(host);
+    }, 900);
+  }
+
+  function rectOf(node) {
+    if (!node || typeof node.getBoundingClientRect !== 'function') return null;
+    try {
+      var r = node.getBoundingClientRect();
+      return (r && r.width && r.height) ? r : null;
+    } catch (e) { return null; }
+  }
+
+  function onScreen(r) {
+    return !!r && r.top < (window.innerHeight || 0) - 40 && r.bottom > 60;
+  }
+
+  function editorCanvasEl() {
+    return refs.editor ? refs.editor.querySelector('.studio-canvas') : null;
+  }
+
+  /* The charm grid is long, so by the time she taps a charm the nail it lands
+     on is usually below the fold — she would tap and see nothing happen. Bring
+     the big nail back into view first, THEN celebrate. */
+  function withCharmInView(done) {
+    var canvas = editorCanvasEl();
+    if (onScreen(rectOf(canvas)) || onScreen(rectOf(refs.stage))) { done(); return; }
+    if (!canvas || typeof canvas.scrollIntoView !== 'function') { done(); return; }
+    try { canvas.scrollIntoView({ block: 'center', behavior: reduced() ? 'auto' : 'smooth' }); }
+    catch (e) { try { canvas.scrollIntoView(); } catch (e2) { /* ignore */ } }
+    window.setTimeout(done, reduced() ? 60 : 420);
+  }
+
+  /* the sparkle goes where SHE is looking: the big editor nail when it is on
+     screen, otherwise the small hand in the preview — and nowhere at all if
+     neither is, because a burst off the bottom of the page is just wasted work */
+  function sparkleOnCharm(key, index) {
+    var canvas = editorCanvasEl();
+    var svg = canvas ? canvas.firstChild : null;
+    var marks = (svg && svg.querySelectorAll) ? svg.querySelectorAll('g.nail-charm') : null;
+    var r = (marks && marks[index]) ? rectOf(marks[index]) : null;
+    if (onScreen(r)) { sparkleAt(r, 1.25); return; }
+    r = refs.stage ? rectOf(refs.stage.querySelector('g.nail[data-key="' + fk(key) + '"]')) : null;
+    if (onScreen(r)) sparkleAt(r, 0.9);
+  }
 
   /* ====================================================================== */
   /* 2. base64url — UTF-8 safe both ways, never throws                      */
@@ -717,7 +942,18 @@
     activeCharm: -1,
     paneOpen: false,
     clip: null,
-    booted: false
+    booted: false,
+    /* progress: a step she has actually touched counts as done even when her
+       choice happens to equal the default — deliberate is deliberate */
+    touch: {},
+    doneSeen: {},
+    allDoneSeen: false,
+    rolling: false,
+    /* consumed once by the next renderStage(): the nails that should visibly
+       acknowledge the change that is being painted */
+    pop: null,
+    landCharm: -1,
+    landStage: null
   };
 
   var hist = { past: [], future: [] };
@@ -816,6 +1052,7 @@
               state.design = sanitize(cfg);
               hist.past.length = 0; hist.future.length = 0;
               pruneSelection();
+              primeProgress();
               hideRestore();
               saveDraft();
               renderAll();
@@ -922,6 +1159,122 @@
   }
 
   /* ====================================================================== */
+  /* 7b. Progress — what is genuinely finished                              */
+  /* ====================================================================== */
+  /* A step is done when it holds a real decision, not when it has been walked
+     past. Two ways to earn it: she touched a control in that step (`touch`),
+     or the design already differs from a pristine one — which is what makes a
+     restored draft or a shared link open with its progress intact. Step 6 is
+     the order itself, so the journey bar counts steps 1..5. */
+
+  var JOURNEY = 5;
+
+  /* `blank()` rebuilds ten nails from store defaults; stepDone() asks for it
+     a dozen times per render, so hold one copy and drop it when the shop data
+     changes underneath us */
+  var pristine = null;
+  function blankRef() {
+    if (!pristine) pristine = blank();
+    return pristine;
+  }
+
+  function nailLook(n) {
+    var p = (n && isObj(n.pattern)) ? n.pattern : {};
+    return [
+      hex(n && n.color, ''), String(n && n.finish), String(p.kind),
+      hex(p.color, ''), hex(p.color2, ''), String(num(p.scale, 1)),
+      String((n && n.charms ? n.charms.length : 0))
+    ].join('|');
+  }
+
+  function stepDone(n) {
+    var d = state.design, b, kk, i;
+    if (state.touch[n]) return true;
+    if (!d) return false;
+    b = blankRef();
+    if (n === 1) return hex(d.skin, 'a') !== hex(b.skin, 'b') || d.hand !== b.hand;
+    if (n === 2) return d.shape !== b.shape || d.length !== b.length;
+    if (n === 3) {
+      if (d.measure !== b.measure) return true;
+      kk = keys();
+      for (i = 0; i < kk.length; i++) {
+        if (num(d.sizes[kk[i]], -1) !== num(b.sizes[kk[i]], -2)) return true;
+      }
+      return false;
+    }
+    if (n === 4) {
+      kk = activeKeys(d);
+      for (i = 0; i < kk.length; i++) {
+        if (nailLook(d.nails[kk[i]]) !== nailLook(b.nails[kk[i]])) return true;
+      }
+      return false;
+    }
+    if (n === 5) {
+      return num(d.qty, 1) !== num(b.qty, 1) || !!d.express || !!d.giftWrap ||
+        !!String(d.notes || '').trim();
+    }
+    return false;
+  }
+
+  function doneCount() {
+    var c = 0, i;
+    for (i = 1; i <= JOURNEY; i++) if (stepDone(i)) c++;
+    return c;
+  }
+
+  function progressText() {
+    var left = JOURNEY - doneCount();
+    if (left <= 0) return t('studio.progAll');
+    if (left === JOURNEY) return t('studio.progStart');
+    if (left === 1) return t('studio.progLeft1');
+    if (left === 2) return t('studio.progLeft2');
+    return t('studio.progLeft', { n: nfm(left) });
+  }
+
+  /* the warm confirmation: the chip that just earned its tick gives one bounce
+     and a small spark. It fires once per step, never on a re-render. */
+  function celebrateStep(n) {
+    var host = refs.steps, btn, r;
+    if (!host || !host.querySelector) return;
+    btn = host.querySelector('[data-fk="' + fk('step-' + n) + '"]');
+    if (!btn || !onScreen(rectOf(btn))) return;
+    play(btn, [
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.12)', offset: 0.4 },
+      { transform: 'scale(1)' }
+    ], { duration: 380, easing: EASE_POP });
+    r = rectOf(btn.querySelector('.studio-step-n') || btn);
+    if (r) sparkleAt(r, 0.62);
+  }
+
+  /* called after every render of the step strip */
+  function noteCompletions() {
+    var i, fresh = [];
+    for (i = 1; i <= JOURNEY; i++) {
+      if (stepDone(i) && !state.doneSeen[i]) { state.doneSeen[i] = true; fresh.push(i); }
+    }
+    for (i = 0; i < fresh.length; i++) celebrateStep(fresh[i]);
+    if (!state.allDoneSeen && doneCount() >= JOURNEY) {
+      state.allDoneSeen = true;
+      toast(t('studio.progAll'), 'ok');
+    }
+  }
+
+  /* Adopt whatever progress the design already carries WITHOUT celebrating it:
+     restoring a draft or opening a shared link is not five achievements. */
+  function primeProgress() {
+    var i;
+    for (i = 1; i <= JOURNEY; i++) if (stepDone(i)) state.doneSeen[i] = true;
+    if (doneCount() >= JOURNEY) state.allDoneSeen = true;
+  }
+
+  function markTouch(n) {
+    if (state.touch[n]) return;
+    state.touch[n] = true;
+    renderSteps();
+  }
+
+  /* ====================================================================== */
   /* 8. The preview pane                                                    */
   /* ====================================================================== */
 
@@ -945,7 +1298,49 @@
       node = host.querySelector('[data-key="' + fk(focusKey) + '"]');
       if (node && node.focus) { try { node.focus({ preventScroll: true }); } catch (e2) { /* ignore */ } }
     }
+    /* the hand acknowledges the tap that caused this repaint, then forgets it —
+       a queue of one, so a drag repainting at 60fps never stacks animations */
+    if (state.pop) { popNails(state.pop, host); state.pop = null; }
+    if (state.landStage) {
+      landInStage(state.landStage.key, state.landStage.index);
+      state.landStage = null;
+    }
     renderPaneFoot();
+  }
+
+  /* queue the nails that should react to the change about to be applied */
+  function react(list) {
+    state.pop = Array.isArray(list) ? list.slice(0, 10) : null;
+  }
+
+  /* On a phone the sticky strip at the top is the hand she can actually see —
+     the big editor is usually far below it — so the charm has to land THERE
+     too, not only on the editor plate. */
+  function landInStage(key, index) {
+    var host = refs.stage, nail, marks;
+    if (!host || reduced() || index < 0) return;
+    nail = host.querySelector ? host.querySelector('g.nail[data-key="' + fk(key) + '"]') : null;
+    marks = nail ? nail.querySelectorAll('g.nail-charm') : null;
+    if (!marks || !marks[index]) return;
+    play(fxWrap(marks[index]), [
+      { transform: 'translate(0,-9px) scale(2.2)', opacity: 0 },
+      { transform: 'translate(0,0) scale(.82)', opacity: 1, offset: 0.6 },
+      { transform: 'scale(1.1)', offset: 0.8 },
+      { transform: 'scale(1)', opacity: 1 }
+    ], { duration: 460, easing: EASE_OUT });
+  }
+
+  /* what a tap will affect, said plainly: one nail gets named, a hand gets
+     named, anything else gets counted */
+  function selectionLabel() {
+    var kk = activeKeys(state.design), n = state.sel.length, right = 0, i;
+    if (!n) return t('studio.selEmpty');
+    if (n === 1) return nailName(state.sel[0]);
+    if (n === kk.length) return countT('selCount', n);
+    for (i = 0; i < state.sel.length; i++) if (sideOf(state.sel[i]) === 'right') right++;
+    if (right === n && n === 5) return t('studio.rightHand') + ' · ' + countT('selCount', n);
+    if (!right && n === 5) return t('studio.leftHand') + ' · ' + countT('selCount', n);
+    return countT('selCount', n);
   }
 
   function renderPaneFoot() {
@@ -955,9 +1350,16 @@
     host.appendChild(el('p', {
       'class': 'studio-pane-note',
       text: state.step === 4
-        ? countT('selCount', state.sel.length)
+        ? selectionLabel()
         : t('studio.stepOf', { n: nfm(state.step), total: nfm(STEP_COUNT) })
     }));
+    /* undo and redo live beside the preview as well as in the toolbar: she is
+       looking here when she changes her mind, and a visible way back is what
+       makes experimenting feel safe */
+    if (state.step === 4) {
+      host.appendChild(historyBtn('undo', 'common.undo', undo, !hist.past.length, 'foot-undo'));
+      host.appendChild(historyBtn('redo', 'common.redo', redo, !hist.future.length, 'foot-redo'));
+    }
     host.appendChild(el('button', {
       'class': 'btn btn-ghost btn-sm only-mob', type: 'button',
       'data-fk': 'pane-toggle',
@@ -1001,6 +1403,42 @@
       'data-fk': fkey ? fk(fkey) : null,
       on: { click: onClick }
     });
+  }
+
+  /* The two shortcuts that stop the flow feeling like data entry — "apply to
+     all" and "copy to the other hand" — are not ghost buttons anywhere in the
+     studio. They read as offers. */
+  function shortcutBtn(ico, labelKey, fkey, primary, onClick) {
+    return el('button', {
+      'class': 'btn ' + (primary ? 'btn-pri' : 'btn-line') + ' btn-sm',
+      type: 'button', 'data-fk': fk(fkey),
+      on: { click: onClick }
+    }, [
+      el('span', { 'class': 'btn-ico', html: icon(ico, 16), 'aria-hidden': 'true' }),
+      el('span', { text: t(labelKey) })
+    ]);
+  }
+
+  /* An invitation, never a scold: shown only while the step is still exactly
+     as we left it, and it disappears the instant she chooses anything. */
+  function defaultsNote(n) {
+    if (stepDone(n)) return null;
+    return el('p', { 'class': 'note' }, [
+      el('span', { 'class': 'ico', html: icon('sparkle', 18), 'aria-hidden': 'true' }),
+      el('span', { text: t('studio.nudge' + n) })
+    ]);
+  }
+
+  function historyBtn(name, labelKey, onClick, off, fkey) {
+    var b = el('button', {
+      'class': 'icon-btn icon-btn-sm', type: 'button',
+      html: icon(name, 16),
+      'aria-label': t(labelKey), title: t(labelKey),
+      'data-fk': fk(fkey),
+      on: { click: onClick }
+    });
+    if (off) b.disabled = true;
+    return b;
   }
 
   function chip(label, on, onClick, fkey) {
@@ -1062,6 +1500,8 @@
 
   function buildStep1(host) {
     var tones = list('skinTones');
+    var nudge = defaultsNote(1);
+    if (nudge) host.appendChild(nudge);
     var skins = el('div', { 'class': 'studio-skins' });
     var i;
 
@@ -1074,6 +1514,8 @@
           aria: { pressed: state.design.skin === h },
           on: {
             click: function () {
+              markTouch(1);
+              react(activeKeys(state.design));
               mutate(function () { state.design.skin = h; });
             }
           }
@@ -1104,11 +1546,14 @@
           aria: { pressed: state.design.hand === o.id },
           on: {
             click: function () {
+              markTouch(1);
               mutate(function () {
                 state.design.hand = o.id;
                 state.sel = activeKeys(state.design);
                 state.activeCharm = -1;
               });
+              react(activeKeys(state.design));
+              renderStage();
             }
           }
         }, [ico, el('span', { text: t(o.label) })]));
@@ -1130,6 +1575,8 @@
 
   function buildStep2(host) {
     var shapes = list('shapes');
+    var nudge = defaultsNote(2);
+    if (nudge) host.appendChild(nudge);
     var lengths = list('lengths');
     var grid = el('div', { 'class': 'studio-opts' });
     var lgrid = el('div', { 'class': 'studio-opts studio-opts-len' });
@@ -1151,7 +1598,11 @@
           'data-fk': fk('shape-' + sh.id),
           aria: { pressed: state.design.shape === sh.id },
           on: {
-            click: function () { mutate(function () { state.design.shape = sh.id; }); }
+            click: function () {
+              markTouch(2);
+              react(activeKeys(state.design));
+              mutate(function () { state.design.shape = sh.id; });
+            }
           }
         }, [
           miniNail(sampleNail(), {
@@ -1173,7 +1624,11 @@
           'data-fk': fk('len-' + ln.id),
           aria: { pressed: state.design.length === ln.id },
           on: {
-            click: function () { mutate(function () { state.design.length = ln.id; }); }
+            click: function () {
+              markTouch(2);
+              react(activeKeys(state.design));
+              mutate(function () { state.design.length = ln.id; });
+            }
           }
         }, [
           miniNail(sampleNail(), {
@@ -1313,6 +1768,7 @@
           aria: { pressed: active === set.id },
           on: {
             click: function () {
+              markTouch(3);
               mutate(function () { applySizeSet(set); });
             }
           }
@@ -1361,6 +1817,7 @@
               keydown: begin,
               input: function (ev) {
                 begin();
+                markTouch(3);
                 state.design.sizes[key] = mmToIndex(num(ev.target.value, 12));
                 paint();
                 renderSizeGrid();
@@ -1434,6 +1891,8 @@
 
   function buildStep3(host) {
     var methods = list('measureMethods');
+    var nudge = defaultsNote(3);
+    if (nudge) host.appendChild(nudge);
     var tabs = el('div', { 'class': 'tabs', role: 'tablist' });
     var panel = el('div', { 'class': 'flow' });
     var current = state.design.measure;
@@ -1452,7 +1911,10 @@
           aria: { selected: m.id === current },
           text: pick(m.name),
           on: {
-            click: function () { mutate(function () { state.design.measure = m.id; }); }
+            click: function () {
+              markTouch(3);
+              mutate(function () { state.design.measure = m.id; });
+            }
           }
         }));
       }(methods[i]));
@@ -1482,37 +1944,28 @@
       refs.sizeGrid,
       el('div', { 'class': 'studio-row' }, [
         sel,
-        el('button', {
-          'class': 'btn btn-line btn-sm', type: 'button', 'data-fk': 'apply-all',
-          text: t('studio.applyAll'),
-          on: {
-            click: function () {
-              var v = clamp(Math.round(num(sel.value, 5)), 0, Math.max(0, guide().length - 1) || 11);
-              mutate(function () {
-                var kk = keys(), j;
-                for (j = 0; j < kk.length; j++) state.design.sizes[kk[j]] = v;
-              });
-              toast(t('studio.applyAllDone'), 'ok');
-            }
-          }
+        shortcutBtn('grid', 'studio.applyAll', 'apply-all', true, function () {
+          var v = clamp(Math.round(num(sel.value, 5)), 0, Math.max(0, guide().length - 1) || 11);
+          markTouch(3);
+          mutate(function () {
+            var kk = keys(), j;
+            for (j = 0; j < kk.length; j++) state.design.sizes[kk[j]] = v;
+          });
+          toast(t('studio.applyAllDone'), 'ok');
         }),
-        el('button', {
-          'class': 'btn btn-ghost btn-sm', type: 'button', 'data-fk': 'copy-hand',
-          text: t('studio.copyHand'),
-          on: {
-            click: function () {
-              var from = state.design.hand === 'left' ? 'left' : 'right';
-              var to = from === 'right' ? 'left' : 'right';
-              mutate(function () {
-                var fs = fingers(), j;
-                for (j = 0; j < fs.length; j++) {
-                  state.design.sizes[keyOf(to, fs[j].key)] = state.design.sizes[keyOf(from, fs[j].key)];
-                }
-              });
-              toast(t('studio.copyDone'), 'ok');
-            }
-          }
-        })
+        state.design.hand === 'both'
+          ? shortcutBtn('hand', 'studio.copyHand', 'copy-hand', false, function () {
+            var from = 'right', to = 'left';
+            markTouch(3);
+            mutate(function () {
+              var fs = fingers(), j;
+              for (j = 0; j < fs.length; j++) {
+                state.design.sizes[keyOf(to, fs[j].key)] = state.design.sizes[keyOf(from, fs[j].key)];
+              }
+            });
+            toast(t('studio.copyDone'), 'ok');
+          })
+          : null
       ])
     ]));
   }
@@ -1535,7 +1988,7 @@
         right.length ? chip(t('studio.selRight'), false, function () { selectKeys(right); }, 'sel-r') : null,
         left.length ? chip(t('studio.selLeft'), false, function () { selectKeys(left); }, 'sel-l') : null,
         chip(t('studio.selNone'), !state.sel.length, function () { selectKeys([]); }, 'sel-none'),
-        el('span', { 'class': 'studio-selcount', text: countT('selCount', state.sel.length) })
+        el('span', { 'class': 'studio-selcount', text: selectionLabel() })
       ]));
       host.appendChild(el('p', { 'class': 'studio-hint' }, [
         el('span', { html: icon('sparkle', 16), 'aria-hidden': 'true' }),
@@ -1712,6 +2165,8 @@
   function applyColor(h) {
     if (!state.sel.length) { toast(t('studio.needSel'), 'info'); return; }
     rememberColor(h);
+    markTouch(4);
+    react(state.sel);
     mutate(function () {
       eachSelected(function (n) { n.color = h; });
     });
@@ -1732,6 +2187,8 @@
           on: {
             click: function () {
               if (!state.sel.length) { toast(t('studio.needSel'), 'info'); return; }
+              markTouch(4);
+              react(state.sel);
               mutate(function () { eachSelected(function (nl) { nl.finish = f.id; }); });
             }
           }
@@ -1767,6 +2224,8 @@
           on: {
             click: function () {
               if (!state.sel.length) { toast(t('studio.needSel'), 'info'); return; }
+              markTouch(4);
+              react(state.sel);
               mutate(function () {
                 eachSelected(function (nl) {
                   nl.pattern.kind = typeof p.kind === 'string' ? p.kind : 'none';
@@ -1798,6 +2257,7 @@
             var h = hex(ev.target.value, '');
             if (!h) return;
             begin();
+            markTouch(4);
             eachSelected(function (nl) { nl.pattern[prop] = h; });
             renderStage();
             saveDraft();
@@ -1822,6 +2282,7 @@
         input: function (ev) {
           var v = clamp(num(ev.target.value, 1), 0.6, 1.6);
           begin();
+          markTouch(4);
           eachSelected(function (nl) { nl.pattern.scale = v; });
           renderStage();
           saveDraft();
@@ -1897,18 +2358,39 @@
     if (!arr.length) host.appendChild(el('p', { 'class': 'muted', text: t('common.empty') }));
   }
 
+  /* THE charm moment. It does not simply appear: it drops onto the plate,
+     settles a touch past its resting size, and throws one small spark. Once —
+     and the spark IS the confirmation, so the toast only speaks up when motion
+     is switched off and there is nothing to see. */
   function addCharm(id) {
     var n = firstSelected();
     if (!state.sel.length || !n) { toast(t('studio.needSel'), 'info'); return; }
     if (n.charms.length >= CHARM_MAX) { toast(t('studio.charmLimit'), 'info'); return; }
+    markTouch(4);
+    /* the view moves BEFORE the charm is placed, so the drop happens in front
+       of her rather than somewhere down the page */
+    withCharmInView(function () { placeCharm(id); });
+  }
+
+  function placeCharm(id) {
+    var n = firstSelected();
+    var key = state.sel.length ? state.sel[0] : '';
+    var landed = -1;
+    if (!n || n.charms.length >= CHARM_MAX) return;
+    react(state.sel);
     mutate(function () {
       eachSelected(function (nl) {
         if (nl.charms.length < CHARM_MAX) nl.charms.push({ id: id, x: 0.5, y: 0.35, s: 1, r: 0 });
       });
       var f = firstSelected();
-      state.activeCharm = f ? f.charms.length - 1 : -1;
+      landed = f ? f.charms.length - 1 : -1;
+      state.activeCharm = landed;
+      state.landCharm = landed;
+      state.landStage = { key: key, index: landed };
     });
-    toast(t('studio.charmAdded'), 'ok');
+    if (reduced()) { toast(t('studio.charmAdded'), 'ok'); return; }
+    /* the spark waits for the drop to finish, so the two read as one gesture */
+    if (landed >= 0) window.setTimeout(function () { sparkleOnCharm(key, landed); }, 300);
   }
 
   /* ---- the charm list + big editor ---- */
@@ -2004,6 +2486,17 @@
   /* pointer dragging on the big single-nail editor */
   var drag = { on: false, index: -1, raf: 0 };
 
+  /* letting go: the charm drops the last of its lift and settles */
+  function settleCharm(svg, index) {
+    var marks = (svg && svg.querySelectorAll && index >= 0) ? svg.querySelectorAll('g.nail-charm') : null;
+    if (!marks || !marks[index]) return;
+    play(fxWrap(marks[index]), [
+      { transform: 'scale(1.16)' },
+      { transform: 'scale(.97)', offset: 0.55 },
+      { transform: 'scale(1)' }
+    ], { duration: 260, easing: EASE_OUT });
+  }
+
   function editorCanvas() {
     var key = state.sel.length ? state.sel[0] : activeKeys(state.design)[0];
     var n = nailOf(key);
@@ -2012,13 +2505,38 @@
 
     /* Only the <svg> inside `box` is ever replaced: `box` itself has to stay
        alive for the whole gesture, because it owns the pointer capture. */
+    /* the charm that is under her finger sits proud of the plate — a static
+       transform, not an animation, because the SVG is repainted every frame */
+    function dressCharms(svg) {
+      var marks = (svg && svg.querySelectorAll) ? svg.querySelectorAll('g.nail-charm') : null;
+      var wrap;
+      if (!marks || !marks.length) return;
+      if (drag.on && drag.index >= 0 && marks[drag.index] && !reduced()) {
+        wrap = fxWrap(marks[drag.index]);
+        if (wrap) wrap.style.transform = 'scale(1.16)';
+      }
+      if (state.landCharm >= 0 && marks[state.landCharm]) {
+        wrap = fxWrap(marks[state.landCharm]);
+        state.landCharm = -1;
+        play(wrap, [
+          { transform: 'translate(0,-16px) scale(2)', opacity: 0 },
+          { transform: 'translate(0,0) scale(.84)', opacity: 1, offset: 0.6 },
+          { transform: 'scale(1.08)', offset: 0.8 },
+          { transform: 'scale(1)', opacity: 1 }
+        ], { duration: 460, easing: EASE_OUT });
+      }
+    }
+
     function paint() {
+      var svg = null;
       empty(box);
       try {
-        box.appendChild(SN.Nail.single(n, state.design, {
+        svg = SN.Nail.single(n, state.design, {
           key: key, shape: state.design.shape, w: 250, bg: true,
           ariaLabel: nailName(key)
-        }));
+        });
+        box.appendChild(svg);
+        dressCharms(svg);
       } catch (e) { /* a partial state must never break the editor */ }
     }
 
@@ -2064,7 +2582,9 @@
     }
 
     function endDrag(ev) {
+      var released;
       if (!drag.on) return;
+      released = drag.index;
       drag.on = false;
       drag.index = -1;
       if (drag.raf && window.cancelAnimationFrame) {
@@ -2072,11 +2592,13 @@
         drag.raf = 0;
       }
       if (box.classList) box.classList.remove('is-drag');
+      box.style.transform = '';
       try { if (ev && ev.pointerId !== undefined) box.releasePointerCapture(ev.pointerId); }
       catch (e) { /* ignore */ }
       commit();
       saveDraft();
       paint();
+      settleCharm(box.firstChild, released);
       renderStage();
       renderActionsSafe();
     }
@@ -2090,8 +2612,15 @@
       drag.on = true;
       drag.index = i;
       state.activeCharm = i;
+      markTouch(4);
       begin();                       /* one history entry for the whole drag */
       if (box.classList) box.classList.add('is-drag');
+      /* the nail itself answers the grab, so the charm feels attached to it */
+      if (!reduced()) {
+        box.style.transition = 'transform .16s var(--ease)';
+        box.style.transform = 'scale(1.025)';
+      }
+      paint();
       try { box.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
       renderCharmList();
     }, false);
@@ -2138,62 +2667,200 @@
   /* ---- copy / paste / randomise / reset ---- */
   function randomOf(arr) { return arr.length ? arr[Math.floor(Math.random() * arr.length)] : null; }
 
-  function randomize() {
-    var colors = list('colors');
-    var finishes = list('finishes');
-    var patterns = list('patterns');
-    var charms = list('charms');
-    var byGroup = {}, groups = [], i, g;
+  /* ---- the randomiser --------------------------------------------------
+     The old one drew three colours out of one random family and hoped. It
+     produced noise about as often as it produced a look. This one starts from
+     a hand-written palette — a trio that a person already decided goes
+     together — and then SNAPS each colour to the nearest shade the owner
+     actually stocks, so an owner who reworks her colour list keeps control of
+     what comes out. Pattern, finish and charm are chosen from the shortlist
+     that palette was written for, and the whole set gets ONE layout, which is
+     what separates a manicure from a colour test. */
 
-    for (i = 0; i < colors.length; i++) {
-      g = colors[i].group || 'misc';
-      if (!has(byGroup, g)) { byGroup[g] = []; groups.push(g); }
-      byGroup[g].push(colors[i]);
+  var PALETTES = [
+    { name: { ar: 'ماء الورد', en: 'Rosewater' }, hexes: ['#F0C8D2', '#E0A2B3', '#FFF3F0'],
+      finish: 'gloss', patterns: ['french', 'glazed', 'aura', 'ombre'], charms: ['stones', 'hearts', 'flowers'] },
+    { name: { ar: 'لاتيه', en: 'Latte' }, hexes: ['#C9A184', '#8C6449', '#F6EADF'],
+      finish: 'velvet', patterns: ['french', 'ombre', 'marble', 'frenchDeep'], charms: ['stones', 'misc'] },
+    { name: { ar: 'كرزي', en: 'Cherry' }, hexes: ['#9E1F32', '#6B1526', '#FBE6E6'],
+      finish: 'gloss', patterns: ['french', 'half', 'hearts', 'diagonal'], charms: ['hearts', 'stones'] },
+    { name: { ar: 'لؤلؤ', en: 'Pearl' }, hexes: ['#F4EFEA', '#DCE4EC', '#FFFFFF'],
+      finish: 'chrome', patterns: ['glazed', 'aura', 'chrome', 'french'], charms: ['stones', 'stars'] },
+    { name: { ar: 'غروب', en: 'Sunset' }, hexes: ['#F0906E', '#E8624F', '#FDE7D6'],
+      finish: 'glitter', patterns: ['ombre', 'aura', 'tipsGlitter', 'ombreV'], charms: ['stars', 'misc'] },
+    { name: { ar: 'برقوق', en: 'Plum' }, hexes: ['#6B3A52', '#A76A85', '#F3E2E8'],
+      finish: 'matte', patterns: ['half', 'diagonal', 'marble', 'frenchDeep'], charms: ['stones', 'stars'] },
+    { name: { ar: 'سماء', en: 'Sky' }, hexes: ['#BBD3E8', '#C9BEE6', '#FFFFFF'],
+      finish: 'jelly', patterns: ['ombre', 'checkers', 'dots', 'aura'], charms: ['stars', 'flowers'] },
+    { name: { ar: 'زيتوني', en: 'Olive' }, hexes: ['#95A279', '#5E6B4C', '#F2EFE2'],
+      finish: 'matte', patterns: ['leopard', 'dots', 'stripes', 'french'], charms: ['flowers', 'misc'] },
+    { name: { ar: 'شامبين', en: 'Champagne' }, hexes: ['#E4CBA0', '#C2A05E', '#FBF3E5'],
+      finish: 'chrome', patterns: ['chrome', 'glazed', 'tipsGlitter', 'french'], charms: ['stones', 'stars'] },
+    { name: { ar: 'توت', en: 'Berry' }, hexes: ['#C0417C', '#E06AA0', '#FBE0EC'],
+      finish: 'gloss', patterns: ['ombreV', 'hearts', 'stars', 'french'], charms: ['hearts', 'stars'] }
+  ];
+
+  var LAYOUTS = ['accent', 'alternate', 'allOver'];
+  var FINGER_ORDER = ['thumb', 'index', 'middle', 'ring', 'pinky'];
+
+  /* snap a palette colour onto the closest shade the shop really sells */
+  function nearestColor(target) {
+    var arr = list('colors'), best = target, bd = Infinity, i, h, d, dr, dg, db;
+    var tr = parseInt(target.slice(1, 3), 16);
+    var tg = parseInt(target.slice(3, 5), 16);
+    var tb = parseInt(target.slice(5, 7), 16);
+    for (i = 0; i < arr.length; i++) {
+      h = hex(arr[i] && arr[i].hex, '');
+      if (!h) continue;
+      dr = parseInt(h.slice(1, 3), 16) - tr;
+      dg = parseInt(h.slice(3, 5), 16) - tg;
+      db = parseInt(h.slice(5, 7), 16) - tb;
+      d = dr * dr * 0.9 + dg * dg * 1.2 + db * db * 0.7;   /* eyes weight green */
+      if (d < bd) { bd = d; best = h; }
     }
-    if (!groups.length) { toast(t('common.empty'), 'info'); return; }
+    return best;
+  }
 
-    mutate(function () {
-      var pal = [], famly = byGroup[randomOf(groups)] || [];
-      var neutral = byGroup.neutral || byGroup.nude || famly;
-      var kk = activeKeys(state.design);
-      var finish = randomOf(finishes);
-      var accentPattern = randomOf(patterns.filter(function (p) { return p.kind && p.kind !== 'none'; }));
-      var accentFinger = randomOf(['ring', 'middle', 'index']);
-      var charm = Math.random() < 0.5 ? randomOf(charms) : null;
-      var base, second, j, k, n, isAccent;
+  function planLook(pal) {
+    var kinds = patternKinds(), avail = [], i;
+    var finishes = list('finishes'), fin = '';
+    var charms = list('charms'), pool = [];
 
-      base = randomOf(famly);
-      second = randomOf(famly);
-      pal.push(hex(base && base.hex, '#E9C2C0'));
-      pal.push(hex(second && second.hex, '#F4CBD2'));
-      pal.push(hex((randomOf(neutral) || {}).hex, '#FAF3EE'));
+    for (i = 0; i < pal.patterns.length; i++) {
+      if (kinds.indexOf(pal.patterns[i]) !== -1) avail.push(pal.patterns[i]);
+    }
+    for (i = 0; i < finishes.length; i++) if (finishes[i].id === pal.finish) fin = pal.finish;
+    if (!fin) fin = (randomOf(finishes) || {}).id || 'gloss';
+    for (i = 0; i < charms.length; i++) {
+      if (pal.charms.indexOf(charms[i].group) !== -1) pool.push(charms[i]);
+    }
+    if (!pool.length) pool = charms;
 
-      for (j = 0; j < kk.length; j++) {
-        k = kk[j];
-        n = state.design.nails[k];
-        isAccent = fingerOf(k) === accentFinger;
-        n.color = isAccent ? pal[2] : (Math.random() < 0.72 ? pal[0] : pal[1]);
-        n.finish = finish ? finish.id : n.finish;
-        n.pattern = {
-          kind: (isAccent && accentPattern) ? accentPattern.kind : 'none',
-          color: pal[2],
-          color2: pal[1],
-          scale: 0.9 + Math.random() * 0.4
-        };
-        n.charms = [];
-        if (isAccent && charm) {
-          n.charms.push({ id: charm.id, x: 0.5, y: 0.3, s: 1, r: 0 });
-        }
+    return {
+      name: pal.name,
+      base: nearestColor(pal.hexes[0]),
+      second: nearestColor(pal.hexes[1]),
+      light: nearestColor(pal.hexes[2]),
+      finish: fin,
+      kind: avail.length ? randomOf(avail) : 'none',
+      layout: randomOf(LAYOUTS),
+      accent: Math.random() < 0.72 ? 'ring' : 'middle',
+      charm: (Math.random() < 0.6 && pool.length) ? randomOf(pool).id : null,
+      scale: Math.round((0.9 + Math.random() * 0.35) * 100) / 100
+    };
+  }
+
+  function applyLook(p) {
+    var kk = activeKeys(state.design), i, key, f, fi, n, isAccent, col, patterned;
+    for (i = 0; i < kk.length; i++) {
+      key = kk[i];
+      n = state.design.nails[key];
+      if (!n) continue;
+      f = fingerOf(key);
+      fi = FINGER_ORDER.indexOf(f);
+      isAccent = f === p.accent;
+
+      if (p.layout === 'alternate') col = (fi % 2) ? p.second : p.base;
+      else if (p.layout === 'allOver') col = p.light;
+      else col = p.base;
+      if (isAccent) col = (p.layout === 'allOver') ? p.base : p.light;
+
+      patterned = p.kind !== 'none' && (isAccent || p.layout === 'allOver');
+
+      n.color = col;
+      n.finish = p.finish;
+      n.pattern = {
+        kind: patterned ? p.kind : 'none',
+        color: p.light,
+        color2: p.second,
+        scale: p.scale
+      };
+      n.charms = (isAccent && p.charm) ? [{ id: p.charm, x: 0.5, y: 0.3, s: 1, r: 0 }] : [];
+    }
+  }
+
+  function revealLook(pal) {
+    var r;
+    markTouch(4);
+    react(activeKeys(state.design));
+    refresh();
+    toast(t('studio.randDone', { name: pick(pal.name) }), 'ok');
+    r = rectOf(refs.stage);
+    if (r) window.setTimeout(function () { sparkleAt(r, 1.7); }, 120);
+  }
+
+  /* A beat of anticipation, then the reveal. Three throwaway looks flash past
+     at ~110ms — long enough to register as a shuffle, short enough that she is
+     never waiting — and the whole roll is ONE undo step. */
+  function randomize() {
+    var pal, plan, ticks = 0, atStep = state.step;
+    if (state.rolling) return;
+    if (!list('colors').length) { toast(t('common.empty'), 'info'); return; }
+
+    pal = randomOf(PALETTES);
+    plan = planLook(pal);
+
+    if (reduced()) {
+      mutate(function () { applyLook(plan); });
+      markTouch(4);
+      toast(t('studio.randDone', { name: pick(pal.name) }), 'ok');
+      return;
+    }
+
+    state.rolling = true;
+    begin();
+    renderActionsSafe();
+
+    (function spin() {
+      /* she moved on mid-shuffle: land the final look at once, no theatre */
+      if (state.step !== atStep) { ticks = 3; }
+      if (ticks < 3) {
+        ticks++;
+        applyLook(planLook(randomOf(PALETTES)));
+        renderStage();
+        window.setTimeout(spin, 108);
+        return;
       }
-    });
+      applyLook(plan);
+      commit();
+      state.rolling = false;
+      revealLook(pal);
+    }());
   }
 
   function renderActions() {
-    var host = refs.actions;
+    var host = refs.actions, rollBtn;
     if (!host) return;
     keepFocus(host, function () {
       empty(host);
+
+      /* Row 1 — the offers. The randomiser is the headline: it is the only
+         filled button on the step, it says what it does, and it is the first
+         thing a thumb reaches. Beside it, the two shortcuts that stop this
+         feeling like ten separate jobs. */
+      rollBtn = shortcutBtn('dice', 'studio.randomize', 'a-rand', true, randomize);
+      if (state.rolling) {
+        rollBtn.disabled = true;
+        rollBtn.setAttribute('aria-busy', 'true');
+        rollBtn.lastChild.textContent = t('studio.randRoll');
+      }
       host.appendChild(el('div', { 'class': 'studio-actions' }, [
+        rollBtn,
+        shortcutBtn('grid', 'studio.applyLook', 'a-all', false, applyLookToAll),
+        state.design.hand === 'both'
+          ? shortcutBtn('hand', 'studio.mirrorLook', 'a-mirror', false, mirrorLook)
+          : null
+      ]));
+      host.appendChild(el('p', { 'class': 'studio-hint' }, [
+        el('span', { 'class': 'ico', html: icon('sparkle', 16), 'aria-hidden': 'true' }),
+        el('span', { text: t('studio.randHint') })
+      ]));
+
+      /* Row 2 — the quieter tools, with undo and redo pulled to the front so
+         the way back is the first thing she sees, not the last. */
+      host.appendChild(el('div', { 'class': 'studio-actions' }, [
+        actionBtn('undo', 'common.undo', undo, 'a-undo', !hist.past.length),
+        actionBtn('redo', 'common.redo', redo, 'a-redo', !hist.future.length),
         actionBtn('copy', 'studio.copyNail', function () {
           var n = firstSelected();
           if (!n) { toast(t('studio.needSel'), 'info'); return; }
@@ -2204,6 +2871,8 @@
         actionBtn('plusCircle', 'studio.pasteNail', function () {
           if (!state.clip) { toast(t('studio.noCopy'), 'info'); return; }
           if (!state.sel.length) { toast(t('studio.needSel'), 'info'); return; }
+          markTouch(4);
+          react(state.sel);
           mutate(function () {
             eachSelected(function (n) {
               var c = clone(state.clip);
@@ -2215,9 +2884,9 @@
           });
           toast(t('studio.pastedNail'), 'ok');
         }, 'a-paste', !state.clip),
-        actionBtn('dice', 'studio.randomize', randomize, 'a-rand'),
         actionBtn('close', 'studio.clearNail', function () {
           if (!state.sel.length) { toast(t('studio.needSel'), 'info'); return; }
+          react(state.sel);
           mutate(function () {
             var fresh = blank();
             var src = fresh.nails[keys()[0]] || null;
@@ -2230,11 +2899,56 @@
             state.activeCharm = -1;
           });
           toast(t('studio.cleared'), 'ok');
-        }, 'a-clear'),
-        actionBtn('undo', 'common.undo', undo, 'a-undo', !hist.past.length),
-        actionBtn('redo', 'common.redo', redo, 'a-redo', !hist.future.length)
+        }, 'a-clear')
       ]));
+      if (!hist.past.length) {
+        host.appendChild(el('p', { 'class': 'studio-hint' }, [
+          el('span', { 'class': 'ico', html: icon('undo', 16), 'aria-hidden': 'true' }),
+          el('span', { text: t('studio.undoSafe') })
+        ]));
+      }
     });
+  }
+
+  /* copy the look she is standing on to every nail she ordered */
+  function applyLookToAll() {
+    var src = firstSelected(), kk = activeKeys(state.design);
+    if (!src) { toast(t('studio.needSel'), 'info'); return; }
+    markTouch(4);
+    react(kk);
+    mutate(function () {
+      var look = clone(src), i, n;
+      for (i = 0; i < kk.length; i++) {
+        n = state.design.nails[kk[i]];
+        if (!n) continue;
+        n.color = look.color;
+        n.finish = look.finish;
+        n.pattern = clone(look.pattern);
+        n.charms = clone(look.charms);
+      }
+    });
+    toast(t('studio.appliedLook'), 'ok');
+  }
+
+  /* the right hand is the one she designs; the left one just follows */
+  function mirrorLook() {
+    var fs = fingers(), kk = activeKeys(state.design);
+    if (state.design.hand !== 'both') return;
+    markTouch(4);
+    react(kk);
+    mutate(function () {
+      var i, from, to;
+      for (i = 0; i < fs.length; i++) {
+        from = state.design.nails[keyOf('right', fs[i].key)];
+        to = state.design.nails[keyOf('left', fs[i].key)];
+        if (!from || !to) continue;
+        to.color = from.color;
+        to.finish = from.finish;
+        to.pattern = clone(from.pattern);
+        to.charms = clone(from.charms);
+      }
+    });
+    toast(t('studio.mirroredLook'), 'ok');
   }
 
   function renderActionsSafe() { if (state.step === 4) renderActions(); }
@@ -2259,7 +2973,9 @@
     refs.actions = el('div', {});
     refs.editor = el('div', { 'class': 'flow' });
     refs.charmList = el('div', {});
+    var nudge = defaultsNote(4);
 
+    if (nudge) host.appendChild(nudge);
     host.appendChild(section('studio.selTitle', null, [refs.selBar, refs.actions]));
     host.appendChild(el('section', { 'class': 'studio-sec' }, [refs.tools, refs.panel]));
     host.appendChild(section('studio.charmList', null, [refs.editor, refs.charmList]));
@@ -2323,6 +3039,7 @@
                   pushHist();
                   state.design = sanitize(item.config);
                   pruneSelection();
+                  primeProgress();
                   saveDraft();
                   renderAll();
                   toast(t('studio.loadedSaved'), 'ok');
@@ -2388,6 +3105,9 @@
 
   function buildStep5(host) {
     var pricing = setting('pricing', {}) || {};
+    /* nothing on this step is required — one set, no extras, no note is a
+       complete answer — so arriving here is what finishes it */
+    window.setTimeout(function () { markTouch(5); }, 0);
     var qtyOut = el('span', { 'class': 'studio-qty-n', text: nfm(state.design.qty) });
 
     function setQty(v) {
@@ -2448,17 +3168,7 @@
         ]),
         el('button', {
           'class': 'btn btn-line', type: 'button', 'data-fk': 'share',
-          on: {
-            click: function () {
-              var url = shareUrl();
-              var p = (SN.UI && SN.UI.copy) ? SN.UI.copy(url) : null;
-              if (p && typeof p.then === 'function') {
-                p.then(function (ok) { toast(ok ? t('studio.shareOk') : t('studio.shareFail'), ok ? 'ok' : 'err'); });
-              } else {
-                toast(t('studio.shareFail'), 'err');
-              }
-            }
-          }
+          on: { click: copyShareLink }
         }, [
           el('span', { 'class': 'btn-ico', html: icon('share', 18), 'aria-hidden': 'true' }),
           el('span', { text: t('studio.shareBtn') })
@@ -2475,6 +3185,9 @@
                 state.design = sanitize(blank());
                 state.sel = activeKeys(state.design);
                 state.activeCharm = -1;
+                state.touch = {};
+                state.doneSeen = {};
+                state.allDoneSeen = false;
                 saveDraft();
                 renderAll();
               }
@@ -2595,24 +3308,40 @@
     ]);
   }
 
+  /* The last screen before she orders is not a receipt — it is the thing she
+     already owns, shown large, with the price told honestly underneath and one
+     obvious way forward. The details she can audit sit below the fold. */
   function buildStep6(host) {
     var art = el('div', { 'class': 'studio-review-art' });
+    var res = (SN.Checkout && SN.Checkout.priceCustom) ? SN.Checkout.priceCustom(state.design) : null;
+
     reviewSvg = null;
     try {
       reviewSvg = SN.Nail.preview(state.design, { interactive: false });
       art.appendChild(reviewSvg);
     } catch (e) { /* ignore */ }
 
-    host.appendChild(section('studio.reviewTitle', 'studio.reviewText', [
+    host.appendChild(section('studio.reviewProud', 'studio.reviewOwn', [
       art,
+      el('div', { 'class': 'studio-total' }, [
+        el('span', { text: t('studio.reviewTotal') }),
+        el('b', { text: res ? money(res.total) : '—' })
+      ]),
+      el('button', {
+        'class': 'btn btn-pri btn-lg btn-block', type: 'button', 'data-fk': 'confirm',
+        text: t('studio.confirm'),
+        on: { click: openCheckout }
+      }),
+      el('p', { 'class': 'muted small', text: t('studio.priceHonest') })
+    ]));
+
+    /* Sharing sits directly under the set, not buried at the end: a photo sent
+       to a friend is how this shop grows. */
+    host.appendChild(section('studio.shareImg', 'studio.shareImgText', [
       el('div', { 'class': 'studio-row' }, [
-        el('button', {
-          'class': 'btn btn-ghost btn-sm', type: 'button', 'data-fk': 'png',
-          on: { click: downloadPNG }
-        }, [
-          el('span', { 'class': 'btn-ico', html: icon('download', 16), 'aria-hidden': 'true' }),
-          el('span', { text: t('studio.png') })
-        ]),
+        shortcutBtn('share', 'studio.shareImg', 'share-img', true, shareImage),
+        shortcutBtn('download', 'studio.png', 'png', false, downloadPNG),
+        shortcutBtn('copy', 'studio.shareBtn', 'share-link', false, copyShareLink),
         el('button', {
           'class': 'btn btn-ghost btn-sm', type: 'button', 'data-fk': 'print',
           on: { click: function () { try { window.print(); } catch (e) { /* ignore */ } } }
@@ -2628,11 +3357,17 @@
     host.appendChild(section('studio.priceTitle', null, [
       priceTable(),
       el('button', {
-        'class': 'btn btn-pri btn-lg btn-block', type: 'button', 'data-fk': 'confirm',
+        'class': 'btn btn-pri btn-lg btn-block', type: 'button', 'data-fk': 'confirm-2',
         text: t('studio.confirm'),
         on: { click: openCheckout }
       })
     ]));
+
+    /* one quiet moment of pride as the finished set arrives */
+    play(art, [
+      { transform: 'translateY(14px) scale(.985)', opacity: 0 },
+      { transform: 'none', opacity: 1 }
+    ], { duration: 460, easing: EASE_OUT });
   }
 
   function openCheckout() {
@@ -2640,17 +3375,127 @@
       toast(t('common.error'), 'err');
       return;
     }
+    state.touch[6] = true;
+    renderSteps();
     SN.Checkout.open({ kind: 'custom', design: clone(state.design) });
   }
 
+  /* ---- the shareable picture ------------------------------------------- */
+  /* `SN.Nail.toPNG` gives us the hands on a flat ground. What gets posted is
+     the branded card: the set centred on the house cream, the shop's name and
+     handle under it. Every step degrades to the plain render rather than
+     failing — an older browser still gets its image. */
+
+  function brandImage(blob) {
+    return new Promise(function (resolve) {
+      var img, url = '';
+      var brand = pick(setting('settings.brand', null)) || 'Shosh Nail';
+      var handle = String(setting('settings.instagram', '') || '').replace(/^@/, '');
+      if (!blob || !window.URL || !window.URL.createObjectURL || !D.createElement) { resolve(blob); return; }
+      try { url = window.URL.createObjectURL(blob); }
+      catch (e) { resolve(blob); return; }
+
+      function done(out) {
+        try { window.URL.revokeObjectURL(url); } catch (e) { /* ignore */ }
+        resolve(out || blob);
+      }
+
+      img = new window.Image();
+      img.onerror = function () { done(null); };
+      img.onload = function () {
+        var W = 1080, H = 1350, cv, ctx, g, pad = 84, availW, availH, s, dw, dh;
+        try {
+          cv = D.createElement('canvas');
+          if (!cv.getContext || !cv.toBlob) { done(null); return; }
+          cv.width = W; cv.height = H;
+          ctx = cv.getContext('2d');
+
+          g = ctx.createLinearGradient(0, 0, W, H);
+          g.addColorStop(0, '#FDF5F2');
+          g.addColorStop(1, '#F4E3E6');
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, W, H);
+
+          availW = W - pad * 2;
+          availH = H - pad - 250;
+          s = Math.min(availW / img.width, availH / img.height);
+          dw = img.width * s;
+          dh = img.height * s;
+          ctx.drawImage(img, (W - dw) / 2, pad + (availH - dh) / 2, dw, dh);
+
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillStyle = '#8C4459';
+          ctx.font = '700 62px Tajawal, "Reem Kufi", sans-serif';
+          ctx.fillText(brand, W / 2, H - 132);
+          if (handle) {
+            ctx.fillStyle = '#A85A73';
+            ctx.font = '500 38px Tajawal, sans-serif';
+            ctx.fillText('@' + handle, W / 2, H - 74);
+          }
+
+          cv.toBlob(function (out) { done(out); }, 'image/png');
+        } catch (e) { done(null); }
+      };
+      img.src = url;
+    });
+  }
+
+  function designPNG() {
+    if (!reviewSvg || !SN.Nail || !SN.Nail.toPNG || typeof window.Promise !== 'function') return null;
+    toast(t('studio.preparing'), 'info');
+    return SN.Nail.toPNG(reviewSvg, { scale: 2 }).then(brandImage);
+  }
+
   function downloadPNG() {
-    if (!reviewSvg || !SN.Nail || !SN.Nail.toPNG) { toast(t('studio.pngFail'), 'err'); return; }
-    SN.Nail.toPNG(reviewSvg, { scale: 2 }).then(function (blob) {
+    var p = designPNG();
+    if (!p) { toast(t('studio.pngFail'), 'err'); return; }
+    p.then(function (blob) {
       if (SN.UI && SN.UI.download) SN.UI.download(blob, 'shosh-nail-design.png', 'image/png');
       toast(t('studio.pngOk'), 'ok');
     }, function () {
       toast(t('studio.pngFail'), 'err');
     });
+  }
+
+  function shareImage() {
+    var p = designPNG();
+    if (!p) { toast(t('studio.pngFail'), 'err'); return; }
+    p.then(function (blob) {
+      var nav = window.navigator, file = null, sent = null;
+      try {
+        if (typeof window.File === 'function') {
+          file = new window.File([blob], 'shosh-nail-design.png', { type: 'image/png' });
+        }
+      } catch (e) { file = null; }
+      try {
+        if (file && nav && nav.share && nav.canShare && nav.canShare({ files: [file] })) {
+          sent = nav.share({
+            files: [file],
+            title: pick(setting('settings.brand', null)) || 'Shosh Nail',
+            text: t('studio.shareImgText')
+          });
+        }
+      } catch (e2) { sent = null; }
+      if (sent && typeof sent.then === 'function') {
+        sent.then(function () { toast(t('studio.sharedOk'), 'ok'); }, function () { /* she cancelled */ });
+        return;
+      }
+      /* no share sheet on this device — hand her the file instead */
+      if (SN.UI && SN.UI.download) SN.UI.download(blob, 'shosh-nail-design.png', 'image/png');
+      toast(t('studio.pngOk'), 'ok');
+    }, function () {
+      toast(t('studio.pngFail'), 'err');
+    });
+  }
+
+  function copyShareLink() {
+    var p = (SN.UI && SN.UI.copy) ? SN.UI.copy(shareUrl()) : null;
+    if (p && typeof p.then === 'function') {
+      p.then(function (ok) { toast(ok ? t('studio.shareOk') : t('studio.shareFail'), ok ? 'ok' : 'err'); });
+    } else {
+      toast(t('studio.shareFail'), 'err');
+    }
   }
 
   /* ====================================================================== */
@@ -2660,20 +3505,23 @@
   var STEP_LABELS = ['studio.s1', 'studio.s2', 'studio.s3', 'studio.s4', 'studio.s5', 'studio.s6'];
 
   function renderSteps() {
-    var host = refs.steps, i;
+    var host = refs.steps, i, pct;
     if (!host) return;
     keepFocus(host, function () {
       empty(host);
       for (i = 1; i <= STEP_COUNT; i++) {
         (function (n) {
-          var done = n < state.step;
+          var done = stepDone(n);
           var on = n === state.step;
           host.appendChild(el('button', {
-            'class': 'studio-step-btn' + (on ? ' is-on' : (done ? ' is-done' : '')),
+            'class': 'studio-step-btn' + (done ? ' is-done' : '') + (on ? ' is-on' : ''),
             type: 'button',
             'data-fk': fk('step-' + n),
             disabled: n > state.reached,
-            aria: { current: on ? 'step' : false },
+            aria: {
+              current: on ? 'step' : false,
+              label: t(STEP_LABELS[n - 1]) + (done ? ' — ' + t('studio.stepDone') : '')
+            },
             on: { click: function () { setStep(n); } }
           }, [
             el('span', { 'class': 'studio-step-n', html: done ? icon('check', 14) : String(n) }),
@@ -2682,11 +3530,18 @@
         }(i));
       }
     });
+    /* the bar measures decisions made, not chips walked past */
+    pct = Math.max(4, Math.round(doneCount() / JOURNEY * 100));
     if (refs.progress && refs.progress.firstChild) {
-      try { refs.progress.firstChild.style.setProperty('inline-size', Math.round(state.step / STEP_COUNT * 100) + '%'); }
-      catch (e) { refs.progress.firstChild.style.width = Math.round(state.step / STEP_COUNT * 100) + '%'; }
+      try { refs.progress.firstChild.style.setProperty('inline-size', pct + '%'); }
+      catch (e) { refs.progress.firstChild.style.width = pct + '%'; }
+    }
+    if (refs.progressNote) {
+      refs.progressNote.textContent = progressText();
+      refs.progressNote.setAttribute('data-full', doneCount() >= JOURNEY ? '1' : '0');
     }
     revealStep();
+    noteCompletions();
   }
 
   /* On a narrow screen the six chips overflow the strip, and the browser's
@@ -2892,6 +3747,7 @@
       if (item && isObj(item.config)) {
         state.design = sanitize(item.config);
         pruneSelection();
+        primeProgress();
         toast(t('studio.loadedReady'), 'ok');
         replaceHash('#step=1');
         return true;
@@ -2906,6 +3762,7 @@
       if (!isObj(data)) { toast(t('studio.badShared'), 'err'); replaceHash('#step=1'); return false; }
       state.design = sanitize(data);
       pruneSelection();
+      primeProgress();
       toast(t('studio.loadedShared'), 'ok');
       replaceHash('#step=1');
       return true;
@@ -2952,7 +3809,16 @@
     var host = refs.steps;
     if (!host || !host.parentNode) return;
     refs.progress = el('div', { 'class': 'studio-progress' }, [el('i', {})]);
+    /* the journey read out in words — "one step to go" does more for finishing
+       than a bar ever does. aria-live so it is spoken as it changes. */
+    refs.progressNote = el('p', {
+      'class': 'studio-pane-note',
+      aria: { live: 'polite' },
+      style: { marginBlockStart: '7px', marginBlockEnd: '0' },
+      text: progressText()
+    });
     host.parentNode.insertBefore(refs.progress, host.nextSibling);
+    refs.progress.parentNode.insertBefore(refs.progressNote, refs.progress.nextSibling);
   }
 
   function init() {
@@ -2995,6 +3861,7 @@
       refs.eyebrow.appendChild(el('span', { text: t('studio.eyebrow') }));
     }
 
+    primeProgress();
     mountProgress();
     renderAll();
 
@@ -3011,10 +3878,11 @@
     }
     if (SN.Store && SN.Store.subscribe) {
       SN.Store.subscribe(SN.UI.debounce ? SN.UI.debounce(function () {
+        pristine = null;                 /* the owner may have edited defaults */
         state.design = sanitize(state.design);
         pruneSelection();
         renderAll();
-      }, 200) : function () { renderAll(); });
+      }, 200) : function () { pristine = null; renderAll(); });
     }
 
     window.addEventListener('hashchange', onHashChange, false);
@@ -3036,6 +3904,7 @@
       hist.past.length = 0;
       hist.future.length = 0;
       pruneSelection();
+      primeProgress();
       saveDraft();
       renderAll();
       return clone(state.design);

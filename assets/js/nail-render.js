@@ -1370,41 +1370,321 @@
     }
   };
 
-  /* Magnetic cat eye. A deep, saturated base — magnetic gel is always dark —
-     and one bright band pulled up out of it by the magnet, brightest at its
-     core, falling off smoothly on both sides, with the faint chromatic shift
-     along its length that a real magnetic pigment gives you. The falloff is
-     built from stacked strokes and finished with ONE shared blur, so ten of
-     them still cost one filter definition and one small filter region each. */
-  PATTERNS.catEye = function (g, x) {
-    var deep = darken(x.c2, 0.34);
-    var band = pb()
-      .M(-x.w * 0.14, x.h * 0.86)
-      .C(x.w * 0.26, x.h * 0.72, x.w * 0.60, x.h * 0.48, x.w * 1.14, x.h * 0.14).d();
-    var core = mix(x.c1, '#FFFFFF', 0.30);
-    var shift = dGrad(x.defs, [
-      [0, mix(core, '#FFD9B0', 0.45)], [0.42, core],
-      [0.7, mix(core, '#CFE6FF', 0.35)], [1, mix(x.c1, '#E6C7FF', 0.3)]
-    ], 0, 1, 1, 0);
-    var gg, i;
-    var W = [0.52, 0.38, 0.27, 0.185, 0.115, 0.07];
-    var O = [0.12, 0.16, 0.21, 0.28, 0.38, 0.58];
+  /* ====================================================================== */
+  /* Cat eye — magnetic gel                                                  */
+  /*                                                                         */
+  /*  A magnet held under the nail drags the metallic pigment into ONE band   */
+  /*  along the nail's long axis and empties everywhere else. So the effect   */
+  /*  is never just a bright stripe: it is a bright stripe INSIDE a dark      */
+  /*  frame. Every reference photo shows the same four things —               */
+  /*    1. the band runs cuticle-to-tip, centred on the long axis, widest    */
+  /*       through the middle third and narrowing toward both ends;           */
+  /*    2. a vignette on all four edges, deepest at the side walls, so the    */
+  /*       perimeter reads almost black next to the band;                     */
+  /*    3. a core that stays in the customer's hue — saturated and luminous,  */
+  /*       never blown out to white;                                          */
+  /*    4. very fine pigment sparkle inside the band, and two or three small  */
+  /*       SHARP speculars on the gloss above it.                             */
+  /*  How dark the frame goes is driven by how light the base colour is, so   */
+  /*  a pale nude gives the milky "velvet pearl" variant instead of mud.      */
+  /* ====================================================================== */
 
+  /* HSL in and out. The whole effect is hue-preserving — the deep base has to
+     be a very dark version of the customer's colour, not a mix toward black,
+     which is why plain darken() is not enough here. `w` is the minimum
+     channel: distance to white, and the honest measure of "is this a pale
+     colour" for a saturated hue that luminance would call light. */
+  function ceHsl(hex) {
+    var p = parseHex(hex) || { r: 0, g: 0, b: 0 };
+    var r = p.r / 255, g = p.g / 255, b = p.b / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn;
+    var l = (mx + mn) / 2, s = 0, hh = 0;
+    if (dl > 0.0001) {
+      s = l > 0.5 ? dl / (2 - mx - mn) : dl / (mx + mn);
+      if (mx === r) hh = (g - b) / dl + (g < b ? 6 : 0);
+      else if (mx === g) hh = (b - r) / dl + 2;
+      else hh = (r - g) / dl + 4;
+      hh /= 6;
+    }
+    return { h: hh, s: s, l: l, w: mn };
+  }
+  function ceHex(h, s, l) {
+    h = num(h, 0);
+    h = h - Math.floor(h);
+    s = clamp(num(s, 0), 0, 1);
+    l = clamp(num(l, 0), 0, 1);
+    var q2 = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    var p2 = 2 * l - q2;
+    function ch(t) {
+      t = t - Math.floor(t);
+      if (t < 1 / 6) return p2 + (q2 - p2) * 6 * t;
+      if (t < 1 / 2) return q2;
+      if (t < 2 / 3) return p2 + (q2 - p2) * (2 / 3 - t) * 6;
+      return p2;
+    }
+    return toHex(ch(h + 1 / 3) * 255, ch(h) * 255, ch(h - 1 / 3) * 255);
+  }
+
+  /* A pointed lens, centred on the origin, `L` long and `W` wide. This is the
+     shape a specular takes on a domed nail: a sliver with two sharp ends, not
+     a blob. */
+  function ceSliver(L, W) {
+    return pb()
+      .M(0, -L).C(W, -L * 0.42, W, L * 0.42, 0, L)
+      .C(-W, L * 0.42, -W, -L * 0.42, 0, -L).Z().d();
+  }
+
+  /* A radial ramp stretched along the nail's long axis. Object-bounding-box
+     units on purpose: ten nails at ten different pixel sizes then share one
+     gradient definition instead of asking for ten. */
+  function ceRamp(defs, stops, rx, ry, cy) {
+    return radGrad(defs, stops, {
+      cx: 0.5, cy: f(cy), r: f(rx),
+      gradientTransform: 'translate(0.5 ' + f(cy) + ') scale(1 ' + f(ry / rx) +
+        ') translate(-0.5 ' + f(-cy) + ')'
+    });
+  }
+
+  /* Every colour and every number the pattern needs, derived from the two
+     customer colours in one place so the layers below stay readable. */
+  function ceMix(x) {
+    var c1 = col(x.c1, '#FFFFFF');
+    var c2 = col(x.c2, '#3A1E28');
+    var A = ceHsl(c1), B = ceHsl(c2);
+    var h1 = A.h, s1 = A.s, h2 = B.h, s2 = B.s;
+    var S = clamp(num(x.S, 1), 0.5, 1.8);
+
+    /* The studio hands out white as the default band colour. A grey streak is
+       not cat eye, so a colourless band borrows the base's hue: the magnet
+       concentrates the customer's colour, it does not bleach it. */
+    if (s1 < 0.17 && s2 > 0.20) { h1 = h2; s1 = clamp(s2 * 0.92, 0.34, 1); }
+    /* And the reverse: the "black" in the photographs is never neutral, it is
+       a very dark version of the red / the purple. A colourless base picks up
+       the band's hue so the frame stays part of the same nail. */
+    if (s2 < 0.13 && s1 > 0.22) { h2 = h1; s2 = clamp(s1 * 0.55, 0, 0.62); }
+
+    /* how milky the whole thing goes. Measured as distance to WHITE, not as
+       luminance: a neon green and a pale nude sit at the same luminance and
+       want opposite treatments — the neon still needs a near-black frame. */
+    var pale = clamp((B.w - 0.38) / 0.36, 0, 1);
+
+    var deepL = 0.048 + 0.038 * s2;
+    /* On the milky variant the base is the MIDDLE tone, not the top one: the
+       pearl band has to sit above it and the emptied edge below it. Taking
+       the customer's colour down a step is what buys room for both — leave it
+       at face value and the whole nail flattens into one pale wash. */
+    var milkL = clamp(B.l - 0.10, 0.68, 0.85);
+    var baseL = deepL + (milkL - deepL) * pale;
+    var baseS = clamp(s2 * (1.14 - 0.40 * pale) + 0.05 * (1 - pale), 0, 1);
+    /* The brightest pixel in every one of the reference photographs is the
+       PURE pigment, not a lightened version of it: HSL 0.5 for a saturated
+       hue. Push past that and red turns coral and purple turns lilac, which
+       is exactly the "white streak" failure. The band looks luminous because
+       of what surrounds it, not because it was brightened. Only the milky
+       variant climbs, and there the hue thins out as it does. */
+    var coreL = clamp(Math.max(0.485 + 0.30 * pale, baseL + 0.11 + 0.05 * pale), 0, 0.97);
+    var coreS = clamp(s1 * (1.25 - 0.90 * pale) + 0.10 * (1 - pale), 0, 1);
+
+    var deep = ceHex(h2, baseS, baseL);
+    var core = ceHex(h1, coreS, coreL);
+
+    return {
+      pale: pale,
+      deep: deep,
+      /* the emptied perimeter — the same hue again, taken down as far as the
+         base allows. On a milky nail this is only a shade deeper. */
+      edge: ceHex(h2, clamp(baseS * (1 + 0.34 * pale), 0, 1),
+                  baseL * (0.30 + 0.42 * pale)),
+      lift: ceHex(h2, baseS * 0.92, clamp(baseL * (1.22 - 0.14 * pale), 0, 0.94)),
+      core: core,
+      /* the very centre of the pull — a hair above the core and no more */
+      hot: ceHex(h1, clamp(coreS * 1.02, 0, 1),
+                 clamp(coreL + 0.055 * (1 - pale) + 0.02 * pale, 0, 0.96)),
+      /* the shoulder of the band. Taken toward the deep base rather than
+         built fresh, so the falloff always reads as one material however far
+         apart the customer's two colours are. */
+      band: mix(core, deep, 0.54 - 0.20 * pale),
+      spark: mix(core, '#FFFFFF', 0.42 + 0.34 * pale),
+      /* Where the ramp reaches zero, in fractions of the plate box — NOT the
+         width of the visible band. The band the eye reads is the inner half of
+         it, so at scale 1 this puts a bright core about a fifth of the nail
+         wide inside a soft field about half the nail wide, which is what the
+         photographs measure. 0.6 -> a tight wire, 1.6 -> a wide sweep that
+         leaves only a rim of frame. */
+      bw: clamp(0.50 * (0.60 + 0.40 * S), 0.30, 0.70),
+      /* and how far it reaches toward the two ends. Longer than half the nail,
+         so the taper is the ellipse's flank and the band still has colour in
+         it when the vignette takes over at the tip. */
+      bh: 0.88,
+      /* the pull sits a little above centre, toward the cuticle, in all four
+         photographs — the magnet is held against the finger, not the tip */
+      cy: 0.555,
+      /* the frame is nearly black on a dark nail and no more than a shade of
+         warmth at the edge on a milky one; both are in the photographs */
+      vr: 1 - 0.45 * pale,
+      vx: 0.74 - 0.38 * pale,
+      vy: 0.80 - 0.42 * pale
+    };
+  }
+
+  PATTERNS.catEye = function (g, x) {
+    var m = ceMix(x);
+    var q = clamp(num(x.q, 1), 0.25, 1);
+    var Lx = num(x.L && x.L.x, -0.4), Ly = num(x.L && x.L.y, 0.5);
+    var i, n, a, rr, dx, dy, px, py, op, sz, ring, gl, hx, hy;
+    /* the concentric border: stroke widths as fractions of the nail width,
+       and how much each one darkens */
+    var RW = [0.60, 0.44, 0.31, 0.20, 0.115, 0.05];
+    var RO = [0.08, 0.10, 0.125, 0.16, 0.22, 0.34];
+
+    /* 1. the emptied plate. Flat, in the deepest version of the base hue,
+          with a touch more life through the middle where the gel is thickest. */
     add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      fill: vGrad(x.defs, [[0, darken(deep, 0.12)], [0.5, deep], [1, darken(deep, 0.22)]])
+      fill: vGrad(x.defs, [
+        [0, m.edge], [0.14, m.deep], [0.55, m.lift], [0.9, m.deep], [1, m.edge]
+      ])
     }));
-    gg = add(g, E('g', { filter: blurF(x.defs, x.u * 1.5) }));
-    for (i = 0; i < W.length; i++) {
-      add(gg, E('path', {
-        d: band, fill: 'none', stroke: i >= 4 ? shift : x.c1,
-        'stroke-width': f(x.w * W[i] * (0.62 + x.S * 0.38)),
-        'stroke-linecap': 'round', opacity: f(O[i])
+
+    /* 2. THE BAND, in two passes. A single ramp can only give an oval hot
+          spot; the photographs show a long bright LINE sitting inside a much
+          broader soft field, because the magnet concentrates the pigment on
+          its axis and merely thins it either side. So: the field first —
+          an elongated radial ramp whose contours are ellipses, widest through
+          the middle third and tapering toward both ends, with no hard edge
+          anywhere. */
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: ceRamp(x.defs, [
+        [0.00, m.core, 1],
+        [0.20, m.core, 0.97],
+        [0.36, m.band, 0.92],
+        [0.52, mix(m.band, m.deep, 0.34), 0.80],
+        [0.68, mix(m.band, m.deep, 0.66), 0.56],
+        [0.83, mix(m.band, m.deep, 0.88), 0.29],
+        [1.00, m.deep, 0]
+      ], m.bw, m.bh, m.cy)
+    }));
+    /* then the line itself: narrow, and stretched far enough along the axis
+       that it stays a streak the whole length of the nail instead of pooling
+       in the middle. */
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: ceRamp(x.defs, [
+        [0.00, m.hot, 0.80],
+        [0.28, m.core, 0.66],
+        [0.58, m.core, 0.32],
+        [0.82, m.band, 0.10],
+        [1.00, m.band, 0]
+      ], m.bw * 0.46, m.bh * 1.30, m.cy)
+    }));
+
+    /* 3. the pigment itself. Magnetic pigment is a suspension of tiny
+          reflective flakes and they line up ALONG the field, which is why the
+          sparkle in the photographs reads as fine radial silk fanning out of
+          the band rather than as scattered glitter. So each fleck is a short
+          streak pointed away from the core, densest on the axis and thinning
+          toward the shoulders — over one shared micro-speckle tile that buys
+          the density a hundred separate flecks would otherwise cost. The
+          milky variant leans on this far harder than the dark ones do: in the
+          pale photograph the band and the base are barely a step apart in
+          tone, and it is the silk that tells them apart at all. */
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: grainP(x.defs, m.spark, 0.62 + 0.30 * m.pale, x.u * 24),
+      opacity: f(0.6 + 0.4 * m.pale)
+    }));
+    n = Math.round((26 + 16 * m.pale) * q);
+    for (i = 0; i < n; i++) {
+      a = x.rnd() * 6.2832;
+      rr = Math.pow(x.rnd(), 0.55) * 0.86;
+      dx = Math.cos(a) * rr * m.bw;
+      dy = Math.sin(a) * rr * m.bh;
+      px = 0.5 + dx;
+      py = m.cy + dy;
+      op = (1 - rr * 0.85) * x.rnd.r(0.20, 0.60) * (1 + 0.55 * m.pale);
+      sz = x.rnd.r(0.40, 1.10) * (1 + 0.45 * m.pale);
+      /* nothing that would not survive the vignette above it */
+      if (py < 0.04 || py > 0.97 || op < 0.05) continue;
+      add(g, E('ellipse', {
+        cx: f(px * x.w), cy: f(py * x.h),
+        rx: f(x.u * sz), ry: f(x.u * sz * 0.28),
+        fill: m.spark, opacity: f(op),
+        transform: 'rotate(' + f(Math.atan2(dy * x.h, dx * x.w) * 57.2958) +
+          ' ' + f(px * x.w) + ' ' + f(py * x.h) + ')'
       }));
     }
-    add(gg, E('path', {
-      d: band, fill: 'none', stroke: mix(core, '#FFFFFF', 0.5),
-      'stroke-width': f(x.w * 0.028 * (0.62 + x.S * 0.38)),
-      'stroke-linecap': 'round', opacity: 0.65
+
+    /* 4. THE FRAME, and it is the whole trick. Whatever the magnet pulls into
+          the band it takes from the edges, so a cat eye is a bright stripe
+          inside a dark border — leave the border out and the nail just looks
+          like a stripe of paint. Built in two parts.
+          First the border itself, as concentric strokes of the silhouette:
+          the frame in the photographs hugs the nail's OUTLINE, staying the
+          same thickness around the point of an almond, which an x/y gradient
+          on the bounding box cannot do. Half of every stroke falls outside
+          the clip, so each one lays down an inward band of half its width and
+          the stack ramps smoothly inward. ONE shared blur across the whole
+          stack turns those steps into a continuous ramp — the only filter the
+          pattern uses, and it is defined once for the page however many nails
+          are on it. */
+    ring = add(g, E('g', {
+      fill: 'none', stroke: m.edge, filter: blurF(x.defs, x.u * 2.6)
+    }));
+    for (i = 0; i < RW.length; i++) {
+      add(ring, E('path', {
+        d: x.d, 'stroke-width': f(x.w * RW[i]), opacity: f(RO[i] * m.vr)
+      }));
+    }
+
+    /* Then across the nail — the side walls lose more pigment than the ends,
+       so they get a second, wider pass on top of the border. */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, [
+        [0.00, m.edge, f(m.vx)],
+        [0.045, m.edge, f(m.vx * 0.90)],
+        [0.105, m.edge, f(m.vx * 0.62)],
+        [0.175, m.edge, f(m.vx * 0.32)],
+        [0.26, m.edge, f(m.vx * 0.11)],
+        [0.37, m.edge, 0],
+        [0.63, m.edge, 0],
+        [0.74, m.edge, f(m.vx * 0.11)],
+        [0.825, m.edge, f(m.vx * 0.32)],
+        [0.895, m.edge, f(m.vx * 0.62)],
+        [0.955, m.edge, f(m.vx * 0.90)],
+        [1.00, m.edge, f(m.vx)]
+      ])
+    }));
+    /* then along it: a broad fade into the free edge, and a narrower but
+       harder line at the cuticle where the gel meets skin. */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: vGrad(x.defs, [
+        [0.00, m.edge, f(m.vy)],
+        [0.06, m.edge, f(m.vy * 0.72)],
+        [0.15, m.edge, f(m.vy * 0.42)],
+        [0.26, m.edge, f(m.vy * 0.19)],
+        [0.38, m.edge, f(m.vy * 0.05)],
+        [0.48, m.edge, 0],
+        [0.865, m.edge, 0],
+        [0.93, m.edge, f(m.vy * 0.22)],
+        [0.975, m.edge, f(m.vy * 0.62)],
+        [1.00, m.edge, f(m.vy * 0.95)]
+      ])
+    }));
+
+    /* 5. gloss. Two speculars, both small, both SHARP, and both shaped like
+          slivers with pointed ends — the long one high on the ridge where the
+          dome is steepest, a short one off its shoulder. The pale photograph
+          shows exactly this: one clean sliver, nothing soft. A single fat
+          blob is the tell of a drawing, and it is never in the photographs. */
+    hx = clamp(0.44 - Lx * 0.13, 0.28, 0.66) * x.w;
+    hy = clamp(0.64 + Ly * 0.06, 0.50, 0.76) * x.h;
+    gl = add(g, E('g', { opacity: f(0.58 + 0.34 * m.pale) }));
+    add(gl, E('path', {
+      d: ceSliver(x.h * (0.060 + 0.020 * m.pale), x.w * 0.020),
+      fill: '#FFFFFF', opacity: 0.9,
+      transform: 'translate(' + f(hx) + ' ' + f(hy) + ') rotate(' + f(-7 + Lx * 9) + ')'
+    }));
+    add(gl, E('path', {
+      d: ceSliver(x.h * 0.026, x.w * 0.011), fill: '#FFFFFF', opacity: 0.5,
+      transform: 'translate(' + f(hx + x.w * 0.10) + ' ' + f(hy - x.h * 0.15) +
+        ') rotate(' + f(-14 + Lx * 9) + ')'
     }));
   };
 

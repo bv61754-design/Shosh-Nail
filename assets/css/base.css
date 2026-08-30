@@ -13,7 +13,10 @@
    * State hooks are duplicated defensively: a component reacts to its spec class
      (.tab-on), to .is-on, and to the matching ARIA attribute, so page agents can
      use whichever they wired up.
-   * Motion is <= 240ms and fully removed under prefers-reduced-motion.
+   * Motion: transitions are <= --dur-2 (220ms); the longer --dur-3 is for
+     one-shot animations only. Section 20 is the whole motion system and the
+     only place timings are defined; section 22 removes every last one of them
+     under prefers-reduced-motion.
 
    Table of contents
    -----------------
@@ -37,8 +40,9 @@
    17  Nail SVG hooks
    18  Utilities
    19  Scrollbars & selection
-   20  Print
-   21  Reduced motion
+   20  Motion system  (tokens · press · the pick · entrances · payoff · skeletons)
+   21  Print
+   22  Reduced motion
    ========================================================================= */
 
 
@@ -78,7 +82,24 @@
   --glow-2:rgba(194,160,94,.16);        /* gold companion glow               */
   --thumb:#FFFFFF;                      /* switch / range knob               */
   --focus:var(--rose);
-  --dur:.22s;
+
+  /* ---- motion tokens — the whole site's timing lives here (see section 20)
+     Three durations, three easings, one stagger step. Nothing anywhere else
+     may invent its own number; if a moment needs different timing it picks a
+     different token. --dur stays as the historical alias of --dur-2 so every
+     rule written before the motion system keeps working unchanged.          */
+  --dur-1:.12s;      /* press / release — has to read as instant             */
+  --dur-2:.22s;      /* the default: hover, colour, border, open/close       */
+  --dur-3:.42s;      /* one-shot animations only: entrances, the pick        */
+  --dur:var(--dur-2);
+  /* --ease (standard) is declared in the spec block above                   */
+  --ease-out:cubic-bezier(.16,.86,.42,1);   /* decelerate — things arriving  */
+  --ease-pop:cubic-bezier(.34,1.42,.5,1);   /* gentle overshoot — selections */
+  --stagger:44ms;                            /* one step of a staggered list */
+  --halo:rgba(201,123,146,.30);              /* rose bloom behind a choice   */
+  --halo-2:rgba(194,160,94,.34);             /* gold companion, celebrations */
+  --sheen:rgba(255,255,255,.66);             /* skeleton shimmer highlight   */
+  --shine:rgba(194,160,94,.26);              /* the one luxury sweep of light*/
   /* readable text colours for the soft status grounds (>=4.5:1 both themes) */
   --ok-ink:#2A6F52; --warn-ink:#7A5410; --err-ink:#9B3A36;
 }
@@ -90,6 +111,10 @@
   --glow-2:rgba(217,188,126,.10);
   --thumb:#F6EDF0;
   --ok-ink:#7FD3AE; --warn-ink:#E7BE72; --err-ink:#F0938D;
+  --halo:rgba(226,155,176,.26);
+  --halo-2:rgba(217,188,126,.28);
+  --sheen:rgba(255,255,255,.10);
+  --shine:rgba(255,255,255,.11);
   /* the spec shadows are tuned for the light ground; deepen them on dark     */
   --sh-1:0 1px 2px rgba(0,0,0,.34),0 4px 14px rgba(0,0,0,.28);
   --sh-2:0 10px 34px rgba(0,0,0,.46);
@@ -1619,7 +1644,7 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   font-weight:700;
   line-height:1.55;
   pointer-events:auto;
-  animation:sn-toast-in .26s var(--ease) both;
+  animation:sn-toast-in var(--dur-3) var(--ease-out) both;
 }
 .toast-ico{ display:inline-flex; flex:0 0 auto; color:var(--rose-2); }
 .toast-txt{ flex:1 1 auto; min-inline-size:0; }
@@ -1636,10 +1661,10 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
 .toast-err .toast-ico,.toast.is-err .toast-ico{ color:var(--err-ink); }
 .toast-info .toast-ico,.toast.is-info .toast-ico{ color:var(--rose-3); }
 .toast-ok .toast-x,.toast-err .toast-x,.toast-info .toast-x{ color:inherit; opacity:.7; }
-.toast.is-out{ animation:sn-toast-out .2s var(--ease) both; }
+.toast.is-out{ animation:sn-toast-out var(--dur-2) var(--ease) both; }
 
 @keyframes sn-toast-in{
-  from{ opacity:0; transform:translateY(14px) scale(.98); }
+  from{ opacity:0; transform:translateY(16px) scale(.96); }
   to{ opacity:1; transform:none; }
 }
 @keyframes sn-toast-out{
@@ -1664,7 +1689,7 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   -webkit-backdrop-filter:blur(6px);
   backdrop-filter:blur(6px);
   overflow:auto;
-  animation:sn-fade .2s var(--ease) both;
+  animation:sn-fade var(--dur-2) var(--ease-out) both;
 }
 .modal{
   position:relative;
@@ -1679,7 +1704,7 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
   border-radius:var(--r-lg);
   box-shadow:var(--sh-3);
   overflow:hidden;
-  animation:sn-pop .24s var(--ease) both;
+  animation:sn-pop var(--dur-2) var(--ease-out) both;
 }
 @supports (max-block-size:88dvh){ .modal{ max-block-size:88dvh; } }
 .modal:focus{ outline:none; }
@@ -1754,7 +1779,7 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
     border-end-end-radius:0;
     border-block-end:0;
     padding-block-start:10px;
-    animation:sn-sheet-up .26s var(--ease) both;
+    animation:sn-sheet-up var(--dur-3) var(--ease-out) both;
   }
   @supports (max-block-size:92dvh){
     .modal-back.is-sheet .modal,.modal.sheet{ max-block-size:92dvh; }
@@ -1780,11 +1805,13 @@ a.card,.card a.card-link{ text-decoration:none; color:inherit; }
 
 @keyframes sn-fade{ from{ opacity:0; } to{ opacity:1; } }
 @keyframes sn-pop{
-  from{ opacity:0; transform:translateY(10px) scale(.985); }
+  from{ opacity:0; transform:translateY(12px) scale(.97); }
   to{ opacity:1; transform:none; }
 }
+/* a bottom sheet comes up from off the bottom of the phone, the way every
+   native one does — anything less reads as a box that blinked into place */
 @keyframes sn-sheet-up{
-  from{ opacity:.4; transform:translateY(26px); }
+  from{ opacity:.5; transform:translateY(100%); }
   to{ opacity:1; transform:none; }
 }
 
@@ -1993,7 +2020,544 @@ a.ft-row:hover{ color:var(--rose-2); }
 
 
 /* =========================================================================
-   20  PRINT  — the owner prints orders, so the shell and every control goes
+   20  MOTION SYSTEM
+   -------------------------------------------------------------------------
+   Choosing a colour, a shape, a charm is the core verb of this site, so a tap
+   has to feel like picking something up — not like ticking a box. Everything
+   below is built out of the six motion tokens declared in section 00 and
+   nothing else.
+
+     --dur-1 .12s   press / release. Instant, or it feels laggy.
+     --dur-2 .22s   the default state change (this is the old --dur).
+     --dur-3 .42s   ONE-SHOT animations only — entrances and the pick
+                    flourish. Transitions stay <= --dur-2 per SPEC §14.
+     --ease         standard, for anything reversible (hover, open/close)
+     --ease-out     decelerate, for anything arriving on screen
+     --ease-pop     one gentle overshoot, reserved for "I chose this"
+     --stagger 44ms one step of a staggered reveal
+
+   Public classes other files may use
+   ---------------------------------
+     .sn-pickable          any custom option element (a card picker, a tile).
+                           Gets press feedback, a phone-sized tap target and
+                           the pick flourish when it also carries .is-on /
+                           aria-pressed / aria-selected / aria-checked / .sn-picked.
+     .sn-pick-keep         variant: the drawn ring stays after the flourish
+                           (that is what .swatch does — a colour circle needs a
+                           permanent ring). Default is a ring that draws, blooms
+                           and clears, leaving the component's own selected
+                           styling to hold the state.
+     .sn-stagger           put on a CONTAINER: its direct children rise into
+                           place one after another. Tune with --stagger and
+                           --sn-rise on the container.
+     .sn-in / .sn-in-pop   one-shot entrance for a single element that was just
+                           inserted (rise / scale-pop).
+     .sn-reveal + .is-in   scroll reveal. Ships hidden; JS adds .is-in when the
+                           element enters the viewport, and may set
+                           style.transitionDelay for its own stagger.
+     .sn-pulse             the small win: a charm placed, a design saved.
+     .sn-glow              soft rose bloom for a number that just changed.
+     .sn-burst             THE payoff — a gold + rose sparkle burst, 1s, self
+                           clearing. Markup:
+                             <div class="sn-burst" aria-hidden="true">
+                               <i></i> x12
+                             </div>
+                           inside a position:relative host. Origin can be moved
+                           with --sn-burst-x / --sn-burst-y (default 50%/50%).
+     .sn-shine             one slow luxury sweep across a panel (adds
+                           overflow:hidden to its host).
+     .sk .sk-line .sk-title .sk-text .sk-media .sk-card .sk-swatch .sk-chip
+                           loading skeletons, so nothing ever pops in blank.
+
+   Performance rules kept here: animate transform and opacity; the only
+   exceptions are the pick ring (clip-path + box-shadow on one small
+   pseudo-element, once per tap) and the skeleton sheen (a translated
+   gradient). Nothing loops except a skeleton, which is removed with its
+   content. Every animation below is switched off in section 22.
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   20.1  KEYFRAMES
+   ------------------------------------------------------------------------- */
+
+/* the picked element itself: pressed down, then springs back past its size */
+@keyframes sn-settle{
+  from{ transform:scale(var(--sn-from,.86)); }
+  to{ transform:scale(1); }
+}
+/* the ring: wipes into being from the top, then blooms a halo and clears.
+   Negative clip insets keep the halo outside the clip while the ring draws. */
+@keyframes sn-ring{
+  0%{   clip-path:inset(-22px -22px calc(100% + 22px) -22px);
+        box-shadow:0 0 0 0 var(--halo); border-color:var(--rose); }
+  55%{  clip-path:inset(-22px);
+        box-shadow:0 0 0 0 var(--halo); border-color:var(--rose); }
+  100%{ clip-path:inset(-22px);
+        box-shadow:0 0 13px 7px transparent; border-color:transparent; }
+}
+/* same, for a ring that has to stay (colour swatches) */
+@keyframes sn-ring-keep{
+  0%{   clip-path:inset(-22px -22px calc(100% + 22px) -22px);
+        box-shadow:0 0 0 0 var(--halo); }
+  55%{  clip-path:inset(-22px);
+        box-shadow:0 0 0 0 var(--halo); }
+  100%{ clip-path:inset(-22px);
+        box-shadow:0 0 13px 7px transparent; }
+}
+/* the tick stamping itself into a chosen swatch */
+@keyframes sn-tick{
+  from{ opacity:0; transform:scale(.3); }
+  to{ opacity:1; transform:scale(1); }
+}
+/* entrances */
+@keyframes sn-rise{
+  from{ opacity:0; transform:translateY(var(--sn-rise,14px)); }
+  to{ opacity:1; transform:none; }
+}
+@keyframes sn-pop-in{
+  from{ opacity:0; transform:scale(.9); }
+  to{ opacity:1; transform:none; }
+}
+@keyframes sn-underline{
+  from{ transform:scaleX(0); }
+  to{ transform:scaleX(1); }
+}
+/* small wins */
+@keyframes sn-pulse{
+  0%{ transform:scale(1); }
+  34%{ transform:scale(1.08); }
+  100%{ transform:scale(1); }
+}
+@keyframes sn-glow{
+  0%{ box-shadow:0 0 0 0 var(--halo); }
+  100%{ box-shadow:0 0 0 14px transparent; }
+}
+/* the payoff */
+@keyframes sn-burst-life{
+  0%,99%{ visibility:visible; }
+  100%{ visibility:hidden; }
+}
+@keyframes sn-burst-bloom{
+  0%{ opacity:0; transform:scale(.25); }
+  22%{ opacity:.72; }
+  100%{ opacity:0; transform:scale(2.4); }
+}
+@keyframes sn-burst-ring{
+  0%{ opacity:0; transform:scale(.2); }
+  18%{ opacity:.8; }
+  100%{ opacity:0; transform:scale(1.9); }
+}
+@keyframes sn-spark{
+  0%{   opacity:0; transform:rotate(var(--a,0deg)) translateY(0) scale(.15); }
+  16%{  opacity:1; }
+  36%{  opacity:1; transform:rotate(var(--a,0deg)) translateY(calc(var(--d,60px) * -.46)) scale(1.12); }
+  72%{  opacity:.9; }
+  100%{ opacity:0; transform:rotate(var(--a,0deg)) translateY(calc(var(--d,60px) * -1)) scale(.4); }
+}
+@keyframes sn-shine{
+  from{ transform:translateX(-130%) skewX(-14deg); }
+  to{ transform:translateX(330%) skewX(-14deg); }
+}
+@keyframes sn-shine-rtl{
+  from{ transform:translateX(130%) skewX(14deg); }
+  to{ transform:translateX(-330%) skewX(14deg); }
+}
+/* skeleton sheen — transform only, so it costs a phone nothing */
+@keyframes sn-sheen{
+  from{ transform:translateX(-100%); }
+  to{ transform:translateX(220%); }
+}
+
+
+/* -------------------------------------------------------------------------
+   20.2  PRESS FEEDBACK + PHONE-SIZED TAP TARGETS
+   A press must answer with a transform, never colour alone, and it must
+   answer in --dur-1. The release is allowed to be slower — that is what
+   makes it feel like a physical button coming back up.
+
+   NOTE for the JS owners: iOS Safari only applies :active to elements once
+   the document has a touch listener. One line in ui.js buys every press
+   state on this site:  document.addEventListener('touchstart',function(){},
+   {passive:true});
+   ------------------------------------------------------------------------- */
+.btn:active,.btn-pri:active,.btn-soft:active,.btn-line:active,.btn-ghost:active,
+.btn-danger:active,.btn-danger-line:active{
+  transform:translateY(1px) scale(.982);
+}
+.btn-lg:active{ transform:translateY(1px) scale(.99); }
+.icon-btn:active{ transform:scale(.9); }
+.chip:active,.tab:active{ transform:scale(.94); }
+.swatch:active{ transform:scale(.9); }
+.card:active{ transform:translateY(-1px) scale(.995); }
+a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.995); }
+.nav-a:active,.ft-a:active,.acc-head:active,.link:active{ transform:scale(.98); }
+.brand:active{ transform:scale(.97); }
+.check-card:active,.sn-pickable:active{ transform:scale(.978); }
+.range:active::-webkit-slider-thumb{ transform:scale(1.22); }
+.toast:active{ transform:scale(.99); }
+.nail[role="button"]:active{ opacity:.7; }
+
+/* every one of those has to snap down and ease back up */
+.btn,.icon-btn,.chip,.tab,.swatch,.card,.nav-a,.brand,.acc-head,
+.check-card,.sn-pickable,.link,.toast{
+  transition-timing-function:var(--ease);
+}
+.btn:active,.icon-btn:active,.chip:active,.tab:active,.swatch:active,
+.card:active,.nav-a:active,.brand:active,.acc-head:active,
+.check-card:active,.sn-pickable:active,.link:active,.nail:active{
+  transition-duration:var(--dur-1);
+}
+.brand{ transition:opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+.nav-a,.ft-a,.acc-head,.link,.check-card,.sn-pickable{
+  transition-property:background-color,color,border-color,box-shadow,transform,opacity;
+  transition-duration:var(--dur-2);
+}
+
+/* Tap targets. The ring pseudo doubles as the hit area: it is part of the
+   element for hit testing, so a 36px chip answers to a 46px thumb without a
+   single pixel of layout moving. */
+.swatch,.chip,.tab,.icon-btn,.btn-sm,.sn-pickable,.check-card{ position:relative; }
+.swatch::before,.chip::before,.tab::before,.check-card::before,
+.icon-btn::before,.btn-sm::before,.sn-pickable::before{
+  content:"";
+  position:absolute;
+  inset:-4px;
+  border:2px solid transparent;
+  border-radius:inherit;
+  pointer-events:auto;                 /* deliberate: this IS the tap target */
+}
+/* a rectangular picker needs its ring radius spelled out: `inherit` on a box
+   that is 4px bigger draws a corner slightly tighter than the card's own */
+.sn-pickable::before,.check-card::before{ border-radius:var(--sn-ring-r,var(--r)); }
+/* a .check-card wraps a real checkbox and is already thumb-sized: its pseudo
+   is a ring only, never a lid over the control */
+.check-card::before{ pointer-events:none; }
+/* plain buttons want the hit area, never a ring */
+.icon-btn::before,.btn-sm::before{ border-width:0; }
+/* 40px -> 44px, and the header's own 2px gap is exactly respected, so two
+   neighbouring icon buttons still can never steal each other's taps */
+.icon-btn::before{ inset:-2px; }
+.icon-btn-sm::before{ inset:-4px; }
+@media (pointer:coarse){
+  .swatch::before,.chip::before,.tab::before,
+  .check-card::before,.btn-sm::before,.sn-pickable::before{ inset:-5px; }
+  .toast-x::before,.announce-x::before{ inset:-6px; }
+}
+
+
+/* -------------------------------------------------------------------------
+   20.3  THE PICK  — the site's signature moment
+   Three things happen at once, all on one element and its one pseudo:
+   the thing you touched springs up to size, a hairline ring draws itself
+   around it from the top down, and a soft rose halo blooms out of the ring
+   and clears. Repeated taps never queue: each is a fresh one-shot animation.
+   ------------------------------------------------------------------------- */
+.swatch-on,.swatch.is-on,.swatch[aria-pressed="true"],.swatch[aria-checked="true"],
+.chip-on,.chip.is-on,.chip[aria-pressed="true"],.chip[aria-selected="true"],
+.tab-on,.tab.is-on,.tab[aria-selected="true"],.tab[aria-current="true"],
+.sn-pickable.is-on,.sn-pickable[aria-pressed="true"],
+.sn-pickable[aria-selected="true"],.sn-pickable[aria-checked="true"],
+.check-card:has(> input:checked),
+.sn-picked{
+  animation:sn-settle var(--dur-2) var(--ease-pop);
+}
+.swatch-on::before,.swatch.is-on::before,
+.swatch[aria-pressed="true"]::before,.swatch[aria-checked="true"]::before,
+.chip-on::before,.chip.is-on::before,
+.chip[aria-pressed="true"]::before,.chip[aria-selected="true"]::before,
+.tab-on::before,.tab.is-on::before,
+.tab[aria-selected="true"]::before,.tab[aria-current="true"]::before,
+.sn-pickable.is-on::before,.sn-pickable[aria-pressed="true"]::before,
+.sn-pickable[aria-selected="true"]::before,.sn-pickable[aria-checked="true"]::before,
+.sn-picked::before{
+  animation:sn-ring var(--dur-3) var(--ease-out) backwards;
+}
+
+/* cards are big: they settle from much closer to their own size, or the
+   whole grid appears to lurch */
+.sn-pickable,.check-card{ --sn-from:.972; }
+.check-card:has(> input:checked)::before{
+  animation:sn-ring var(--dur-3) var(--ease-out) backwards;
+}
+.chip,.tab{ --sn-from:.9; }
+
+/* a colour circle keeps its ring — it is the only thing saying "this one" */
+.swatch-on::before,.swatch.is-on::before,
+.swatch[aria-pressed="true"]::before,.swatch[aria-checked="true"]::before,
+.sn-pick-keep.is-on::before,.sn-pick-keep[aria-pressed="true"]::before,
+.sn-pick-keep[aria-selected="true"]::before,.sn-pick-keep.sn-picked::before{
+  border-color:var(--rose);
+  animation-name:sn-ring-keep;
+}
+/* …so the ring can come off the box-shadow, which now only draws the inner
+   white hairline and the gap that separates it from the ring */
+.swatch-on,.swatch.is-on,.swatch[aria-pressed="true"],.swatch[aria-checked="true"]{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.75),
+             0 0 0 2px var(--bg-2);
+}
+/* the tick stamps itself in after the ring has drawn */
+.swatch-on::after,.swatch.is-on::after,
+.swatch[aria-pressed="true"]::after,.swatch[aria-checked="true"]::after{
+  animation:sn-tick var(--dur-2) var(--ease-pop) calc(var(--dur-3) * .3) backwards;
+}
+
+/* the underline of a line-tab draws instead of fading in */
+.tabs-line .tab::after{
+  transform:scaleX(0);
+  transform-origin:center;
+  transition:transform var(--dur-2) var(--ease-pop),
+             background-color var(--dur-2) var(--ease);
+}
+.tabs-line .tab-on::after,
+.tabs-line .tab.is-on::after,
+.tabs-line .tab[aria-selected="true"]::after{ transform:scaleX(1); }
+/* the line variant owns ::after, so it must not also grow a ring */
+.tabs-line .tab::before{ border-width:0; }
+.tabs-line .tab-on::before,.tabs-line .tab.is-on::before,
+.tabs-line .tab[aria-selected="true"]::before{ animation:none; }
+
+/* the active nav link draws its own gradient rule */
+.nav-a.is-active::after{
+  transform-origin:center;
+  animation:sn-underline var(--dur-3) var(--ease-out) backwards;
+}
+
+
+/* -------------------------------------------------------------------------
+   20.4  ENTRANCES
+   ------------------------------------------------------------------------- */
+.sn-in{ animation:sn-rise var(--dur-3) var(--ease-out) both; }
+.sn-in-pop{ animation:sn-pop-in var(--dur-2) var(--ease-pop) both; }
+
+/* one class on a container, and its children arrive in reading order */
+.sn-stagger > *{ animation:sn-rise var(--dur-3) var(--ease-out) both; }
+.sn-stagger > *:nth-child(1){ animation-delay:0ms; }
+.sn-stagger > *:nth-child(2){ animation-delay:calc(var(--stagger) * 1); }
+.sn-stagger > *:nth-child(3){ animation-delay:calc(var(--stagger) * 2); }
+.sn-stagger > *:nth-child(4){ animation-delay:calc(var(--stagger) * 3); }
+.sn-stagger > *:nth-child(5){ animation-delay:calc(var(--stagger) * 4); }
+.sn-stagger > *:nth-child(6){ animation-delay:calc(var(--stagger) * 5); }
+.sn-stagger > *:nth-child(7){ animation-delay:calc(var(--stagger) * 6); }
+.sn-stagger > *:nth-child(8){ animation-delay:calc(var(--stagger) * 7); }
+.sn-stagger > *:nth-child(9){ animation-delay:calc(var(--stagger) * 8); }
+.sn-stagger > *:nth-child(10){ animation-delay:calc(var(--stagger) * 9); }
+.sn-stagger > *:nth-child(11){ animation-delay:calc(var(--stagger) * 10); }
+/* a long shop grid must not make its last card wait a second and a half:
+   past the first screenful everything shares one delay */
+.sn-stagger > *:nth-child(n+12){ animation-delay:calc(var(--stagger) * 11); }
+.sn-stagger-sm{ --stagger:30ms; --sn-rise:9px; }
+.sn-stagger-lg{ --stagger:60ms; --sn-rise:20px; }
+
+/* scroll reveal: ships hidden, JS adds .is-in (and may set transitionDelay) */
+.sn-reveal{
+  opacity:0;
+  transform:translateY(var(--sn-rise,18px));
+  transition:opacity var(--dur-3) var(--ease-out),
+             transform var(--dur-3) var(--ease-out);
+}
+.sn-reveal.is-in{ opacity:1; transform:none; }
+
+
+/* -------------------------------------------------------------------------
+   20.5  THE PAYOFF
+   One celebration, once, when an order is confirmed. Gold and rose, under a
+   second, and it takes itself off the screen afterwards. Everything smaller
+   — a charm placed, a design saved — gets .sn-pulse instead.
+   ------------------------------------------------------------------------- */
+.sn-pulse{ animation:sn-pulse var(--dur-3) var(--ease-pop); }
+.sn-glow{ animation:sn-glow var(--dur-3) var(--ease-out); border-radius:var(--r-full); }
+
+.sn-burst{
+  position:absolute;
+  inset:0;
+  z-index:5;
+  overflow:visible;
+  pointer-events:none;
+  animation:sn-burst-life 1s linear forwards;
+}
+/* the soft rose bloom under everything */
+.sn-burst::before,
+.sn-burst::after{
+  content:"";
+  position:absolute;
+  inset-block-start:var(--sn-burst-y,50%);
+  inset-inline-start:var(--sn-burst-x,50%);
+  inline-size:150px;
+  block-size:150px;
+  /* centred with logical margins, never translate(-50%): an absolutely
+     positioned box in RTL is placed by its inline-START (right) edge, and a
+     translate would push it off-centre on the Arabic side of the site */
+  margin-block-start:-75px;
+  margin-inline-start:-75px;
+  border-radius:50%;
+  pointer-events:none;
+}
+.sn-burst::before{
+  background:radial-gradient(closest-side,var(--halo),var(--halo-2) 55%,transparent 72%);
+  animation:sn-burst-bloom .62s var(--ease-out) both;
+}
+/* and one thin gold ring opening out of it */
+.sn-burst::after{
+  inline-size:96px;
+  block-size:96px;
+  margin-block-start:-48px;
+  margin-inline-start:-48px;
+  border:2px solid var(--gold);
+  background:none;
+  animation:sn-burst-ring .7s var(--ease-out) .04s both;
+}
+.sn-burst > i{
+  position:absolute;
+  inset-block-start:var(--sn-burst-y,50%);
+  inset-inline-start:var(--sn-burst-x,50%);
+  inline-size:var(--sz,13px);
+  block-size:var(--sz,13px);
+  margin-block-start:calc(var(--sz,13px) / -2);
+  margin-inline-start:calc(var(--sz,13px) / -2);
+  background:var(--gold);
+  /* a four-point sparkle, not a dot of confetti */
+  clip-path:polygon(50% 0%,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0% 50%,39% 39%);
+  animation:sn-spark .78s var(--ease-out) both;
+}
+.sn-burst > i:nth-child(1){ --a:6deg;   --d:104px; --sz:18px; animation-delay:.02s; }
+.sn-burst > i:nth-child(2){ --a:38deg;  --d:72px;  --sz:13px; animation-delay:.10s; background:var(--rose); }
+.sn-burst > i:nth-child(3){ --a:71deg;  --d:122px; --sz:16px; animation-delay:.00s; }
+.sn-burst > i:nth-child(4){ --a:104deg; --d:84px;  --sz:12px; animation-delay:.13s; background:var(--rose-2); }
+.sn-burst > i:nth-child(5){ --a:139deg; --d:112px; --sz:17px; animation-delay:.05s; }
+.sn-burst > i:nth-child(6){ --a:168deg; --d:78px;  --sz:13px; animation-delay:.16s; background:var(--rose); }
+.sn-burst > i:nth-child(7){ --a:196deg; --d:118px; --sz:16px; animation-delay:.01s; }
+.sn-burst > i:nth-child(8){ --a:226deg; --d:80px;  --sz:12px; animation-delay:.12s; background:var(--rose-2); }
+.sn-burst > i:nth-child(9){ --a:257deg; --d:110px; --sz:18px; animation-delay:.06s; }
+.sn-burst > i:nth-child(10){ --a:288deg; --d:74px;  --sz:13px; animation-delay:.15s; background:var(--rose); }
+.sn-burst > i:nth-child(11){ --a:318deg; --d:120px; --sz:16px; animation-delay:.03s; }
+.sn-burst > i:nth-child(12){ --a:344deg; --d:86px;  --sz:12px; animation-delay:.11s; background:var(--gold); }
+
+/* one slow sweep of light across a panel — the luxury note, used once */
+.sn-shine{ position:relative; overflow:hidden; }
+.sn-shine::after{
+  content:"";
+  position:absolute;
+  inset-block:-20%;
+  inset-inline-start:0;
+  inline-size:38%;
+  background:linear-gradient(90deg,transparent,var(--shine) 42%,var(--shine) 58%,transparent);
+  transform:translateX(-130%) skewX(-14deg);
+  pointer-events:none;
+  animation:sn-shine .95s var(--ease-out) .16s both;
+}
+[dir="rtl"] .sn-shine::after{ animation-name:sn-shine-rtl; transform:translateX(130%) skewX(14deg); }
+
+
+/* -------------------------------------------------------------------------
+   20.6  SKELETONS  — nothing on this site pops in as a blank rectangle
+   <div class="sk-card"><div class="sk sk-media"></div>
+        <div class="sk-text"><span class="sk sk-title"></span>
+        <span class="sk sk-line"></span><span class="sk sk-line"></span></div></div>
+   ------------------------------------------------------------------------- */
+.sk{
+  position:relative;
+  display:block;
+  overflow:hidden;
+  background:var(--bg-3);
+  border-radius:var(--r-xs);
+}
+.sk::after{
+  content:"";
+  position:absolute;
+  inset-block:0;
+  inset-inline-start:0;
+  inline-size:45%;
+  background:linear-gradient(90deg,transparent,var(--sheen),transparent);
+  transform:translateX(-100%);
+  animation:sn-sheen 1.35s linear infinite;
+}
+.sk-line{ block-size:12px; margin-block:7px; }
+.sk-line-sm{ block-size:9px; }
+.sk-title{ block-size:17px; inline-size:62%; margin-block:9px; border-radius:var(--r-xs); }
+.sk-text > .sk-line:last-child{ inline-size:72%; }
+.sk-btn{ block-size:44px; inline-size:132px; border-radius:var(--r-full); }
+.sk-chip{ block-size:36px; inline-size:88px; border-radius:var(--r-full); }
+.sk-swatch{ inline-size:38px; block-size:38px; border-radius:50%; }
+.sk-media{ aspect-ratio:4/5; inline-size:100%; border-radius:0; }
+.sk-media-sq{ aspect-ratio:1/1; }
+.sk-card{
+  display:flex;
+  flex-direction:column;
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.sk-card > .sk-text{ padding:clamp(14px,2vw,18px); }
+.sk-row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.sk-grid{
+  display:grid;
+  gap:clamp(14px,2.2vw,24px);
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,244px),1fr));
+}
+
+
+/* -------------------------------------------------------------------------
+   20.7  BRINGING THE OLD SHELL UP TO THE SAME STANDARD
+   Motion only — not one layout rule changes here.
+   ------------------------------------------------------------------------- */
+/* the switch knob slides on the compositor, and lands with the tiniest
+   overshoot. translateX is physical, so each direction gets its own rule. */
+.switch > input + span::after,.switch-ui::after{
+  transition:transform var(--dur-2) var(--ease-pop),
+             background-color var(--dur-2) var(--ease);
+}
+[dir="ltr"] .switch > input:checked + span::after,
+[dir="ltr"] .switch.is-on .switch-ui::after{ inset-inline-start:2px; transform:translateX(20px); }
+[dir="rtl"] .switch > input:checked + span::after,
+[dir="rtl"] .switch.is-on .switch-ui::after{ inset-inline-start:2px; transform:translateX(-20px); }
+.switch:active > input:not(:disabled) + span::after,
+.switch.is-on:active .switch-ui::after{ inline-size:24px; }
+
+/* accordion: the panel does not just get taller, its contents fade up too */
+.acc-body{ transition:grid-template-rows var(--dur-2) var(--ease-out); }
+.acc-in{
+  opacity:0;
+  transform:translateY(-4px);
+  transition:opacity var(--dur-2) var(--ease),
+             transform var(--dur-2) var(--ease-out);
+}
+.acc-item.is-open > .acc-body .acc-in,
+.acc-body.is-open .acc-in,
+.acc-head[aria-expanded="true"] + .acc-body .acc-in{
+  opacity:1;
+  transform:none;
+  transition-delay:60ms;
+}
+.acc-head .ico{ transition:transform var(--dur-2) var(--ease-pop); }
+
+/* footer links slide on transform instead of reflowing their padding, and
+   get a thumb-sized hit area without opening the column up */
+.ft-a{ position:relative; transition:color var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+.ft-a::before{ content:""; position:absolute; inset:-7px -6px; border-radius:var(--r-xs); }
+.ft-a:hover{ padding-inline-start:0; }
+[dir="ltr"] .ft-a:hover{ transform:translateX(4px); }
+[dir="rtl"] .ft-a:hover{ transform:translateX(-4px); }
+
+/* the mobile menu falls open, it does not merely un-hide */
+@media (max-width:900px){
+  #sn-header.nav-open .nav > .nav-a{ animation:sn-rise var(--dur-2) var(--ease-out) both; }
+  #sn-header.nav-open .nav > .nav-a:nth-child(1){ animation-delay:30ms; }
+  #sn-header.nav-open .nav > .nav-a:nth-child(2){ animation-delay:calc(30ms + var(--stagger)); }
+  #sn-header.nav-open .nav > .nav-a:nth-child(3){ animation-delay:calc(30ms + var(--stagger) * 2); }
+  #sn-header.nav-open .nav > .nav-a:nth-child(4){ animation-delay:calc(30ms + var(--stagger) * 3); }
+}
+
+/* the empty state and the spinner should arrive, not blink into place */
+.empty{ animation:sn-rise var(--dur-3) var(--ease-out) both; }
+.spinner-c{ animation:sn-pop-in var(--dur-2) var(--ease-out) both; }
+
+/* progress fills with the same easing as everything else */
+.progress > span,.progress-bar{ transition:inline-size var(--dur-3) var(--ease-out); }
+
+
+/* =========================================================================
+   21  PRINT  — the owner prints orders, so the shell and every control goes
    away and an open dialog flows into the page instead of floating over it.
    ========================================================================= */
 @media print{
@@ -2018,6 +2582,7 @@ a.ft-row:hover{ color:var(--rose-2); }
   }
   .card:hover{ transform:none !important; }
   .sec-head::before,.glow::before,.card-media::before{ display:none !important; }
+  .sn-burst,.sn-shine::after,.sk,.sk-card{ display:none !important; }
   /* a dialog left open (an order detail) should print as the document */
   .modal-back{
     position:static !important;
@@ -2046,7 +2611,15 @@ a.ft-row:hover{ color:var(--rose-2); }
 
 
 /* =========================================================================
-   21  REDUCED MOTION  — no transitions, no animations, no transforms
+   22  REDUCED MOTION
+   Everything in section 20 is switched off here, and the site has to stay
+   completely usable: every state the motion communicated is also communicated by
+   colour, border or the drawn ring, all of which survive below.
+     * the pick   -> the ring and the tick are still there, they just appear
+     * entrances  -> `both` fill means the end state (visible) is what shows
+     * the payoff -> the burst is removed outright, the success panel stands
+                     on its own words
+     * skeletons  -> stay, minus the sheen
    ========================================================================= */
 @media (prefers-reduced-motion:reduce){
   html{ scroll-behavior:auto !important; }
@@ -2058,15 +2631,48 @@ a.ft-row:hover{ color:var(--rose-2); }
     transition-delay:0ms !important;
     scroll-behavior:auto !important;
   }
-  .card:hover,.btn:hover,.btn:active,.btn-pri:hover,.btn-danger:hover,
-  .icon-btn:active,.chip:active,.swatch:hover,.nail[role="button"]:hover{
+  /* nothing may move, hover or press */
+  .card:hover,.card:active,.btn:hover,.btn:active,.btn-pri:hover,.btn-pri:active,
+  .btn-lg:active,.btn-danger:hover,.btn-danger:active,.btn-soft:active,
+  .btn-line:active,.btn-ghost:active,.btn-danger-line:active,
+  .icon-btn:active,.chip:active,.tab:active,.swatch:hover,.swatch:active,
+  .nav-a:active,.ft-a:hover,.ft-a:active,.brand:active,.acc-head:active,
+  .link:active,.check-card:active,.sn-pickable:active,.toast:active,
+  a.card:active,.nail[role="button"]:hover{
     transform:none !important;
   }
-  .range:hover::-webkit-slider-thumb{ transform:none !important; }
+  .range:hover::-webkit-slider-thumb,
+  .range:active::-webkit-slider-thumb{ transform:none !important; }
   .ft-a:hover{ padding-inline-start:0 !important; }
+  .switch:active > input + span::after,
+  .switch.is-on:active .switch-ui::after{ inline-size:20px !important; }
+
+  /* the reveal must resolve to visible even if .is-in never arrives */
+  .sn-reveal{ opacity:1 !important; transform:none !important; }
+  .acc-in{ opacity:1 !important; transform:none !important; }
+  .tabs-line .tab-on::after,.tabs-line .tab.is-on::after,
+  .tabs-line .tab[aria-selected="true"]::after{ transform:none !important; }
+  .tabs-line .tab::after{ transform:scaleX(1); }
+
+  /* the pick loses its flourish but keeps every pixel of its meaning */
+  .swatch-on::before,.swatch.is-on::before,
+  .swatch[aria-pressed="true"]::before,.swatch[aria-checked="true"]::before,
+  .sn-pick-keep.is-on::before,.sn-pick-keep[aria-pressed="true"]::before,
+  .sn-pick-keep[aria-selected="true"]::before,.sn-pick-keep.sn-picked::before{
+    clip-path:none !important;
+    box-shadow:none !important;
+    border-color:var(--rose) !important;
+  }
+
+  /* no celebration, no sweep — the words carry it */
+  .sn-burst{ display:none !important; }
+  .sn-shine::after{ display:none !important; }
+  .sn-pulse,.sn-glow{ animation:none !important; }
+
   /* a loading indicator still has to indicate loading — just slow it right down */
   .spinner{
     animation-duration:1.6s !important;
     animation-iteration-count:infinite !important;
   }
+  .sk::after{ display:none !important; }
 }

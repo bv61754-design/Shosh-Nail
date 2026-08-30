@@ -11,7 +11,9 @@
      except pure white/black alphas inside shadows and scrims.
    * Logical properties everywhere (padding-inline, inset-inline-start,
      text-align:start …) so one rule is correct in RTL (Arabic) and LTR.
-   * Touch targets are >= 44px, motion <= 240ms and removed entirely under
+   * Touch targets are >= 44px on a phone (section 11 grows the small ones
+     with a pseudo-element, so no layout moves), and every animation here is
+     built from the base.css motion tokens and removed entirely under
      prefers-reduced-motion.
 
    Contents
@@ -26,7 +28,8 @@
    08  Step 5 — finishing touches, saved designs
    09  Step 6 — review, spec list, price table
    10  Sticky action bar
-   11  Print
+   11  Motion
+   12  Print
    ========================================================================= */
 
 /* a class rule has to beat the UA sheet for [hidden] to survive */
@@ -1147,8 +1150,104 @@ body[data-page="studio"] #sn-footer{
 
 
 /* =========================================================================
-   11  MOTION & PRINT
+   11  MOTION
+   The studio is where the customer actually plays, so every picker here opts
+   into the site-wide motion system defined in base.css section 20: the same
+   tokens (--dur-1/2/3, --ease-out, --ease-pop, --stagger), the same keyframes
+   (sn-settle, sn-ring, sn-ring-keep, sn-rise, sn-pulse) and the same rule
+   that section 22 of base.css switches all of it off.
+
+   Classes STUDIO can reach for from base.css:
+     .sn-stagger   on a freshly rendered grid, so its cards arrive in order
+     .sn-pulse     when a charm lands, a nail is copied, a design is saved
+     .sn-in        on one element that was just inserted
+     .sk / .sk-*   while a preview is still being drawn
    ========================================================================= */
+
+/* ---- every studio picker is a pick: press it, and it answers ------------ */
+.studio-opt,.studio-mini,.studio-preset,.studio-hand-card,
+.studio-toggle,.studio-charm,.studio-toolbtn,.studio-step-btn,.studio-savedrow{
+  position:relative;
+  --sn-from:.968;
+}
+/* the pseudo is both the drawn ring and, on a phone, the real tap target */
+.studio-opt::before,.studio-mini::before,.studio-preset::before,
+.studio-hand-card::before,.studio-toggle::before,.studio-charm::before,
+.studio-toolbtn::before,.studio-step-btn::before,.studio-skin-dot::before{
+  content:"";
+  position:absolute;
+  inset:-4px;
+  border:2px solid transparent;
+  border-radius:calc(var(--r-sm) + 4px);
+  pointer-events:auto;
+}
+.studio-toolbtn::before,.studio-step-btn::before{ border-radius:var(--r-full); }
+.studio-skin-dot{ position:relative; }
+.studio-skin-dot::before{ inset:-5px; border-radius:50%; }
+/* these three are already far bigger than a thumb, so their pseudo is a ring
+   and nothing else — it must not sit between the finger and the control */
+.studio-toggle::before,.studio-step-btn::before,.studio-hand-card::before{
+  pointer-events:none;
+}
+@media (pointer:coarse){
+  .studio-opt::before,.studio-mini::before,.studio-preset::before,
+  .studio-hand-card::before,.studio-charm::before,.studio-toolbtn::before{ inset:-5px; }
+}
+
+.studio-opt:active,.studio-mini:active,.studio-preset:active,
+.studio-hand-card:active,.studio-charm:active,.studio-toolbtn:active,
+.studio-step-btn:active,.studio-sizecell:active{
+  transform:scale(.968);
+  transition-duration:var(--dur-1);
+}
+.studio-skin:active .studio-skin-dot{ transform:scale(.93); transition-duration:var(--dur-1); }
+.studio-mini,.studio-preset,.studio-hand-card,.studio-toolbtn,.studio-step-btn{
+  transition-property:background-color,border-color,color,box-shadow,transform;
+  transition-duration:var(--dur-2);
+  transition-timing-function:var(--ease);
+}
+/* the charm tiles lift a little on hover; keep that, add the press */
+.studio-charm:active{ transform:translateY(0) scale(.955); }
+
+/* ---- the flourish: springs to size, ring draws, halo blooms ------------- */
+.studio-opt[aria-pressed="true"],.studio-mini[aria-pressed="true"],
+.studio-preset[aria-pressed="true"],.studio-hand-card[aria-pressed="true"],
+.studio-toolbtn[aria-selected="true"],.studio-toggle.is-on,
+.studio-step-btn.is-on{
+  animation:sn-settle var(--dur-2) var(--ease-pop);
+}
+.studio-opt[aria-pressed="true"]::before,.studio-mini[aria-pressed="true"]::before,
+.studio-preset[aria-pressed="true"]::before,.studio-hand-card[aria-pressed="true"]::before,
+.studio-toolbtn[aria-selected="true"]::before,.studio-toggle.is-on::before,
+.studio-step-btn.is-on::before{
+  animation:sn-ring var(--dur-3) var(--ease-out) backwards;
+}
+
+/* a skin tone is a colour circle, so — exactly like .swatch — its ring is
+   drawn once and then stays: it is the only thing marking the choice */
+.studio-skin[aria-pressed="true"] .studio-skin-dot{
+  animation:sn-settle var(--dur-2) var(--ease-pop);
+  box-shadow:inset 0 -6px 12px rgba(0,0,0,.10),
+             inset 0 0 0 2px rgba(255,255,255,.45),
+             0 0 0 3px var(--bg-2);
+}
+.studio-skin[aria-pressed="true"] .studio-skin-dot::before{
+  border-color:var(--rose);
+  animation:sn-ring-keep var(--dur-3) var(--ease-out) backwards;
+}
+
+/* the charm being placed, and the nail row it lands on */
+.studio-crow.is-on{ animation:sn-pulse var(--dur-3) var(--ease-pop); }
+
+/* ---- the wizard itself -------------------------------------------------- */
+.studio-progress > i{ transition:inline-size var(--dur-3) var(--ease-out); }
+.studio-stage{ transition:max-block-size var(--dur-2) var(--ease-out); }
+.studio-canvas.is-drag{ transition:none; }
+.studio-toolbtn[aria-selected="true"]{ transition-duration:var(--dur-2); }
+.studio-sharelink,.studio-hex{ transition:border-color var(--dur-2) var(--ease); }
+
+/* the "carry on with your last design" bar drops in once, gently */
+.studio-restore{ animation:sn-rise var(--dur-3) var(--ease-out) both; }
 
 @media (prefers-reduced-motion:reduce){
   .studio-stage,
@@ -1158,11 +1257,24 @@ body[data-page="studio"] #sn-footer{
   .studio-progress > i{
     transition:none !important;
   }
-  .studio-charm:hover,
-  .studio-opt:active,
-  .studio-skin:hover .studio-skin-dot{ transform:none !important; }
+  .studio-charm:hover,.studio-charm:active,
+  .studio-opt:active,.studio-mini:active,.studio-preset:active,
+  .studio-hand-card:active,.studio-toolbtn:active,.studio-step-btn:active,
+  .studio-sizecell:active,
+  .studio-skin:hover .studio-skin-dot,
+  .studio-skin:active .studio-skin-dot{ transform:none !important; }
+  /* the drawn rings stay — they are the state, not the decoration */
+  .studio-skin[aria-pressed="true"] .studio-skin-dot::before{
+    clip-path:none !important;
+    box-shadow:none !important;
+    border-color:var(--rose) !important;
+  }
+  .studio-restore{ animation:none !important; }
 }
 
+/* =========================================================================
+   12  PRINT
+   ========================================================================= */
 @media print{
   .studio-top,
   .studio-bar,
