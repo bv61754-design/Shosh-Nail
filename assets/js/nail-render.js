@@ -2932,6 +2932,61 @@
   }
 
   /* ====================================================================== */
+  /* 8e. GRAIN                                                               */
+  /*                                                                         */
+  /*  The plate is composited onto a PHOTOGRAPH, and a photograph has noise.  */
+  /*  Measured on the studio hand at three times device scale: the skin       */
+  /*  beside a plate carries a high-frequency sigma of 0.0142 and the cloth   */
+  /*  0.0215, while the plate itself carried 0.0092 — smooth in a way nothing */
+  /*  else in the frame is. That gap is most of why an eighth of a pale plate */
+  /*  measured as having NO gradient anywhere: not because the shading is     */
+  /*  wrong, but because a real surface is never noiseless and this one was.  */
+  /*                                                                          */
+  /*  Grain matching is the oldest trick in compositing and it is nearly free */
+  /*  here: one feTurbulence, baked once into a shared <pattern>, tiled over  */
+  /*  the plate in OVERLAY so the perturbation scales with the level — which  */
+  /*  is what sensor noise does — and so it never lifts a black nail off its  */
+  /*  black. No payload at all: the noise is generated, not shipped.          */
+  /*                                                                          */
+  /*  The tile is measured in the plate's own user units, and on the photo    */
+  /*  hands a user unit IS a pixel of the photograph, so the grain lands at   */
+  /*  the same scale as the grain it is matching.                             */
+  /* ====================================================================== */
+
+  function grainPat(defs, amp, freq) {
+    var k = Math.round(clamp(num(amp, 0.5), 0.05, 3) * 100) / 100;
+    var bf = Math.round(clamp(num(freq, 2.2), 0.2, 8) * 100) / 100;
+    return shared(defs, 'filmgrain|' + k + '|' + bf, function (dd) {
+      var fid = uid('gnf'), pid = uid('gn'), row = f(k) + ' 0 0 0 ' + f(0.5 - 0.5 * k);
+      add(dd, E('filter', {
+        id: fid, x: '0%', y: '0%', width: '100%', height: '100%',
+        'color-interpolation-filters': 'sRGB'
+      }, [
+        E('feTurbulence', {
+          type: 'fractalNoise', baseFrequency: f(bf), numOctaves: '2',
+          seed: '11', stitchTiles: 'stitch', result: 'n'
+        }),
+        E('feColorMatrix', {
+          'in': 'n', type: 'matrix',
+          values: row + '  ' + row + '  ' + row + '  0 0 0 0 1'
+        })
+      ]));
+      add(dd, E('pattern', {
+        id: pid, width: 64, height: 64, patternUnits: 'userSpaceOnUse'
+      }, [E('rect', { x: 0, y: 0, width: 64, height: 64, filter: 'url(#' + fid + ')' })]));
+      return 'url(#' + pid + ')';
+    });
+  }
+
+  function filmGrain(host, x) {
+    if (!x.on) return;
+    add(host, rect(-2, -2, x.w + 4, x.h + 4, {
+      fill: grainPat(x.defs, x.amp, x.freq), style: 'mix-blend-mode:overlay',
+      'pointer-events': 'none'
+    }));
+  }
+
+  /* ====================================================================== */
   /* 9. One nail plate — a curved, glossy, slightly translucent object       */
   /*                                                                         */
   /*  Bottom to top, and every layer obeys the one light:                     */
@@ -3167,6 +3222,12 @@
     envRim(clipG, {
       w: w, h: h, defs: defs, env: opts.env,
       k: kind === 'matte' ? 0.22 : (kind === 'velvet' ? 0.16 : (kind === 'chrome' ? 0.5 : 1))
+    });
+
+    /* --- 5c. grain, over every layer of colour and light ------------------- */
+    filmGrain(clipG, {
+      w: w, h: h, defs: defs, on: gOn,
+      amp: num(opts.grain, 0.25), freq: num(opts.grainFreq, 2.2)
     });
 
     /* --- 6. the contour --------------------------------------------------- */
