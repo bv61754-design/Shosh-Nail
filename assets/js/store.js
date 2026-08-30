@@ -632,12 +632,41 @@
 
   function txt(v){ return v === undefined || v === null ? '' : String(v); }
 
+  /* Invisible characters an Arabic mobile keyboard, a share sheet or a paste
+     can smuggle into the password field: zero-width marks, the bidi
+     embedding/override/isolate controls, and the BOM. None of them is ever
+     part of a password the owner meant to type. */
+  var INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
+
+  /* THE one normalisation, used everywhere a password is hashed or compared,
+     so what was typed when setting the password and what is typed when logging
+     in can never silently differ:
+       - drop the invisible characters above,
+       - compose to NFC where the engine supports it, so visually identical
+         Arabic always hashes identically,
+       - trim leading/trailing whitespace (an Android keyboard appends a space
+         after word prediction — the classic invisible lockout). */
+  function normPass(v){
+    var s = txt(v).replace(INVISIBLE, '');
+    try { if (typeof s.normalize === 'function') s = s.normalize('NFC'); }
+    catch (e){ /* exotic engine: the un-normalised form still works */ }
+    return s.replace(/^\s+/, '').replace(/\s+$/, '');
+  }
+
+  function isHashed(v){ return txt(v).slice(0, 7).toLowerCase() === 'sha256:'; }
+
   function globalPass(){
     var v;
     try { v = typeof window !== 'undefined' ? window.SN_ADMIN : null; }
     catch (e){ return ''; }
     return typeof v === 'string' ? v : '';
   }
+
+  /* What password.js supplied, as last known: its value at load, then whatever
+     refreshPass() re-read from the network. Never exposed — passStatus() only
+     ever reports THAT it exists, never what it is. */
+  var filePass  = globalPass();
+  var passStale = false;
 
   /* The password the gate will actually accept, right now, on this device. */
   function effectivePass(){
@@ -658,26 +687,112 @@
   }
 
   function hashPass(plain){
-    return 'sha256:' + sha256Hex(txt(plain));
+    return 'sha256:' + sha256Hex(normPass(plain));
   }
 
-  /* Constant-ish comparison against either a plain or a hashed expected value. */
+  /* Comparison against either a plain or a hashed expected value.
+     What was typed is accepted in its normalised form OR in its raw form: a
+     fingerprint committed before this normalisation existed was built from the
+     raw text, and its owner must not be locked out by the fix. Anything else,
+     including an empty expected value, fails closed. */
   function passMatches(given, expected){
-    var exp = txt(expected);
-    if (exp.slice(0, 7).toLowerCase() === 'sha256:'){
-      return hashPass(given).toLowerCase() === exp.toLowerCase();
+    var raw = txt(given);
+    var exp = normPass(expected);
+    if (exp === '') return false;
+    if (isHashed(exp)){
+      exp = exp.toLowerCase();
+      if (hashPass(raw).toLowerCase() === exp) return true;
+      return ('sha256:' + sha256Hex(raw)).toLowerCase() === exp;   /* legacy */
     }
-    return txt(given) === exp;
+    return normPass(raw) === exp || raw === txt(expected);
   }
 
   Store.hashPass = hashPass;
 
   /* The complete text of password.js carrying `plain` in its hashed form —
-     the owner copies this and pastes it over password.js on her phone. */
+     the owner copies this and pastes it over password.js on his phone. */
   Store.passwordFile = function(plain){
-    return '/* كلمة مرور لوحة التحكم — Shosh Nail admin password.\n' +
-           '   غيّريها من لوحة التحكم ← تبويب «النسخ الاحتياطي» ← زر «انسخي السطر». */\n' +
+    return '/* هذا الملف يحمل كلمة مرور لوحة التحكم — Shosh Nail admin password.\n' +
+           '   انسخ النص الذي تولّده لوحة التحكم وألصقه هنا كاملاً؛ والقيمة قد تكون كلمة المرور نفسها أو بصمة sha256. */\n' +
            'window.SN_ADMIN = "' + hashPass(plain) + '";\n';
+  };
+
+  /* ---------------------------------------------- re-reading password.js */
+  /* admin.html loads password.js as a plain <script>, and both GitHub Pages
+     and the phone browser cache it — so a freshly committed password can keep
+     failing for minutes with nothing on screen to say why. Belt and braces:
+     re-read the file over the network with a cache-busting query, pull the
+     value out of the TEXT with a strict regex (never eval, never injected as a
+     script) and adopt it when it differs. Every failure path — file://,
+     offline, 404, a rewritten 404 page — leaves the gate exactly as it is. */
+
+  var PASS_FILE = 'password.js';
+  var PASS_RE   = /window\s*\.\s*SN_ADMIN\s*=\s*(?:"([^"\\\r\n]{0,256})"|'([^'\\\r\n]{0,256})')\s*;/g;
+  var passRefresh = null;        /* in-flight refreshPass(), so we fetch once */
+
+  function passFromText(text){
+    var s = txt(text), m, out = '';
+    if (s.length > 65536) s = s.slice(0, 65536);
+    PASS_RE.lastIndex = 0;
+    while ((m = PASS_RE.exec(s)) !== null) out = m[1] !== undefined ? m[1] : m[2];
+    PASS_RE.lastIndex = 0;
+    return out;
+  }
+
+  /* Fail closed: adopt only a non-empty value free of control characters. */
+  function adoptFilePass(value){
+    var v = txt(value);
+    if (v === '' || /[\u0000-\u001F\u007F]/.test(v)) return;
+    if (v === filePass) return;
+    passStale = true;                    /* the copy this page loaded was old */
+    /* Never clobber a password changed on this device during this session:
+       adopt only while the live global is still the file's own value. */
+    if (globalPass() === filePass) syncGlobalPass(v);
+    filePass = v;
+  }
+
+  /* What the gate knows about its password source. Carries no secret. */
+  Store.passStatus = function(){
+    var g = globalPass();
+    var s = txt(Store.get('settings.adminPass', ''));
+    var eff, src;
+    if (g !== ''){ eff = g; src = (filePass !== '' && g === filePass) ? 'file' : 'stored'; }
+    else if (s !== ''){ eff = s; src = 'stored'; }
+    else { eff = DEFAULT_PASS; src = 'default'; }
+    /* A value that is still the shipped default is reported as such, whether it
+       reached us from the seed data or from a save — 'stored' would read as if
+       the owner had chosen it. A default sitting in password.js stays 'file':
+       that one really was published. */
+    if (src === 'stored' && passMatches(DEFAULT_PASS, eff)) src = 'default';
+    return {
+      loaded: filePass !== '',
+      source: src,
+      kind: isHashed(eff) ? 'hash' : 'plain',
+      stale: passStale
+    };
+  };
+
+  /* -> Promise<passStatus()>. Never rejects, never throws. */
+  Store.refreshPass = function(){
+    var settled = false, p;
+    if (passRefresh) return passRefresh;
+    p = new Promise(function(resolve){
+      function done(){ settled = true; passRefresh = null; resolve(Store.passStatus()); }
+      try {
+        if (typeof fetch !== 'function' || typeof location === 'undefined' ||
+            String(location.protocol).indexOf('http') !== 0){ done(); return; }
+        fetch(PASS_FILE + '?t=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
+          .then(function(res){
+            if (!res || !res.ok){ done(); return null; }
+            return res.text().then(function(text){
+              try { adoptFilePass(passFromText(text)); } catch (e){ /* keep the cached value */ }
+              done();
+            });
+          })['catch'](function(){ done(); });
+      } catch (e){ done(); }
+    });
+    if (!settled) passRefresh = p;
+    return p;
   };
 
   /* Encode every path segment but keep the slashes — the branch name has some. */
@@ -734,6 +849,24 @@
         notify();
       }
     });
+  }
+
+  /* Belt and braces: on the admin page only, re-read password.js once at
+     startup, so a copy cached by GitHub Pages or by the phone browser cannot
+     silently keep the owner out. Everything about it is optional. */
+  var passKicked = false;
+  function kickPassRefresh(){
+    try {
+      if (passKicked) return;
+      if (typeof document === 'undefined' || !document.body) return;
+      if (document.body.getAttribute('data-page') !== 'admin') return;
+      passKicked = true;
+      Store.refreshPass();
+    } catch (e){ /* a network nicety must never break the gate */ }
+  }
+  kickPassRefresh();
+  if (!passKicked && typeof document !== 'undefined' && document.addEventListener){
+    document.addEventListener('DOMContentLoaded', kickPassRefresh);
   }
 
   SN.Store = Store;

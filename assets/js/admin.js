@@ -34,6 +34,35 @@
         gateHint: 'كلمة المرور الافتراضية هي shosh1234 — غيّريها من تبويب «النسخ الاحتياطي» أول ما تدخلين.',
         gateBack: 'الرجوع للموقع',
 
+        /* ---- gate diagnostics + recovery (shown after a failed attempt) ----
+           هذه النصوص تخاطب صاحب الموقع بصيغة المذكّر. */
+        gd: {
+          missing: 'ملف كلمة المرور لم يصل إلى الموقع بعد. غالباً ما يعني هذا أن النشر ما زال جارياً، أو أن المتصفح يعرض نسخة قديمة من الموقع. انتظر دقيقة واحدة ثم أعد تحميل الصفحة.',
+          hash: 'الموقع استلم كلمة المرور الجديدة بالفعل، إذاً المشكلة في القيمة المكتوبة. تحقق من وجود مسافة زائدة، ومن لغة لوحة المفاتيح، ومن الأحرف الكبيرة والصغيرة.',
+          plain: 'الموقع استلم ملف كلمة المرور بالفعل، إذاً المشكلة في القيمة المكتوبة. تحقق من وجود مسافة زائدة، ومن لغة لوحة المفاتيح، ومن الأحرف الكبيرة والصغيرة.',
+          stale: 'كان المتصفح يعرض نسخة قديمة من ملف كلمة المرور، وقد تم تحديثه الآن. جرّب الدخول مرة أخرى.',
+          refresh: 'تحديث',
+          refreshing: 'جارٍ التحديث…',
+          refreshOk: 'تم تحديث ملف كلمة المرور.',
+
+          recQ: 'ما أقدر أدخل؟',
+          recX: 'إذا لم تنفع كلمة المرور بأي شكل، فهذه طريقة مضمونة للعودة إلى اللوحة، ويمكن تنفيذها كاملة من الجوال.',
+          recOpen: 'افتح ملف password.js على GitHub',
+          recNoLink: 'افتح مستودع الموقع على GitHub من حسابك، ثم افتح الملف password.js الموجود في الجذر.',
+          recLineLbl: 'السطر الثالث — انسخه ثم بدّل الكلمة التي بين علامتي التنصيص',
+          recLine: 'window.SN_ADMIN = "كلمة-مرور-جديدة";',
+          recCopy: 'انسخ السطر',
+          recCopyOk: 'تم نسخ السطر.',
+          rec1: 'اضغط على «افتح ملف password.js على GitHub» في الأعلى، وسجّل الدخول بحسابك إذا طُلب منك ذلك.',
+          rec2: 'اضغط على زر التعديل (رمز القلم) في أعلى الملف.',
+          rec3: 'امسح السطر الثالث بالكامل، وضع مكانه هذا السطر:',
+          rec4: 'بدّل «كلمة-مرور-جديدة» بكلمة مرور بسيطة تكتبها مباشرة بين علامتي التنصيص، بحروف إنجليزية وأرقام وبدون مسافات.',
+          rec5: 'اضغط «Commit changes»، ثم اضغط «Commit changes» مرة أخرى في النافذة التي تظهر.',
+          rec6: 'انتظر دقيقة واحدة، ثم أعد تحميل هذه الصفحة وادخل بكلمة المرور الجديدة.',
+          recWarn: 'انتبه: هذه الصيغة تحفظ كلمة المرور كنص مقروء داخل الملف، ويستطيع أي شخص يفتح المستودع أن يقرأها.',
+          recAfter: 'بعد أن تدخل، افتح تبويب «النسخ الاحتياطي» وغيّر كلمة المرور من هناك، حتى تعود محفوظة كبصمة مشفّرة بدل النص المقروء.'
+        },
+
         /* ---- shell ---- */
         panel: 'لوحة التحكم',
         logout: 'خروج',
@@ -391,6 +420,33 @@
         gateEmpty: 'Please type your password first.',
         gateHint: 'The default password is shosh1234 — change it from the Backup tab as soon as you are in.',
         gateBack: 'Back to the site',
+
+        gd: {
+          missing: 'Your password file has not reached the site yet. Usually that means it is still publishing, or your browser is showing an old copy of the site. Wait a minute, then reload this page.',
+          hash: 'The site did receive your new password, so the problem is the value that was typed. Check for an extra space, the keyboard language, and upper/lower case.',
+          plain: 'The site did receive your password file, so the problem is the value that was typed. Check for an extra space, the keyboard language, and upper/lower case.',
+          stale: 'Your browser was showing an old copy of the password file, and it has just been refreshed. Please try signing in again now.',
+          refresh: 'Refresh',
+          refreshing: 'Refreshing…',
+          refreshOk: 'Password file refreshed.',
+
+          recQ: 'Cannot sign in?',
+          recX: 'If the password will not work at all, this is a guaranteed way back into the panel, and you can do all of it from your phone.',
+          recOpen: 'Open password.js on GitHub',
+          recNoLink: 'Open your site repository on GitHub from your account, then open the file password.js at its root.',
+          recLineLbl: 'The third line — copy it, then change the word between the quotation marks',
+          recLine: 'window.SN_ADMIN = "new-password";',
+          recCopy: 'Copy the line',
+          recCopyOk: 'Line copied.',
+          rec1: 'Tap “Open password.js on GitHub” above, and sign in with your account if you are asked to.',
+          rec2: 'Tap the edit button (the pencil icon) at the top of the file.',
+          rec3: 'Delete the whole third line and put this line in its place:',
+          rec4: 'Replace new-password with a simple password typed directly between the quotation marks — English letters and digits, no spaces.',
+          rec5: 'Tap “Commit changes”, then tap “Commit changes” again in the window that appears.',
+          rec6: 'Wait one minute, then reload this page and sign in with the new password.',
+          recWarn: 'Note: this form stores the password as readable text inside the file, and anyone who opens the repository can read it.',
+          recAfter: 'Once you are back in, open the Backup tab and change the password there, so it is stored as a scrambled fingerprint again instead of readable text.'
+        },
 
         panel: 'Control panel',
         logout: 'Sign out',
@@ -3040,6 +3096,242 @@
   }
 
   /* ====================================================================== */
+  /* 17b. Locked out: gate diagnostics + plain-text recovery                 */
+  /*                                                                         */
+  /*  A wrong-password message alone tells the owner nothing about WHY. The   */
+  /*  usual cause is environmental, not typographic: password.js is still     */
+  /*  publishing, or the phone is serving a cached copy of it. After a failed */
+  /*  attempt we ask SN.Store.refreshPass() what actually reached the browser */
+  /*  and say so in one short paragraph, plus a one-tap «تحديث» retry.        */
+  /*                                                                         */
+  /*  Both helpers are optional. When store.js does not expose them we show   */
+  /*  nothing extra at all — the gate keeps behaving exactly as before.       */
+  /* ====================================================================== */
+
+  var gateFailed = false;    /* survives the re-render caused by a language switch */
+  var gateStatus = null;
+  var gateKey    = '';
+  var staleSeen  = false;    /* `stale` stays true for the rest of the session */
+
+  function storeFn(name) {
+    var St = SN.Store;
+    return (St && typeof St[name] === 'function') ? St[name] : null;
+  }
+
+  /* {loaded, source, kind, stale} — anything else becomes null */
+  function normPassStatus(s) {
+    if (!isObj(s)) return null;
+    return { loaded: !!s.loaded, source: str(s.source), kind: str(s.kind), stale: !!s.stale };
+  }
+
+  function passDiagOn() { return !!(storeFn('refreshPass') || storeFn('passStatus')); }
+
+  function passStatusNow() {
+    var fn = storeFn('passStatus');
+    if (!fn) return null;
+    try { return normPassStatus(fn.call(SN.Store)); }
+    catch (e) { return null; }
+  }
+
+  /* -> Promise<status|null>, or null when refreshPass() is not available */
+  function passRefresh() {
+    var fn = storeFn('refreshPass'), p;
+    if (!fn) return null;
+    try { p = fn.call(SN.Store); }
+    catch (e) { return null; }
+    if (!p || typeof p.then !== 'function') return null;
+    return p.then(
+      function (s) { return normPassStatus(s); },
+      function () { return null; }
+    );
+  }
+
+  /* Which of the three situations he is in. Order matters: a file that never
+     arrived outranks a stale one, and a fresh copy outranks "check your typing".
+     `stale` latches on for the rest of the session, so we announce it once and
+     from then on report what the file actually holds. */
+  function diagKey(st) {
+    if (!st) return '';
+    if (!st.loaded) return 'admin.gd.missing';
+    if (st.stale && !staleSeen) { staleSeen = true; return 'admin.gd.stale'; }
+    if (st.kind === 'hash') return 'admin.gd.hash';
+    return 'admin.gd.plain';
+  }
+
+  function diagTone(key) {
+    if (key === 'admin.gd.missing') return ' note-warn';
+    if (key === 'admin.gd.stale') return ' note-ok';
+    return '';
+  }
+
+  function diagIcon(key) {
+    if (key === 'admin.gd.missing') return 'clock';
+    if (key === 'admin.gd.stale') return 'check';
+    return 'lock';
+  }
+
+  /* The diagnostic block that lives inside the login card, hidden until the
+     first failed attempt. `onRetry(status)` lets the gate re-run the login with
+     whatever is still typed, so a stale copy fixes itself in one tap. */
+  function gateDiagBox(onRetry) {
+    var note = el('div', { 'class': 'note' });
+    var ico  = el('span', { 'class': 'ico', 'aria-hidden': 'true' });
+    var msg  = el('span');
+    var btn;
+    var box;
+
+    note.appendChild(ico);
+    note.appendChild(msg);
+
+    btn = el('button', {
+      'class': 'btn btn-line btn-sm', type: 'button',
+      style: { whiteSpace: 'normal' },
+      on: { click: function () { run(true); } }
+    }, [
+      el('span', { html: icon('undo', 16), 'aria-hidden': 'true' }),
+      el('span', { text: t('admin.gd.refresh') })
+    ]);
+
+    box = el('div', {
+      'class': 'adm-gd adm-hide',
+      role: 'status', 'aria-live': 'polite',
+      style: { inlineSize: '100%', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'start' }
+    }, [note, el('div', { 'class': 'adm-btnrow' }, [btn])]);
+
+    /* `key` given => repaint a verdict already reached (language switch) */
+    function paint(st, key) {
+      var k = key || diagKey(st);
+      if (!k) return;
+      gateStatus = st;
+      gateKey = k;
+      note.className = 'note' + diagTone(k);
+      ico.innerHTML = icon(diagIcon(k), 16);
+      msg.textContent = t(k);
+      box.classList.remove('adm-hide');
+    }
+
+    /* refresh, repaint, retry the login; `announce` only for his own tap */
+    function run(announce) {
+      var p = passRefresh();
+      var label = btn.querySelector('span:last-child');
+      if (!p) {
+        /* no refreshPass(): fall back to the synchronous snapshot */
+        paint(passStatusNow());
+        return;
+      }
+      btn.disabled = true;
+      if (label) label.textContent = t('admin.gd.refreshing');
+      p.then(function (st) {
+        btn.disabled = false;
+        if (label) label.textContent = t('admin.gd.refresh');
+        if (!st) { paint(passStatusNow()); return; }
+        if (typeof onRetry === 'function' && onRetry(st)) return;
+        paint(st);
+        if (announce) toast(t('admin.gd.refreshOk'), 'ok');
+      });
+    }
+
+    box.show = function () { gateFailed = true; run(false); };
+    /* a language switch rebuilds the gate — bring the last verdict back with it */
+    if (gateFailed) { if (gateKey) paint(gateStatus, gateKey); else run(false); }
+    return box;
+  }
+
+  /* The «ما أقدر أدخل؟» disclosure that sits under the card: the plain-text
+     line he can commit from his phone when nothing else works. */
+  function gateRecovery() {
+    var url  = repoFileURL('password.js');
+    var hid  = 'adm-gd-rq';
+    var bid  = 'adm-gd-rb';
+    var line = t('admin.gd.recLine');
+    var pre  = el('pre', {
+      'class': 'adm-pre', dir: 'ltr', tabindex: '0',
+      'aria-label': t('admin.gd.recLineLbl'), text: line
+    });
+    var item, head, body;
+
+    head = el('button', {
+      'class': 'acc-head', type: 'button', id: hid,
+      'aria-expanded': 'false', 'aria-controls': bid,
+      on: { click: function () {
+        var open = head.getAttribute('aria-expanded') === 'true';
+        head.setAttribute('aria-expanded', open ? 'false' : 'true');
+        if (open) item.classList.remove('is-open');
+        else item.classList.add('is-open');
+      } }
+    }, [
+      el('span', { text: t('admin.gd.recQ') }),
+      /* icon() already returns an <svg class="ico ico-chevron"> — the wrapper
+         must NOT repeat .ico, or the open state rotates it twice */
+      el('span', {
+        html: icon('chevron', 18), 'aria-hidden': 'true',
+        style: { flex: '0 0 auto', display: 'flex' }
+      })
+    ]);
+
+    body = el('div', {
+      'class': 'acc-body', id: bid, role: 'region', 'aria-labelledby': hid
+    }, [
+      el('div', { 'class': 'acc-in' }, [
+        el('p', { 'class': 'muted', style: { marginBlock: '0 12px' }, text: t('admin.gd.recX') }),
+
+        url ? el('div', { 'class': 'adm-btnrow', style: { marginBlockEnd: '12px' } }, [
+          el('a', {
+            'class': 'btn btn-line btn-sm', href: url, target: '_blank', rel: 'noopener',
+            style: { whiteSpace: 'normal' }, text: t('admin.gd.recOpen')
+          })
+        ]) : el('div', { 'class': 'note note-warn', style: { marginBlockEnd: '12px' } }, [
+          el('span', { 'class': 'ico', html: icon('shield', 16), 'aria-hidden': 'true' }),
+          el('span', { text: t('admin.gd.recNoLink') })
+        ]),
+
+        el('ol', { 'class': 'adm-steps', style: { listStyleType: 'decimal' } }, [
+          el('li', { text: t('admin.gd.rec1') }),
+          el('li', { text: t('admin.gd.rec2') }),
+          el('li', { text: t('admin.gd.rec3') })
+        ]),
+
+        el('div', { 'class': 'adm-osum', style: { marginBlock: '12px' } }, [
+          el('h5', { 'class': 'label', style: { margin: '0' }, text: t('admin.gd.recLineLbl') }),
+          pre,
+          el('div', { 'class': 'adm-btnrow' }, [
+            el('button', {
+              'class': 'btn btn-pri btn-sm', type: 'button',
+              style: { whiteSpace: 'normal' },
+              on: { click: function () {
+                SN.UI.copy(line).then(function (ok) {
+                  toast(t(ok ? 'admin.gd.recCopyOk' : 'common.error'), ok ? 'ok' : 'err');
+                });
+              } }
+            }, [
+              el('span', { html: icon('copy', 16), 'aria-hidden': 'true' }),
+              el('span', { text: t('admin.gd.recCopy') })
+            ])
+          ])
+        ]),
+
+        el('ol', { 'class': 'adm-steps', start: '4', style: { listStyleType: 'decimal' } }, [
+          el('li', { text: t('admin.gd.rec4') }),
+          el('li', { text: t('admin.gd.rec5') }),
+          el('li', { text: t('admin.gd.rec6') })
+        ]),
+
+        el('div', { 'class': 'note note-warn', style: { marginBlockStart: '12px' } }, [
+          el('span', { 'class': 'ico', html: icon('lock', 16), 'aria-hidden': 'true' }),
+          el('span', { text: t('admin.gd.recWarn') })
+        ]),
+        el('div', { 'class': 'note', style: { marginBlockStart: '10px' } }, [
+          el('span', { 'class': 'ico', html: icon('shield', 16), 'aria-hidden': 'true' }),
+          el('span', { text: t('admin.gd.recAfter') })
+        ])
+      ])
+    ]);
+
+    item = el('div', { 'class': 'acc-item' }, [head, body]);
+    return el('div', { 'class': 'accordion adm-gd-rec' }, [item]);
+  }
+
+  /* ====================================================================== */
   /* 18. Shell: gate, sidebar, body                                          */
   /* ====================================================================== */
 
@@ -3050,6 +3342,7 @@
       placeholder: t('admin.gatePassPh'), autocomplete: 'current-password'
     });
     var err = el('p', { 'class': 'field-err' });
+    var diag = passDiagOn() ? gateDiagBox(retryWith) : null;
     var cardEl, form;
 
     if (!root) return;
@@ -3082,7 +3375,25 @@
       input.select();
       shake();
       toast(t('admin.gateWrong'), 'err');
+      /* only now — the first impression stays clean */
+      if (diag) diag.show();
     }, false);
+
+    /* Called back by the diagnostic after a refresh: if the browser had simply
+       been holding an old password.js, the value already typed now works. */
+    function retryWith() {
+      var v = str(input.value);
+      if (!trim(v) || !SN.Store || typeof SN.Store.login !== 'function') return false;
+      try {
+        if (!SN.Store.login(v)) return false;
+      } catch (e) { return false; }
+      err.textContent = '';
+      gateFailed = false;
+      gateStatus = null;
+      gateKey = '';
+      renderPanel(true);
+      return true;
+    }
 
     function shake() {
       if (!cardEl || !cardEl.classList) return;
@@ -3096,11 +3407,22 @@
       el('h1', { 'class': 'h3 display', text: t('admin.gateTitle') }),
       el('p', { 'class': 'muted', text: t('admin.gateSub') }),
       form,
+      diag,
       el('p', { 'class': 'hint', text: t('admin.gateHint') }),
       el('a', { 'class': 'link adm-gate-back', href: 'index.html', text: t('admin.gateBack') })
     ]);
 
-    root.appendChild(el('div', { 'class': 'adm-gate' }, cardEl));
+    /* one column so the recovery disclosure sits under the card, not beside it
+       (.adm-gate is a centring flex row and admin.css is not ours to change) */
+    root.appendChild(el('div', { 'class': 'adm-gate' }, [
+      el('div', {
+        'class': 'adm-gate-col',
+        style: {
+          inlineSize: '100%', maxInlineSize: '420px',
+          display: 'flex', flexDirection: 'column', gap: '14px'
+        }
+      }, [cardEl, gateRecovery()])
+    ]));
     try { input.focus(); } catch (e) { /* ignore */ }
   }
 

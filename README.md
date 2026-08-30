@@ -119,6 +119,48 @@ window.SN_ADMIN = "shosh1234";
 > الصفحة — يرجع يقبل الكلمة القديمة. اللوحة تنبّهك بهذا بشريط أصفر فوق، وتخليك ترجعين
 > للخطوة 2 بدون ما تكتبين كلمة المرور من جديد.
 
+### ما أقدر أدخل للوحة التحكم
+
+إذا رفضت اللوحة كلمة المرور — القديمة والجديدة معاً — فالسبب في الغالب ليس الكلمة نفسها.
+بعد أول محاولة فاشلة تعرض بطاقة الدخول سطرين يوضحان ما الذي وصل إلى الموقع فعلاً، ومعهما
+زر **«تحديث»** يعيد قراءة ملف `password.js` من الإنترنت مباشرة. جرّب هذا الزر أولاً.
+
+الأسباب الأربعة بالترتيب:
+
+1. **النشر ما زال جارياً.** بعد كل تعديل على GitHub يحتاج الموقع دقيقة أو دقيقتين حتى ينشر
+   الملف الجديد. انتظر دقيقة ثم أعد تحميل الصفحة. إذا قالت اللوحة «ملف كلمة المرور لم يصل
+   إلى الموقع بعد» فهذا هو السبب.
+2. **المتصفح يعرض نسخة قديمة.** الجوال يحتفظ بنسخة من الملف القديم ويستمر في استخدامها.
+   اضغط زر **«تحديث»** في بطاقة الدخول؛ فإذا وجد نسخة أحدث اعتمدها وأخبرك بذلك، وتستطيع
+   الدخول فوراً بلا انتظار.
+3. **مسافة زائدة أو لوحة مفاتيح بلغة أخرى.** إذا قالت اللوحة إن كلمة المرور الجديدة وصلت
+   بالفعل، فالمشكلة في القيمة المكتوبة: تأكد من عدم وجود مسافة في أول الكلمة أو آخرها
+   (لوحة مفاتيح الجوال تضيفها أحياناً بعد اللصق)، ومن أن لوحة المفاتيح بالإنجليزية، ومن
+   الأحرف الكبيرة والصغيرة.
+4. **لم ينفع شيء.** استخدم طريقة العودة المضمونة أدناه.
+
+#### طريقة العودة المضمونة (نص مقروء بدل البصمة)
+
+هذه الطريقة تنجح دائماً، ويمكن تنفيذها كاملة من الجوال. الخطوات نفسها موجودة داخل بطاقة
+الدخول تحت عنوان **«ما أقدر أدخل؟»**:
+
+1. افتح ملف `password.js` على GitHub — الزر جاهز في بطاقة الدخول، أو افتح المستودع يدوياً.
+2. اضغط أيقونة القلم ✏️ (Edit) في أعلى الملف.
+3. امسح السطر الثالث بالكامل، وضع مكانه هذا السطر:
+
+   ```js
+   window.SN_ADMIN = "كلمة-مرور-جديدة";
+   ```
+
+4. بدّل `كلمة-مرور-جديدة` بكلمة مرور بسيطة تكتبها مباشرة بين علامتي التنصيص، بحروف
+   إنجليزية وأرقام وبدون مسافات.
+5. اضغط **«Commit changes...»** ثم **«Commit changes»** مرة أخرى في النافذة التي تظهر.
+6. انتظر دقيقة، ثم أعد تحميل `admin.html` وادخل بكلمة المرور الجديدة.
+
+> **انتبه:** هذه الصيغة تحفظ كلمة المرور كنص مقروء داخل الملف، ويستطيع أي شخص يفتح
+> المستودع أن يقرأها. استخدمها للعودة فقط؛ وبعد أن تدخل افتح تبويب **النسخ الاحتياطي**
+> وغيّر كلمة المرور من هناك، حتى تعود محفوظة كبصمة `sha256:` مشفّرة بدل النص المقروء.
+
 ### وش تحمي هذي الكلمة بالضبط؟ (اقرأيها مرة وارتاحي)
 
 مهم تعرفين الصورة كاملة، وهي مطمئنة أكثر مما تتوقعين:
@@ -357,6 +399,51 @@ is copy and paste:
 > If you stop before step 2, the new password never sticks: any other device — and your own,
 > once you close the page — goes back to accepting the old one. The panel keeps a yellow
 > warning strip at the top for this, and lets you reopen step 2 without retyping anything.
+
+### I cannot get into the control panel
+
+If the panel rejects your password — both the old one and the new one — the cause is usually
+not the password itself. After the first failed attempt the login card shows two short lines
+explaining what actually reached the site, together with a **"Refresh"** button that re-reads
+`password.js` straight from the network. Try that button first.
+
+The four causes, in order:
+
+1. **It is still publishing.** After every commit, GitHub Pages needs a minute or two to
+   publish the new file. Wait a minute and reload the page. If the panel says *"Your password
+   file has not reached the site yet"*, this is why.
+2. **The browser is showing an old copy.** Your phone keeps a cached copy of the old file and
+   goes on using it. Tap **"Refresh"** on the login card: if a newer copy exists it is adopted
+   on the spot, the panel tells you so, and you can sign in immediately.
+3. **A trailing space, or the wrong keyboard.** If the panel says the new password did reach
+   the site, the problem is the value that was typed: check for a space at the start or end
+   (phone keyboards often add one after a paste), that the keyboard is in English, and that
+   upper/lower case matches.
+4. **Nothing worked.** Use the guaranteed way back in, below.
+
+#### The guaranteed way back in (readable text instead of a fingerprint)
+
+This always works and can be done entirely from a phone. The same steps live inside the login
+card, under **"Cannot sign in?"**:
+
+1. Open `password.js` on GitHub — the button is right there on the login card, or open the
+   repository yourself.
+2. Tap the pencil icon ✏️ (Edit) at the top of the file.
+3. Delete the whole third line and put this line in its place:
+
+   ```js
+   window.SN_ADMIN = "new-password";
+   ```
+
+4. Replace `new-password` with a simple password typed directly between the quotation marks —
+   English letters and digits, no spaces.
+5. Tap **"Commit changes..."**, then **"Commit changes"** again in the window that appears.
+6. Wait a minute, then reload `admin.html` and sign in with the new password.
+
+> **Note:** this form stores the password as readable text inside the file, and anyone who
+> opens the repository can read it. Use it only to get back in; once you are in, open the
+> **Backup** tab and change the password there, so it is stored as a scrambled `sha256:`
+> fingerprint again instead of readable text.
 
 ### What this password does and does not protect
 
