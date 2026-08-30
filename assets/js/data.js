@@ -459,7 +459,12 @@
       { id: 'p-chrome', kind: 'chrome', price: 12, name: { ar: 'كروم مرآة', en: 'Mirror Chrome' } },
       { id: 'p-leopard', kind: 'leopard', price: 12, name: { ar: 'نمر', en: 'Leopard' } },
       { id: 'p-lace', kind: 'lace', price: 14, name: { ar: 'دانتيل', en: 'Lace' } },
-      { id: 'p-cat-eye', kind: 'catEye', price: 15, name: { ar: 'كات آي', en: 'Cat Eye' } }
+      { id: 'p-cat-eye', kind: 'catEye', price: 15, name: { ar: 'كات آي', en: 'Cat Eye' } },
+      /* The shop's own signature finish: magnetic gel packed with fine silver
+         flakes. `pattern.color` is read as a faint TINT on the silver (gold /
+         rose gold), never as a colour, and the nail's own colour is the dark
+         base underneath — see SN.Nail PATTERNS.glitterCatEye. */
+      { id: 'p-cat-eye-glitter', kind: 'glitterCatEye', price: 16, name: { ar: 'كات آي جليتر', en: 'Glitter Cat Eye' } }
     ],
 
     /* =====================================================================
@@ -671,27 +676,48 @@
        READY-MADE DESIGNS — 12 items, each with a complete DESIGN_CONFIG.
        ===================================================================== */
     designs: [
+      /* THE flagship — the set @shosh_nail actually makes and sells, and the
+         one the glitter cat-eye renderer was measured from. Ten identical
+         nails on purpose: this is a product, not a composition, and what the
+         customer sees here is exactly what arrives in the box. */
+      {
+        id: 'd-cateye-silver',
+        name: { ar: 'ليل فضي', en: 'Silver Midnight' },
+        desc: {
+          ar: 'توقيع شوش نيل، وأكثر طقم يتكرّر طلبه: أسود عميق مثل الليل، وفوقه شريط فضي مغناطيسي يتحرّك مع حركة يدك ويلمع من مسافة. الجليتر ناعم جدًا — بريق لا لمعان صارخ — على شكل لوز طويل يطوّل الأصابع. طقم سهرة يسأل عنه كل من يراه.',
+          en: 'The Shosh Nail signature, and the set we remake more than any other: a midnight black under a magnetic ribbon of silver that travels with every turn of your hand. The glitter is fine — light rather than sparkle — on a long almond that stretches the finger. An evening set people ask about all night.'
+        },
+        price: 240, orders: 460, featured: true, active: true,
+        tags: ['luxe', 'party', 'winter'], image: '',
+        config: mkConfig({
+          skin: '#E3B48F', shape: 'almond', length: 'long', sizes: mkSizes(1, 4, 3, 5, 7),
+          def: { c: '#17131A', f: 'gloss', p: ['glitterCatEye', '#E6E6E9', '#17131A', 1.15] }
+        })
+      },
       {
         id: 'd-bride',
         name: { ar: 'عروس', en: 'Bridal Veil' },
         desc: {
-          ar: 'طقم عروس بلون عاجي هادئ ونقشة دانتيل ناعمة، مع ظفر بنصر مكسو بلمعة لؤلؤية وحبات لؤلؤ وألماس صغير. طول لوز أنيق يطلع فاخر في الصور من غير ما يعيقك في يومك.',
-          en: 'An ivory bridal set veiled in fine lace, with ring nails dressed in pearl sheen, tiny pearls and a single diamond. An elegant almond length that photographs like couture without getting in your way all day.'
+          ar: 'طقم عروس بلون عاجي هادئ، مرسوم عليه دانتيل بخيط ذهبي رفيع، وظفر البنصر مكسو بلمعة لؤلؤية وحبات لؤلؤ وحجر صغير. طول لوز أنيق يظهر فاخرًا في الصور من دون أن يعيقك في يومك.',
+          en: 'An ivory bridal set drawn with fine gold lace, and ring nails dressed in a pearl glaze with tiny pearls and a single stone. An elegant almond length that photographs like couture without getting in your way all day.'
         },
         price: 260, orders: 310, featured: true, active: true,
         tags: ['bridal', 'luxe', 'pearl'], image: '',
         config: mkConfig({
           skin: '#EFCDB6', shape: 'almond', length: 'long', sizes: mkSizes(1, 4, 3, 5, 7),
-          def: { c: '#FAF3EE', f: 'gloss', p: ['lace', '#FFFFFF', '#EDE4E9', 1] },
+          /* lace has to be a shade the eye can find: white thread on an ivory
+             plate disappears at card size and reads as a scratch. Champagne
+             gold over ivory is what a bridal set actually looks like. */
+          def: { c: '#FAF3EE', f: 'gloss', p: ['lace', '#C2A05E', '#E7C3AE', 1] },
           over: {
             rightThumb: { c: '#FAF3EE', f: 'gloss', p: ['french', '#FFFFFF', '#F1E7E2', 1] },
             leftThumb: { c: '#FAF3EE', f: 'gloss', p: ['french', '#FFFFFF', '#F1E7E2', 1] },
             rightRing: {
-              c: '#F1E7E2', f: 'chrome', p: ['glazed', '#FFFFFF', '#EDE4E9', 1.1],
+              c: '#F1E7E2', f: 'gloss', p: ['glazed', '#FFFFFF', '#EDE4E9', 1.1],
               ch: [['ch-pearl', 0.5, 0.28, 0.85, 0], ['ch-round', 0.38, 0.48, 0.7, 0], ['ch-pearl', 0.62, 0.52, 0.6, 0]]
             },
             leftRing: {
-              c: '#F1E7E2', f: 'chrome', p: ['glazed', '#FFFFFF', '#EDE4E9', 1.1],
+              c: '#F1E7E2', f: 'gloss', p: ['glazed', '#FFFFFF', '#EDE4E9', 1.1],
               ch: [['ch-pearl', 0.5, 0.28, 0.85, 0], ['ch-round', 0.38, 0.48, 0.7, 0], ['ch-pearl', 0.62, 0.52, 0.6, 0]]
             }
           }
@@ -701,17 +727,22 @@
         id: 'd-chrome',
         name: { ar: 'كروم مرآة', en: 'Mirror Chrome' },
         desc: {
-          ar: 'انعكاس معدني صافي يغيّر لونه مع الضوء، وظفر بنصر بهالة ليلكية تكسر البرودة. طقم يلفت النظر بدون أي نقشة زائدة.',
-          en: 'A clean metallic mirror that shifts with the light, softened by a lilac aura on the ring nails. All the attention, none of the fuss.'
+          ar: 'انعكاس معدني صافٍ يتغيّر مع الضوء من فضي إلى رمادي دافئ، وظفر البنصر بانعكاس ليلكي يكسر برودة الفضة. طقم يلفت النظر من دون أي نقشة زائدة.',
+          en: 'A clean metallic mirror that shifts with the light from silver to warm grey, with a lilac reflection on the ring nails to soften the cool. All the attention, none of the fuss.'
         },
         price: 210, orders: 265, featured: true, active: true,
         tags: ['chrome', 'party', 'luxe'], image: '',
         config: mkConfig({
           skin: '#E3B48F', shape: 'coffin', length: 'long', sizes: mkSizes(1, 4, 3, 5, 7),
-          def: { c: '#C8BBB0', f: 'chrome', p: ['chrome', '#FAF3EE', '#A9A29B', 1] },
+          /* No pattern layer at all: the chrome FINISH repaints the plate as a
+             mirror of the nail's own colour, so anything drawn underneath is
+             invisible — and in the studio the customer would still be charged
+             for it. The lilac ring nail is done the honest way, by giving that
+             nail a lilac colour for the mirror to pick up. */
+          def: { c: '#C8BBB0', f: 'chrome' },
           over: {
-            rightRing: { c: '#CFC7D6', f: 'chrome', p: ['aura', '#FFFFFF', '#C9B6EA', 1.1] },
-            leftRing: { c: '#CFC7D6', f: 'chrome', p: ['aura', '#FFFFFF', '#C9B6EA', 1.1] }
+            rightRing: { c: '#CFC7D6', f: 'chrome' },
+            leftRing: { c: '#CFC7D6', f: 'chrome' }
           }
         })
       },
@@ -740,10 +771,13 @@
         tags: ['pearl', 'minimal', 'summer'], image: '',
         config: mkConfig({
           skin: '#E3B48F', shape: 'almond', length: 'medium', sizes: mkSizes(2, 5, 4, 6, 8),
-          def: { c: '#F1E7E2', f: 'chrome', p: ['glazed', '#FFFFFF', '#EDE4E9', 1] },
+          /* gloss, NOT chrome: the chrome FINISH repaints the whole plate with
+             a mirror and swallows the glazed veil underneath it — the pearl
+             has to be the last thing you see, not the first thing covered. */
+          def: { c: '#F1E7E2', f: 'gloss', p: ['glazed', '#FFFFFF', '#EDE4E9', 1] },
           over: {
-            rightThumb: { c: '#E7C3AE', f: 'chrome', p: ['glazed', '#FFFFFF', '#F4CBD2', 0.9] },
-            leftThumb: { c: '#E7C3AE', f: 'chrome', p: ['glazed', '#FFFFFF', '#F4CBD2', 0.9] }
+            rightThumb: { c: '#E7C3AE', f: 'gloss', p: ['glazed', '#FFFFFF', '#F4CBD2', 0.9] },
+            leftThumb: { c: '#E7C3AE', f: 'gloss', p: ['glazed', '#FFFFFF', '#F4CBD2', 0.9] }
           }
         })
       },
@@ -813,8 +847,8 @@
         id: 'd-mocha',
         name: { ar: 'موكا', en: 'Mocha Mousse' },
         desc: {
-          ar: 'بنّي قهوة دافئ بطول قصير عملي، مع فرنش مقلوب بلون اللاتيه على البنصر بلمسة مطفية. مثالي لليد اللي تشتغل طول اليوم.',
-          en: 'A warm coffee brown at a practical short length, with a latte French on the ring nails in a soft matte. Made for hands that work all day.'
+          ar: 'بنّي قهوة دافئ بطول قصير عملي، وظفر البنصر بلون اللاتيه بطرف موكا مطفي يكسر اللون. مثالي لليد اللي تشتغل طول اليوم.',
+          en: 'A warm coffee brown at a practical short length, with latte ring nails tipped in matte mocha to break it up. Made for hands that work all day.'
         },
         price: 155, orders: 205, featured: false, active: true,
         tags: ['nude', 'minimal', 'autumn'], image: '',
@@ -851,14 +885,17 @@
         id: 'd-pearl',
         name: { ar: 'لؤلؤي', en: 'Pearl Drop' },
         desc: {
-          ar: 'قاعدة لؤلؤية بلمسة فيلفيت ناعمة وهالة بيضاء خفيفة، مع ثلاث حبات لؤلؤ متدرجة على البنصر. هادئ وفخم بنفس الوقت.',
-          en: 'A pearl base in a soft velvet finish with a faint white halo, and three graduated pearls resting on each ring nail. Quiet luxury, exactly.'
+          ar: 'قاعدة لؤلؤية باردة تدفّئها هالة ناعمة من الداخل، ولمعة صافية تعطيها بريق اللؤلؤ الحقيقي، مع ثلاث حبات لؤلؤ متدرّجة على البنصر. هادئ وفخم في نفس الوقت.',
+          en: 'A cool pearl base warmed from within by a soft halo, under a clear gloss that gives it a real pearl’s light, with three graduated pearls resting on each ring nail. Quiet luxury, exactly.'
         },
         price: 200, orders: 95, featured: false, active: true,
         tags: ['pearl', 'bridal', 'minimal'], image: '',
         config: mkConfig({
           skin: '#EFCDB6', shape: 'oval', length: 'medium', sizes: mkSizes(2, 5, 4, 6, 8),
-          def: { c: '#EDE4E9', f: 'velvet', p: ['aura', '#FFFFFF', '#CFC7D6', 0.9] },
+          /* A pearl is cool in the body and warm where the light sits — a white
+             halo over a grey one only made it look chalky. Gloss, because a
+             real pearl has a hard little highlight on it. */
+          def: { c: '#EDE4E9', f: 'gloss', p: ['aura', '#FBEAF0', '#D8B49A', 1.05] },
           over: {
             rightRing: {
               c: '#F1E7E2', f: 'gloss',

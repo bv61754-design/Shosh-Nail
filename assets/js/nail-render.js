@@ -1240,43 +1240,98 @@
     }
   };
 
-  /* chrome AS A PATTERN: the same mirror model the chrome finish uses, but
-     driven by the customer's two colours instead of the nail colour */
+  /* ---------------------------------------------------------------- chrome */
+  /*  A chrome nail is a MIRROR the size of a fingernail, and what it mirrors  */
+  /*  is a room. That is the whole model, and everything a render usually      */
+  /*  gets wrong about chrome follows from not having one:                     */
+  /*    · a room has a HORIZON — the hard line where the lit ceiling ends and  */
+  /*      the darker floor begins. It is an EDGE, not a blend. One hard edge   */
+  /*      does more for chrome than any amount of gradient polish.             */
+  /*    · a room has more than one of them: a second, weaker step where a wall */
+  /*      meets a window, and a third dark one at the cuticle where the mirror */
+  /*      is looking back down at the hand holding it.                          */
+  /*    · above the horizon it goes almost white; below it, almost black. The  */
+  /*      RANGE is what says metal. Mid greys say paint.                       */
+  /*    · metal is never neutral: it keeps a tint of the colour it was         */
+  /*      powdered with, strongest in the mid tones and burnt out of the        */
+  /*      highlight.                                                            */
+  /*    · and the mirror is CURVED, so everything in it is squeezed toward the */
+  /*      sides — which the crosswise pass on top of this does.                */
+  /* ------------------------------------------------------------------------ */
+
+  /* one reflected edge: two stops a whisker apart, so the ramp between them
+     is a single pixel wide however large the nail is drawn */
+  function edgeAt(out, t, below, above) {
+    out.push([t, below]);
+    out.push([t + 0.004, above]);
+  }
+
   function mirrorFill(defs, c, tint) {
-    /* Metal is a desaturated version of the colour with a lot of range on it */
-    var m = mix(c, tint || c, 0.35);
-    var g0 = mix(m, '#8E8792', 0.16);
-    /* Slightly off vertical: a real hand is never square to the room, and a
-       dead level band is the single biggest tell that this is a gradient. */
-    return grad(defs, 'linearGradient', [
-      [0.00, darken(g0, 0.34)],
-      [0.15, darken(g0, 0.26)],
-      [0.25, darken(g0, 0.22)],
-      [0.265, lighten(g0, 0.74)],   /* the horizon: a hard edge, like a room */
-      [0.33, lighten(g0, 0.40)],
-      [0.42, lighten(g0, 0.10)],
-      [0.50, darken(g0, 0.16)],
-      [0.60, darken(g0, 0.30)],
-      [0.615, darken(g0, 0.04)],
-      [0.74, mix(g0, '#FFFFFF', 0.26)],
-      [0.87, lighten(g0, 0.58)],
-      [1.00, mix(g0, '#FFFFFF', 0.34)]
-    ], { x1: 0.34, y1: 0, x2: 0.66, y2: 1 });
+    /* the metal itself: the colour, softened toward a neutral so the darks can
+       reach black and the lights white without going muddy or candied */
+    var m = mix(col(c, '#C9CDD6'), tint ? col(tint, c) : c, 0.30);
+    var g0 = mix(m, '#8E8792', 0.20);
+    var sky = mix(g0, '#FFFFFF', 0.86);
+    var lit = mix(g0, '#FFFFFF', 0.52);
+    var flr = mix(darken(g0, 0.72), '#0A0A0D', 0.42);
+    var st = [];
+    /* beyond the fingertip: the dark of the room, with the metal's tint in it */
+    st.push([0.00, mix(flr, g0, 0.30)]);
+    st.push([0.10, darken(g0, 0.44)]);
+    /* THE HORIZON */
+    edgeAt(st, 0.215, darken(g0, 0.40), sky);
+    st.push([0.30, mix(sky, lit, 0.45)]);
+    st.push([0.40, lit]);
+    /* the far wall: a second, weaker step down */
+    edgeAt(st, 0.48, mix(lit, g0, 0.6), darken(g0, 0.30));
+    st.push([0.58, darken(g0, 0.52)]);
+    st.push([0.66, darken(g0, 0.58)]);
+    /* a window in that wall */
+    edgeAt(st, 0.705, darken(g0, 0.56), mix(sky, lit, 0.2));
+    st.push([0.80, mix(g0, '#FFFFFF', 0.42)]);
+    st.push([0.88, g0]);
+    /* and at the cuticle the mirror is looking back at the hand */
+    st.push([1.00, flr]);
+    /* Off vertical by a few degrees: a hand is never square to the room, and
+       a dead level band is the other big tell that this is a gradient. */
+    return grad(defs, 'linearGradient', st, { x1: 0.40, y1: 0, x2: 0.60, y2: 1 });
+  }
+
+  /* The curvature. A cylinder compresses everything it reflects toward its
+     silhouette, so the same room repeats, darker and squashed, at both side
+     walls — and there is a hard vertical line down the ridge where the two
+     halves of the reflection meet. */
+  function mirrorCurve(g, x, lx) {
+    var peak = clamp(0.46 - num(lx, -0.4) * 0.16, 0.28, 0.68);
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, [
+        [0.00, '#08070A', 0.72],
+        [0.055, '#08070A', 0.40],
+        [0.11, '#FFFFFF', 0.30],
+        [0.16, '#08070A', 0.16],
+        [f(Math.max(0.20, peak - 0.16)), '#08070A', 0.02],
+        [f(peak), '#FFFFFF', 0.20],
+        [f(Math.min(0.86, peak + 0.17)), '#08070A', 0.04],
+        [0.87, '#08070A', 0.20],
+        [0.925, '#FFFFFF', 0.26],
+        [0.965, '#08070A', 0.42],
+        [1.00, '#08070A', 0.74]
+      ])
+    }));
+    /* the ridge line: the seam of the reflection, and hard */
+    add(g, rect(f(peak * x.w), -1, Math.max(0.6, x.u * 0.7), x.h + 2, {
+      fill: '#FFFFFF', opacity: 0.30
+    }));
   }
 
   PATTERNS.chrome = function (g, x) {
     add(g, rect(-1, -1, x.w + 2, x.h + 2, { fill: mirrorFill(x.defs, x.c1, x.c2) }));
-    /* the reflection is bent by the C-curve, so the bands bow */
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      fill: hGrad(x.defs, [
-        [0, '#0B0709', 0.5], [0.13, '#0B0709', 0.16],
-        [0.32, '#FFFFFF', 0.22], [0.42, '#FFFFFF', 0.05],
-        [0.72, '#0B0709', 0.12], [1, '#0B0709', 0.46]
-      ])
-    }));
+    mirrorCurve(g, x, x.L && x.L.x);
+    /* the free edge of a chrome nail is the brightest thing on it: the powder
+       wraps the rim and catches the light end on */
     add(g, E('path', {
       d: x.d, fill: 'none', stroke: '#FFFFFF',
-      'stroke-width': f(x.u * 1.4), opacity: 0.6
+      'stroke-width': f(x.u * 1.6), opacity: 0.75
     }));
   };
 
@@ -1820,6 +1875,278 @@
     }));
   };
 
+
+  /* ====================================================================== */
+  /* Glitter cat eye — the shop's OWN product                                */
+  /*                                                                         */
+  /*  Measured off one nail of @shosh_nail's own set, and it is a different   */
+  /*  MATERIAL from the smooth coloured `catEye` above, not a variant of it.  */
+  /*  What the measurements say, and what every layer below is for:           */
+  /*                                                                          */
+  /*    · the plate is 9% deep black, 24% dark base, then 26/19/12% of three   */
+  /*      shimmer tiers — i.e. the magnetic band is not a smooth ramp, it is   */
+  /*      a DENSE FIELD OF FINE FLAKES, 27% of the plate above 0.55 luminance, */
+  /*      at 0.277 local standard deviation. Individual flakes resolve.        */
+  /*    · saturation of that shimmer is 0.037: it is PURE SILVER, and it stays */
+  /*      silver whatever colour the base is. pattern.color is the way out of  */
+  /*      that — a gold or rose-gold version, still barely saturated.          */
+  /*    · luminance by third, cuticle -> tip, is 0.540 / 0.376 / 0.247. The    */
+  /*      effect is brightest at the CUTICLE and fades to the free edge, the   */
+  /*      exact opposite of the tip-weighted `tipsGlitter`.                    */
+  /*    · and there are TWO narrow HARD reflections, not one soft sliver.      */
+  /*      A pair of strip lights, unblurred, is what says "thick glossy gel"   */
+  /*      rather than "a drawing of a shiny thing".                            */
+  /*                                                                          */
+  /*  The density gradient is done by DARKENING, not by placing fewer specks:  */
+  /*  a uniform flake field under a veil that opens over the band costs three  */
+  /*  shared <pattern> tiles and three rects, and it survives being shrunk to  */
+  /*  a 40px hand preview — where the flakes merge into a sheen and the band   */
+  /*  plus the near-black perimeter carry the whole read.                      */
+  /* ====================================================================== */
+
+  /* A speckle tile with resolvable grains, unlike grainP's dust. Shared for
+     the whole page: one definition however many nails ask for it. */
+  function flakeP(defs, tone, size, dots, r0, r1, rot, seed) {
+    /* Quantised onto a 22%-per-step ladder. Nothing in the hand is scaled —
+       a plate is placed with a translate and a rotate — so a flake is the
+       same physical size on the thumb as on the pinky, and the ten plates,
+       whose widths span barely a third, then all land on the same one or two
+       rungs and SHARE these tiles instead of asking for thirty. That is the
+       difference between this pattern costing a few hundred nodes on a ten
+       nail preview and costing a few thousand. */
+    var sz = Math.max(1, num(size, 10));
+    sz = Math.round(Math.pow(1.22, Math.round(Math.log(sz) / Math.log(1.22))) * 100) / 100;
+    return shared(defs, 'fk|' + tone + '|' + sz + '|' + dots + '|' + r0 + '|' + r1 +
+      '|' + rot + '|' + seed,
+      function (d) {
+        var id = uid('fk');
+        var pt = E('pattern', {
+          id: id, width: f(sz), height: f(sz), patternUnits: 'userSpaceOnUse',
+          /* A tile is a lattice, and a lattice on a nail is instantly a
+             printed fabric. Three tiles at three incommensurate sizes AND
+             three angles never line up, so what the eye gets back is a field
+             with no direction in it. */
+          patternTransform: 'rotate(' + f(rot) + ')'
+        });
+        var r = seeded('flake|' + seed + '|' + tone), i, rr, cx, cy;
+        for (i = 0; i < dots; i++) {
+          rr = sz * r.r(r0, r1);
+          /* Inset from the tile edge: a grain sliced in half by the tile
+             boundary is a straight line, and a grid of straight lines is
+             exactly the lattice the three tiles exist to hide. */
+          cx = r.r(rr, sz - rr); cy = r.r(rr, sz - rr);
+          /* a crushed-foil flake is a stubby lozenge, not a dot: giving each
+             one its own aspect and angle is what stops the tile reading as a
+             dotted screen when it repeats */
+          pt.appendChild(E('ellipse', {
+            cx: f(cx), cy: f(cy),
+            rx: f(rr), ry: f(rr * r.r(0.22, 0.78)),
+            fill: tone, opacity: f(r.r(0.30, 1)),
+            transform: 'rotate(' + f(r.r(0, 180)) + ' ' + f(cx) + ' ' + f(cy) + ')'
+          }));
+        }
+        add(d, pt);
+        return 'url(#' + id + ')';
+      });
+  }
+
+  /* how many grains a tile carries at the current detail budget. Deliberately
+     shallow: a hand preview still has to shimmer, it just does not have to
+     resolve. */
+  function nd(base, q) { return Math.round(base * (0.58 + 0.42 * clamp(q, 0.25, 1))); }
+
+  /* A long, near-parallel-sided reflection with tapered ends, centred on the
+     origin and running along the nail. HARD edged on purpose. */
+  function gcStrip(L, W, bow) {
+    return pb()
+      .M(-W * 0.50, -L * 0.90)
+      .C(-W * 0.18, -L * 1.03, W * 0.18, -L * 1.03, W * 0.58, -L * 0.88)
+      .C(W * 0.98, -L * 0.40, W * 0.98 + bow, L * 0.22, W * 0.70 + bow, L * 0.84)
+      .C(W * 0.38 + bow, L * 1.02, -W * 0.20 + bow, L * 1.02, -W * 0.54 + bow, L * 0.82)
+      .C(-W * 0.92, L * 0.24, -W * 0.92, -L * 0.40, -W * 0.50, -L * 0.90)
+      .Z().d();
+  }
+
+  /* Every colour and number in one place. `base` decides the dark; `c1`
+     decides whether the shimmer is silver, gold or rose gold. */
+  function gcMix(x) {
+    var B = ceHsl(col(x.base, '#141118'));
+    var A = ceHsl(col(x.c1, '#FFFFFF'));
+    var S = clamp(num(x.S, 1), 0.5, 1.8);
+    /* The product is a dark nail. However light a colour the customer picks,
+       the hue survives and the value does not: this is near-black gel with
+       silver in it, and a pastel version of it is a different product. */
+    var bl = clamp(0.055 + B.l * 0.20, 0.055, 0.26);
+    var bs = clamp(B.s * 1.05, 0, 0.92);
+    /* Silver is the measured truth (saturation 0.037). Anything the customer
+       puts in pattern.color is read as a TINT on that silver, never as a
+       colour: capped low, so gold reads as gold leaf and not as yellow paint,
+       and a stray default like white or pink stays silver. */
+    var tint = A.s < 0.14 ? 0 : clamp((A.s - 0.10) * 1.5, 0, 1);
+    var th = A.h;
+    function shim(l, k) {
+      return ceHex(th, tint * clamp(k, 0, 1), clamp(l, 0, 1));
+    }
+    return {
+      edge: ceHex(B.h, clamp(bs * 1.1, 0, 1), bl * 0.36),
+      deep: ceHex(B.h, bs, bl),
+      lift: ceHex(B.h, bs * 0.94, clamp(bl * 1.55, 0, 0.34)),
+      /* the three shimmer tiers the histogram counts, plus the specular */
+      dust: shim(0.66, 0.30),
+      mid: shim(0.80, 0.26),
+      hot: shim(0.93, 0.20),
+      spec: shim(0.985, 0.10),
+      /* how wide the band's opening is, in fractions of the plate width.
+         0.6 -> a tight wire of shimmer inside a black frame,
+         1.6 -> the flake field reaches nearly to the side walls. */
+      bw: clamp(0.30 * S, 0.17, 0.52)
+    };
+  }
+
+  PATTERNS.glitterCatEye = function (g, x) {
+    var m = gcMix(x);
+    var q = clamp(num(x.q, 1), 0.25, 1);
+    var Lx = num(x.L && x.L.x, -0.4), Ly = num(x.L && x.L.y, 0.5);
+    var i, n, px, py, sz, op, t, band, sx, hx, hy, gl, ring;
+    /* the concentric frame, as fractions of the nail width */
+    var RW = [0.40, 0.26, 0.155, 0.075, 0.030];
+    var RO = [0.16, 0.22, 0.30, 0.40, 0.56];
+
+    /* 1. the dark plate. Lengthwise, because the gel is thickest and least
+          emptied near the cuticle — 0.540 there against 0.247 at the tip. */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: vGrad(x.defs, [
+        [0, m.edge], [0.10, m.deep], [0.62, m.lift], [0.94, m.deep], [1, m.edge]
+      ])
+    }));
+
+    /* 2. THE FLAKE FIELD, at three grains, laid over the whole plate. Density
+          is handled by the veil in step 3, not by thinning these out: a tile
+          costs one definition and buys a few hundred grains, which is the
+          only way 27% coverage survives ten nails on a phone. */
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: flakeP(x.defs, m.dust, x.u * 14, nd(100, q), 0.020, 0.048, 0, 1), opacity: 1
+    }));
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: flakeP(x.defs, m.mid, x.u * 18.5, nd(86, q), 0.020, 0.045, 24, 2), opacity: 0.95
+    }));
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: flakeP(x.defs, m.hot, x.u * 25, nd(62, q), 0.021, 0.047, -37, 3), opacity: 0.9
+    }));
+
+    /* 3. THE BAND, cut as a veil rather than painted as a light. Everywhere
+          the magnet did not pull the pigment, the black base comes back over
+          the flakes — which is what a density gradient looks like. Across the
+          nail first: the opening is pattern.scale wide. */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: hGrad(x.defs, [
+        [0.00, m.edge, 0.97],
+        [f(clamp(0.5 - m.bw * 1.80, 0.02, 0.40)), m.edge, 0.90],
+        [f(clamp(0.5 - m.bw * 1.30, 0.05, 0.44)), m.deep, 0.66],
+        [f(clamp(0.5 - m.bw * 0.86, 0.08, 0.46)), m.deep, 0.26],
+        [f(clamp(0.5 - m.bw * 0.34, 0.11, 0.49)), m.deep, 0],
+        [f(clamp(0.5 + m.bw * 0.34, 0.51, 0.89)), m.deep, 0],
+        [f(clamp(0.5 + m.bw * 0.90, 0.53, 0.92)), m.deep, 0.30],
+        [f(clamp(0.5 + m.bw * 1.32, 0.55, 0.95)), m.deep, 0.68],
+        [f(clamp(0.5 + m.bw * 1.74, 0.58, 0.99)), m.edge, 0.90],
+        [1.00, m.edge, 0.97]
+      ])
+    }));
+    /* and the other side of the same coin: where the magnet gathered the
+       pigment there is simply MORE of it, so the band gets a whisper of the
+       shimmer tone added back over the field. Weak on purpose — the band has
+       to read as density, and a bright wash is what turns it into paint. */
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: ceRamp(x.defs, [
+        [0.00, m.hot, 0.30], [0.28, m.mid, 0.24],
+        [0.60, m.dust, 0.13], [1.00, m.dust, 0]
+      ], clamp(m.bw * 1.20, 0.2, 0.62), 0.80, 0.62)
+    }));
+    /* then along it — the measured 0.540 / 0.376 / 0.247 by third. Nothing is
+       added at the cuticle; the tip simply has more of the base put back. */
+    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: vGrad(x.defs, [
+        [0.00, m.edge, 0.94],
+        [0.06, m.edge, 0.70],
+        [0.18, m.deep, 0.50],
+        [0.36, m.deep, 0.30],
+        [0.58, m.deep, 0.13],
+        [0.82, m.deep, 0.01],
+        [0.96, m.deep, 0.06],
+        [1.00, m.edge, 0.34]
+      ])
+    }));
+    /* the measured cuticle third, 0.540 against 0.247 at the free edge. Not a
+       highlight — a broad rise in how much of the field is lit at all, which
+       is what a magnet held against the finger actually leaves behind. */
+    add(g, rect(0, 0, x.w, x.h, {
+      fill: ceRamp(x.defs, [
+        [0.00, m.mid, 0.26], [0.40, m.dust, 0.17],
+        [0.74, m.dust, 0.06], [1.00, m.dust, 0]
+      ], clamp(m.bw * 2.0, 0.34, 0.92), 0.58, 0.88)
+    }));
+
+    /* 4. the flakes that RESOLVE. The tiles give the field its density; these
+          give it its 0.277 local contrast — the few dozen grains per nail that
+          are catching the light dead on. Placed with a bias toward the band
+          and toward the cuticle, so they thin out exactly where the veil
+          above has already taken the field down. */
+    n = Math.round(62 * q * q);
+    band = m.bw * 1.25;
+    for (i = 0; i < n; i++) {
+      /* a triangular draw around the axis: dense on the band, tailing off */
+      sx = (x.rnd() + x.rnd() - 1);
+      px = 0.5 + sx * band;
+      /* toward the cuticle: sqrt bias up the nail */
+      py = 0.10 + Math.pow(x.rnd(), 0.62) * 0.88;
+      if (px < 0.06 || px > 0.94) continue;
+      t = (1 - Math.abs(sx)) * (0.35 + 0.65 * py);
+      op = clamp(t * x.rnd.r(0.45, 1), 0.05, 1);
+      sz = x.u * x.rnd.r(0.36, 1.05);
+      add(g, E('ellipse', {
+        cx: f(px * x.w), cy: f(py * x.h), rx: f(sz), ry: f(sz * x.rnd.r(0.4, 0.95)),
+        fill: x.rnd() < 0.30 ? m.spec : (x.rnd() < 0.55 ? m.hot : m.mid),
+        opacity: f(op),
+        transform: 'rotate(' + f(x.rnd.r(0, 180)) + ' ' + f(px * x.w) + ' ' + f(py * x.h) + ')'
+      }));
+    }
+
+    /* 5. THE FRAME. Concentric strokes of the silhouette, so the black hugs
+          the point of an almond at a constant thickness the way it does in
+          the photograph — a bounding-box gradient cannot. Half of each stroke
+          falls outside the clip, so the stack ramps inward; one shared blur
+          turns the steps into a continuous ramp. */
+    ring = add(g, E('g', {
+      fill: 'none', stroke: m.edge, filter: blurF(x.defs, x.u * 2.4)
+    }));
+    for (i = 0; i < RW.length; i++) {
+      add(ring, E('path', { d: x.d, 'stroke-width': f(x.w * RW[i]), opacity: f(RO[i]) }));
+    }
+
+    /* 6. THE GLOSS. Two narrow HARD reflections — a pair of studio strip
+          lights in a thick gel top coat. Not blurred, not soft, not one fat
+          blob: the pair, and their hard edges, are the whole reason the
+          material reads as a coating with depth rather than as a texture. */
+    hx = clamp(0.42 - Lx * 0.10, 0.26, 0.62) * x.w;
+    hy = clamp(0.58 + Ly * 0.05, 0.46, 0.70) * x.h;
+    gl = add(g, E('g'));
+    add(gl, E('path', {
+      d: gcStrip(x.h * 0.33, x.w * 0.068, x.w * 0.020),
+      fill: vGrad(x.defs, [
+        [0, m.spec, 0.16], [0.18, m.spec, 0.86], [0.70, m.spec, 0.90], [1, m.spec, 0.20]
+      ]),
+      transform: 'translate(' + f(hx) + ' ' + f(hy) + ') rotate(' + f(-5 + Lx * 6) + ')'
+    }));
+    add(gl, E('path', {
+      d: gcStrip(x.h * 0.27, x.w * 0.030, x.w * 0.010),
+      fill: vGrad(x.defs, [
+        [0, m.spec, 0.12], [0.24, m.spec, 0.72], [0.74, m.spec, 0.70], [1, m.spec, 0.14]
+      ]),
+      transform: 'translate(' + f(hx + x.w * 0.185) + ' ' + f(hy - x.h * 0.055) +
+        ') rotate(' + f(-9 + Lx * 6) + ')'
+    }));
+  };
+
   /* Aura: a bloom that glows OUT of the nail, tightest in the middle third */
   PATTERNS.aura = function (g, x) {
     var r = clamp(0.40 * x.S, 0.24, 0.66);
@@ -1971,20 +2298,17 @@
      bright metal edge. */
   FINISHES.chrome = function (g, x) {
     add(g, rect(-1, -1, x.w + 2, x.h + 2, { fill: mirrorFill(x.defs, x.color) }));
-    add(g, rect(-1, -1, x.w + 2, x.h + 2, {
-      fill: hGrad(x.defs, [
-        [0, '#07050A', 0.55], [0.12, '#07050A', 0.18],
-        [f(clamp(0.5 + x.L.x * 0.2, 0.2, 0.8)), '#FFFFFF', 0.26],
-        [0.55, '#FFFFFF', 0.04], [0.78, '#07050A', 0.14], [1, '#07050A', 0.5]
-      ])
-    }));
-    /* a single hard streak — the edge of something in the room */
+    mirrorCurve(g, x, x.L.x);
+    /* one reflected upright — the edge of a door frame, a mirror, a person.
+       A mirror with nothing in it is a gradient; one irregular vertical thing
+       in the room is what makes the eye read the rest as a reflection. */
     add(g, E('path', {
-      d: pb().M(x.w * 0.16, -2).L(x.w * 0.38, -2).L(x.w * 0.14, x.h + 2).L(-2, x.h + 2).Z().d(),
-      fill: '#FFFFFF', opacity: 0.09
+      d: pb().M(x.w * 0.20, -2).L(x.w * 0.335, -2).L(x.w * 0.30, x.h * 0.52)
+        .L(x.w * 0.145, x.h + 2).L(x.w * 0.03, x.h + 2).L(x.w * 0.17, x.h * 0.5).Z().d(),
+      fill: '#F6F4F8', opacity: 0.16
     }));
     add(g, E('path', {
-      d: x.d, fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(x.u * 1.5), opacity: 0.7
+      d: x.d, fill: 'none', stroke: '#FFFFFF', 'stroke-width': f(x.u * 1.7), opacity: 0.78
     }));
   };
 
