@@ -2829,6 +2829,7 @@
      that model's skin, not something a finish can be asked to deliver. */
   var VEIL_K = 0.30;
 
+
   function specVeil(host, x, kind) {
     var k = SPEC_MIX[kind], vk;
     if (typeof k !== 'number') k = SPEC_MIX.gloss;
@@ -3102,11 +3103,37 @@
   /*  earlier cycle reached at the wrong size, now confirmed at the right one. */
   /* ====================================================================== */
 
+  /* How much of the grain is independent per channel. The plate has to match
+     the photograph it sits IN, not another photograph: the skin in our own
+     studio frame measures 2.16 degrees of chroma-direction spread, and in the
+     pale reference the nails measure 4.26-5.13 against that frame's own skin at
+     4.39 — a ratio of 0.97 to 1.17. Ours was 0.79, too uniform. Swept at studio
+     size: 0.00 -> 0.79, 0.18 -> 1.01, 0.25 -> 1.16, 0.35 -> 1.33. 0.22 sits at
+     1.08, inside the range, and the luminance noise does not move at all. */
+  var GRAIN_CHROMA = 0.22;
+
   function grainPat(defs, amp, freq) {
     var k = Math.round(clamp(num(amp, 0.5), 0.05, 3) * 100) / 100;
     var bf = Math.round(clamp(num(freq, 2.2), 0.2, 8) * 100) / 100;
-    return shared(defs, 'filmgrain|' + k + '|' + bf, function (dd) {
-      var fid = uid('gnf'), pid = uid('gn'), row = f(k) + ' 0 0 0 ' + f(0.5 - 0.5 * k);
+    return shared(defs, 'filmgrain|' + k + '|' + bf + '|' + f(GRAIN_CHROMA), function (dd) {
+      /* A SENSOR'S NOISE IS NOT GREY. This matrix used to feed the turbulence's
+         RED channel into all three outputs, so every grain pixel was a pure
+         grey: it moved luminance and could not move hue by construction. A real
+         sensor reads three independent wells and a JPEG then keeps some of that
+         chroma jitter, and it is a large part of why a photographed nail is not
+         one flat hue. Measured as the circular standard deviation of the chroma
+         direction inside the nail — his own plain press-on 6.55 deg, three pale
+         ones 4.91 / 4.26 / 5.13, ours 1.71 on a nude and 0.58 on a red: three
+         to eleven times too uniform, and blurring the references shows a large
+         part of theirs living at the pixel scale, exactly where grain lives.
+         So each output channel now gets a shared monochrome part plus its OWN
+         independent part. GRAIN_CHROMA sets the split; chroma noise is quieter
+         than luminance noise in every real sensor, so it is well under half. */
+      var fid = uid('gnf'), pid = uid('gn');
+      var kc = k * GRAIN_CHROMA, km = k - kc, o = f(0.5 - 0.5 * k);
+      var rows = f(km + kc) + ' 0 0 0 ' + o + '  ' +
+                 f(km) + ' ' + f(kc) + ' 0 0 ' + o + '  ' +
+                 f(km) + ' 0 ' + f(kc) + ' 0 ' + o + '  0 0 0 0 1';
       add(dd, E('filter', {
         id: fid, x: '0%', y: '0%', width: '100%', height: '100%',
         'color-interpolation-filters': 'sRGB'
@@ -3115,10 +3142,7 @@
           type: 'fractalNoise', baseFrequency: f(bf), numOctaves: '4',
           seed: '11', stitchTiles: 'stitch', result: 'n'
         }),
-        E('feColorMatrix', {
-          'in': 'n', type: 'matrix',
-          values: row + '  ' + row + '  ' + row + '  0 0 0 0 1'
-        })
+        E('feColorMatrix', { 'in': 'n', type: 'matrix', values: rows })
       ]));
       add(dd, E('pattern', {
         id: pid, width: 64, height: 64, patternUnits: 'userSpaceOnUse'
