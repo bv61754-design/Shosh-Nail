@@ -2846,6 +2846,24 @@
     }));
   }
 
+  /* A REFLECTION IS THE SAME BRIGHTNESS WHATEVER IS UNDER IT — but a
+     PHOTOGRAPH of one is not. On a dark polish the diffuse contributes almost
+     nothing, so the specular lands on an empty sensor and blows out; on a pale
+     one the diffuse has already used most of the range, and what the camera
+     records where the two meet is compressed, not summed. Measured at the size
+     the studio actually draws a nail (42-55 device px across, not the 165 an
+     earlier note assumed), a real pale press-on peaks at 0.908 of white over a
+     body of 0.478 while this render peaked at 0.984 over 0.685: our specular
+     was the HOTTER of the two, on a body that was already brighter.
+     What that costs is chroma at the top. The least-saturated 2% over the
+     median — the one number that catches a highlight going too white — reads
+     0.27 on his own plain press-on and 0.36-0.38 on the pale ones, and this
+     render read 0.20. Scaling the additive layer down by the paint's own
+     lightness is the cheapest honest model of that compression, and it moves
+     the nude to 0.27 while leaving a black nail's reflection alone (0.07
+     either way, and its peak/body 5.36 -> 5.32). */
+  var REFL_PALE = 0.15;
+
   function specReflect(host, x, kind) {
     var G = SN.Gloss, n = G ? Math.max(1, num(G.specN, 1)) : 1;
     var k = SPEC_MIX[kind], id, tile, r = x.rnd, sc, dx, dy, a, sx;
@@ -2867,7 +2885,7 @@
                  'rotate(' + f(a) + ') ' +
                  'scale(' + f(sx) + ' ' + f(x.h * sc) + ') ' +
                  'translate(' + f(-(tile + 0.5)) + ' -0.5)',
-      opacity: f(k * (0.86 + r() * 0.24)),
+      opacity: f(k * (0.86 + r() * 0.24) * (1 - REFL_PALE * clamp(lum(col(x.color, '#C98BA0')), 0, 1))),
       style: 'mix-blend-mode:screen'
     }));
     return k;

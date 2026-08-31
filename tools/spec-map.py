@@ -46,7 +46,8 @@ from scipy import ndimage as nd
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TARGET = ROOT / 'assets' / 'js' / 'nail-gloss.js'
-UW, UH = 96, 144          # one tile, in the same UV rectangle as the shade map
+UW, UH = 96, 144
+HALO_K, HALO_SIG = 0.34, 0.05          # one tile, in the same UV rectangle as the shade map
 
 
 def nails(a):
@@ -142,8 +143,8 @@ def reflection(uv):
     # one, a real nail is still at 1.66x its own base three units away and
     # 1.38x at six; the drawn ellipse this replaces had fallen to nothing by
     # then. That surrounding pool of light is what reads as WET.
-    halo = nd.gaussian_filter(s, (UH * 0.05, UW * 0.05))
-    s = np.maximum(s, 0.34 * halo / max(1e-6, halo.max()))
+    halo = nd.gaussian_filter(s, (UH * HALO_SIG, UW * HALO_SIG))
+    s = np.maximum(s, HALO_K * halo / max(1e-6, halo.max()))
     return np.clip(s, 0, 1)
 
 
@@ -152,7 +153,12 @@ def main():
     ap.add_argument('photo')
     ap.add_argument('--write', action='store_true')
     ap.add_argument('--preview')
+    ap.add_argument('--halo', type=float)
+    ap.add_argument('--halosig', type=float)
     args = ap.parse_args()
+    global HALO_K, HALO_SIG
+    if args.halo is not None: HALO_K = args.halo
+    if args.halosig is not None: HALO_SIG = args.halosig
 
     a = np.asarray(Image.open(args.photo).convert('RGB')).astype(np.float64) / 255
     masks, lum = nails(a)
