@@ -291,9 +291,26 @@ Requirements:
   over the plate as ONE `<image>` per `<svg>` root, referenced by a `<use>` per nail with
   `mix-blend-mode:multiply`, seeded-nudged per nail so ten fingers are not ten identical surfaces.
   The clipped plate group carries `isolation:isolate` so the blend never reaches the finger under it.
-  The drawn specular's size, brightness and edge hardness are measured off the same photograph;
+- The plate is `out = colour x SHADE + REFLECTION`, and the second term is why it does not read as
+  paint. A multiply can only darken, so with SHADE alone nothing on the plate was ever white and its
+  chroma climbed toward the highlight — the arithmetic signature of tinted paint, and the opposite of
+  what light does. `SN.Gloss.spec` is a sheet of `specN` REAL reflections harvested off one of the
+  shop's own product photographs by `tools/spec-map.py` (black gel under a strip light is nearly a
+  mirror, so its image is the light). Screened over the plate, one per nail, mirrored on the hand lit
+  from the other side. A reflection is WHITE, so one sheet is correct for all 45 colours, 8 shapes,
+  4 lengths, 6 finishes, 22 patterns and 43 charms — that is what makes it affordable.
+  Under the streaks sits a TINTED veil: the broad low reflection of the whole room, which is most of
+  why a real nail is brighter than the skin around it (measured on a real hand wearing pale press-ons,
+  nail/skin = 1.18). It is the nail's own colour lightened, scaled by that colour's lightness, because
+  a milky nude scatters light back out and an onyx absorbs it. A WHITE veil was tried and took a black
+  nail to 0.43 of the skin's luminance.
+- Grain: the plate is composited onto a photograph, so it carries the photograph's noise — one
+  feTurbulence baked into a shared `<pattern>`, tiled in OVERLAY so the perturbation scales with the
+  level. Tuned so the plate's high-frequency sigma matches the skin beside it (ratio 1.02).
+  Judge it at 1:1; at 4x zoom any correct grain looks like sand.
+- The drawn specular's size, brightness and edge hardness are measured off the same photograph;
   its POSITION stays with the light, because a photograph of one nail in one pose cannot know
-  where a finger is pointing.
+  where a finger is pointing. It stands down to a faint sheen wherever a measured reflection landed.
 - Finishes: `gloss` = white highlight blob + soft rim; `matte` = no highlight, slight noise-free flat;
   `glitter` = many tiny circles with varying opacity seeded deterministically from the nail key
   (NO Math.random — use a small seeded PRNG so re-render is stable);

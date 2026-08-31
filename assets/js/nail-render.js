@@ -2803,7 +2803,7 @@
 
   function specReflect(host, x, kind) {
     var G = SN.Gloss, n = G ? Math.max(1, num(G.specN, 1)) : 1;
-    var k = SPEC_MIX[kind], id, tile, r = x.rnd, sc, dx, dy, a, sx;
+    var k = SPEC_MIX[kind], id, tile, r = x.rnd, sc, dx, dy, a, sx, vk;
     if (typeof k !== 'number') k = SPEC_MIX.gloss;
     if (!x.on || k <= 0) return 0;
     id = glossImg(x.defs, 'spec', n);
@@ -2816,6 +2816,33 @@
     dy = (r() - 0.5) * x.h * 0.06;
     a  = (r() - 0.5) * 7;
     sx = (x.L.x > 0 ? -1 : 1) * x.w * sc;
+    /* THE VEIL, under the streaks — and it is TINTED, not white.
+       A gloss topcoat returns a broad, low reflection of the whole room as
+       well as the shape of the lamp, and that is most of why a real nail is
+       BRIGHTER than the skin it sits on: measured on a real hand wearing pale
+       pink press-ons, nail median / skin median = 1.18, where this render was
+       at 0.89. The nails read darker than the finger, which is what made a
+       nude set look grey against the skin however good the streaks were.
+       A WHITE veil was tried first and was wrong: it took a black nail to
+       0.43 of the skin's luminance — grey, not black — and cost the red set
+       most of its highlight. The lift a pale polish gets is not a mirror
+       reflection, it is light scattering back out of a translucent pigment,
+       and a black pigment absorbs instead. So the veil is the nail's own
+       colour lightened, and its strength goes with the pigment's own
+       lightness: a milky nude scatters, an oxblood absorbs. Tinting alone was
+       not enough — at full strength on every colour it still cost the red set
+       four tenths of its highlight area, so `vk` takes it out of the way of
+       anything saturated. Nude 0.70 of it, red 0.06, onyx 0.003. */
+    vk = k * Math.pow(clamp(lum(col(x.color, '#C98BA0')), 0, 1), 1.6);
+    add(host, rect(-1, -1, x.w + 2, x.h + 2, {
+      fill: radGrad(x.defs, [
+        [0, lighten(col(x.color, '#C98BA0'), 0.34), f(0.62 * vk)],
+        [0.48, lighten(col(x.color, '#C98BA0'), 0.30), f(0.44 * vk)],
+        [0.80, lighten(col(x.color, '#C98BA0'), 0.24), f(0.17 * vk)],
+        [1, lighten(col(x.color, '#C98BA0'), 0.2), 0]
+      ], { cx: f(clamp(0.5 + x.L.x * 0.10, 0.3, 0.7)), cy: 0.42, r: 0.86 }),
+      style: 'mix-blend-mode:screen'
+    }));
     add(host, E('use', {
       href: '#' + id, 'xlink:href': '#' + id,
       transform: 'translate(' + f(x.w / 2 + dx) + ' ' + f(x.h / 2 + dy) + ') ' +
@@ -3198,7 +3225,8 @@
 
     /* --- 4c. and the reflection over it ----------------------------------- */
     gRefl = specReflect(clipG, {
-      w: w, h: h, on: gOn, L: L, defs: defs, rnd: seeded(key + '|refl|' + s)
+      w: w, h: h, on: gOn, L: L, defs: defs, color: n.color,
+      rnd: seeded(key + '|refl|' + s)
     }, kind);
 
     /* --- 5. finish -------------------------------------------------------- */
