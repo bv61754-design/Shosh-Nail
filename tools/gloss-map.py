@@ -196,7 +196,7 @@ def finish(M):
     M = np.clip(1 - (1 - M) * 1.18, 0, 1)     # a little more bite in the form
     # the colour the customer picked is the one she must see: re-centre on the
     # middle, not the brightest point, or every shade quietly loses 7%
-    return np.clip(M / 0.94, 0, 1)
+    return np.clip(M / 1.02, 0, 1)
 
 
 def uri(M):

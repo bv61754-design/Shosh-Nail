@@ -5104,11 +5104,25 @@
        round, and a halo is a sticker's outline, which is the opposite of what
        this is for. */
     add(g, E('g', {
-      transform: 'translate(' + f(ox * 2.6) + ' ' + f(oy * 2.6) + ') ' +
-                 'translate(' + f(w / 2) + ' ' + f(h / 2) + ') scale(1.018) ' +
+      transform: 'translate(' + f(ox * 2.9) + ' ' + f(oy * 2.9) + ') ' +
+                 'translate(' + f(w / 2) + ' ' + f(h / 2) + ') scale(1.02) ' +
                  'translate(' + f(-w / 2) + ' ' + f(-h / 2) + ')',
-      filter: blurF(defs, Math.max(1.0, w * 0.07 * q))
-    }, [E('path', { d: d, fill: '#1B0F0C', opacity: 0.34 })]));
+      filter: blurF(defs, Math.max(1.0, w * 0.06 * q))
+    }, [E('path', {
+      d: d,
+      /* Graded along the nail, because the gap under the plate is. Over the
+         nail bed the shell is glued flat and there is nothing for light to get
+         under; past the fingertip it overhangs into air and whatever is behind
+         the hand catches it. Measured on the studio hand: the cloth 8-22 px
+         from the HAND is 23 to 33 levels darker than cloth further off — that
+         is the hand's own shadow in the photograph — while the cloth beside a
+         plate was 12.6 levels BRIGHTER. Every real object in that frame
+         darkens the cloth beside it, and the plates were making it glow. */
+      fill: vGrad(defs, [
+        [0, '#170C09', 0.80], [0.28, '#170C09', 0.60],
+        [0.60, '#170C09', 0.22], [0.85, '#170C09', 0.04], [1, '#170C09', 0]
+      ])
+    })]));
     /* The seam. Offset far enough that it only ever shows on ONE side. */
     add(g, E('g', {
       transform: 'translate(' + f(ox * 1.05) + ' ' + f(oy * 1.05) + ')',
