@@ -492,6 +492,38 @@
     t = clamp(num(t, 0), 0, 1);
     return toHex(A.r * (1 - 0.21 * t), A.g * (1 - 0.55 * t), A.b * (1 - 0.65 * t));
   }
+  /* THE SWATCH IS LIGHTER THAN THE PHOTOGRAPH, and only at the pale end.
+     Decomposing his own press-on into P = C.d + s and putting a different
+     polish through the same d and s:
+
+       the photograph's own mid-tone   body 0.495 -> highlight 0.896
+       Rosy Nude #E9C2C0 in its place  body 0.952 -> highlight 1.024
+       Red #C0392B in its place        body 0.546 -> highlight 0.910
+
+     A pale polish arrives at the ceiling before the specular is even added, so
+     it has no highlight left to show — and exposure cannot rescue it, because
+     stopping down scales the body and the highlight together and the CONTRAST
+     RATIO is invariant (measured at 1.0 / 0.8 / 0.66: red highlight-minus-body
+     0.002 / 0.001 / -0.001). Four real pale press-ons photograph at a body
+     luminance of 0.502-0.639 while the Rosy Nude swatch is 0.793: the chip is
+     about a third lighter than anything a camera produces.
+
+     So the plate is painted a little below the chip, and ONLY where the chip
+     is pale enough for it to matter — lum^3.6 leaves a red at 0.99 of itself
+     and an onyx at 1.00, and takes a nude to 0.75. The owner chose this over
+     both ends: chip-faithful (no highlight on pale colours) and fully
+     camera-faithful (a nude visibly darker than the swatch she tapped).
+     The swatch chips, the shop cards and the order summary are NOT toned —
+     this is how the polish photographs, not what the polish is. */
+  function photoTone(c) {
+    var A = parseHex(c), l, k;
+    if (!A) return c;
+    l = clamp((0.2126 * A.r + 0.7152 * A.g + 0.0722 * A.b) / 255, 0, 1);
+    k = 1 - PHOTO_TONE * Math.pow(l, 3.6);
+    /* scaling all three channels leaves hue and saturation untouched */
+    return toHex(A.r * k, A.g * k, A.b * k);
+  }
+
   function lum(c) {
     var p = parseHex(c);
     if (!p) return 0.5;
@@ -2827,6 +2859,15 @@
      bad measurement — patch-sampled on the same photograph it is 1.07, and
      even that is a fact about how light the reference's polish was next to
      that model's skin, not something a finish can be asked to deliver. */
+  /* How far a pale polish is pulled below its own chip. Calibrated on the
+     rendered plate at studio size, not on the swatch: 0.00 -> body 0.697,
+     0.10 -> 0.674, 0.18 -> 0.652, 0.22 -> the value below, 0.30 -> 0.622,
+     against four real pale press-ons photographing at 0.502-0.639. The owner
+     was shown chip-faithful, camera-faithful and the middle, and chose the
+     middle. It buys peak/body as well: 1.31 -> 1.39, into the 1.33-1.73 four
+     real pale press-ons measure, where a chip-faithful nude sat under it. */
+  var PHOTO_TONE = 0.22;
+
   var VEIL_K = 0.30;
 
 
@@ -3184,6 +3225,7 @@
   function nailSVG(nailState, opts) {
     opts = opts || {};
     var n = normNail(nailState);
+    n.color = photoTone(n.color);
     var s = shapeId(opts.shape);
     var w = num(opts.w, NAIL_BOX.w);
     var h = num(opts.h, 0);
@@ -3448,7 +3490,7 @@
     /* --- 5c. grain, over every layer of colour and light ------------------- */
     filmGrain(clipG, {
       w: w, h: h, defs: defs, on: gOn,
-      amp: num(opts.grain, 0.12), freq: num(opts.grainFreq, 0.22)
+      amp: num(opts.grain, 0.11), freq: num(opts.grainFreq, 0.22)
     });
 
     /* --- 6. the contour --------------------------------------------------- */
