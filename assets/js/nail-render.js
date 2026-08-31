@@ -2955,36 +2955,82 @@
     [0.065, 0.20], [0.120, 0.09], [0.300, 0.00]
   ];
 
-  function rimStops(c, flip) {
-    var out = [], i, t;
-    for (i = 0; i < RIM.length; i++) {
-      t = flip ? 1 - RIM[i][0] : RIM[i][0];
-      out.push([f(t), c, f(RIM[i][1])]);
+  /*  AND ONE WALL SEES THE LIGHT ITSELF. The rim above is the room, and the   */
+  /*  room is dark on both sides of a hand on this cloth, which is why a plate */
+  /*  came out with two dark edges and nothing between them. But a wall's      */
+  /*  grazing sweep runs from horizontal to vertical, so it does not only look */
+  /*  sideways at the cloth — on the side the light is coming from it also     */
+  /*  looks straight into the source, and a window is brighter than the whole  */
+  /*  rest of the room put together. That reflection is what you actually see  */
+  /*  on a real press-on: a thin bright line down one edge, following the      */
+  /*  silhouette, sharper than any shading.                                    */
+  /*                                                                          */
+  /*  It goes ON TOP of the room, not instead of it. Taking the cloth off the  */
+  /*  lit wall was tried and it is wrong twice: the horizontal part of the     */
+  /*  sweep is still looking at cloth whichever side the light is on, and on a */
+  /*  black nail — where the cloth is most of what the wall has — removing it  */
+  /*  lifted the whole plate to 2.06 of its own swatch and flattened it.       */
+  /*                                                                          */
+  /*  Narrower than the dark rim, because a source is small and a room is      */
+  /*  everywhere: it is gone by 11% of the width where the room's rim runs to  */
+  /*  30%. Scaled by how sideways the light is, so a nail lit from straight    */
+  /*  overhead gets none of it.                                                */
+  var RIMLIT = [
+    [0.000, 0.66], [0.012, 0.42], [0.030, 0.21],
+    [0.060, 0.08], [0.115, 0.00]
+  ];
+
+  /*  What the lit wall is mirroring. Daylight through a window, slightly warm;
+      an anchor may override it with env.s when its own light is measured. */
+  var RIM_SOURCE = '#FFF3E6';
+
+  function rimStops(c, flip, table) {
+    var out = [], i, t, T = table || RIM;
+    for (i = 0; i < T.length; i++) {
+      t = flip ? 1 - T[i][0] : T[i][0];
+      out.push([f(t), c, f(T[i][1])]);
     }
     if (flip) out.reverse();
     return out;
   }
 
   function envRim(host, x) {
-    var e = x.env, k = clamp(num(x.k, 1), 0, 1), st;
+    var e = x.env, k = clamp(num(x.k, 1), 0, 1), st, lx, litR, side, sc;
     if (!e || k <= 0.02) return;
+    /* Which wall faces the light, and how sideways that light is. L.x > 0 is
+       a light off to the right — the same convention the veil's centre and the
+       measured surface's mirroring already use. */
+    lx = x.L ? num(x.L.x, 0) : 0;
+    litR = lx > 0;
+    side = clamp(Math.abs(lx), 0, 1);
     /* across the nail: left wall then right wall, transparent in between */
     st = rimStops(col(e.l, '#2E3338'), false)
       .concat(rimStops(col(e.r, '#2E3338'), true));
     add(host, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: hGrad(x.defs, st), opacity: f(k)
     }));
+    /* and the grazing band on the wall that faces it */
+    if (side > 0.05) {
+      sc = col(e.s, RIM_SOURCE);
+      st = litR ? [[0, sc, 0]].concat(rimStops(sc, true, RIMLIT))
+                : rimStops(sc, false, RIMLIT).concat([[1, sc, 0]]);
+      add(host, rect(-1, -1, x.w + 2, x.h + 2, {
+        fill: hGrad(x.defs, st), opacity: f(k * side),
+        style: 'mix-blend-mode:screen'
+      }));
+    }
     /* Along it, and the two ends are not the same thing at all.
        THE FREE EDGE IS NOT A GRAZING REFLECTION. At the sides the plate turns
        away and you see the room; at the tip you are looking at the CUT END of
-       a millimetre of acrylic, which is thick, scattering and pale. Measured
-       along nine real press-ons on a real hand, cuticle to tip, luminance over
-       the nail's own median: 0.94 at the cuticle, flat near 1.00 through the
-       body, and 1.10 at the very tip. This render had 0.55 there — the free
-       edge was going DARK where a real one goes BRIGHT, because the rim was
-       mixing in the dark cloth beyond the fingertip at nearly full strength.
-       So the tip end of this gradient is nearly switched off and the free-edge
-       layer below carries it instead.
+       a millimetre of acrylic, which is thick and scattering, so the dark
+       cloth beyond the fingertip does not belong on it at anything like the
+       strength the sides get. It had 0.55 of the nail's median there and the
+       free-edge layer below could not lift it. How bright the tip should end
+       up is a property of the PRODUCT, not of physics: a translucent pearl
+       over a pale table measures 1.04 of the body, his own opaque dusty pink
+       0.74 and the shop's black glitter 0.54. Ours sits at 0.76, which is
+       where a plain opaque press-on belongs, so this gradient is nearly
+       switched off at the tip end and the free-edge layer carries it.
        The cuticle end stays gentle for its own reason: the plate and the skin
        nearly touch there, so there is no grazing view of anything. */
     st = rimStops(col(e.t, '#2E3338'), false).map(function (p) {
@@ -3082,6 +3128,7 @@
     var h = num(opts.h, 0);
     var key, u, kind, d, g, defs, clipId, plate, pg, fg, fn, i, ring, hover, sel, cls, onPick;
     var L, q, peak, ybright, tipD, body, jelly, clipG, glow, wallLit, wallDark;
+    var cs;
     var gDamp, gd, gOn, gRefl;
 
     if (!(w > 0)) w = NAIL_BOX.w;
@@ -3179,19 +3226,49 @@
 
     /* 1. THE C-CURVE. Painted with real colours, not a translucent veil, so
        the customer's colour survives intact through the middle of the nail
-       and only the walls turn away from the light. */
-    add(plate, E('path', {
-      d: d,
-      fill: hGrad(defs, [
-        [0.00, cEdge(n.color)],
-        [0.05, cWall(n.color)],
-        [f(Math.max(0.10, peak - 0.20)), n.color],
-        [f(peak), cLit(n.color)],
-        [f(Math.min(0.90, peak + 0.24)), n.color],
-        [0.95, cWall(n.color)],
-        [1.00, cEdge(n.color)]
-      ])
-    }));
+       and only the walls turn away from the light.
+
+       IT IS AN ARCH HERE AND A RAMP IN LIFE, and the difference was measured
+       and then NOT acted on, which needs saying. Across the nail — measured
+       perpendicular to the long axis, luminance over the nail's own median,
+       sixteen bands:
+
+         his plain dusty pink  0.67 0.76 0.81 0.86 0.91 0.94 0.97 1.00
+                               1.00 1.07 1.11 1.13 1.16 1.18 1.16 1.13
+         the pale press-ons    0.81 0.87 0.91 0.93 0.95 0.97 0.97 1.00
+                               1.00 1.03 1.06 1.08 1.09 1.09 1.09 1.07
+         the shop's black      0.91 1.03 1.30 1.58 1.58 1.13 0.86 0.69
+                               0.65 0.57 0.67 0.82 1.43 1.67 1.44 0.97
+         ours                  0.72 0.81 0.91 0.99 1.01 1.00 1.01 1.02
+                               1.03 1.02 1.01 1.02 1.03 0.99 0.90 0.83
+
+       A pale nail is a RAMP — dark at the shaded wall, brightest at the lit
+       one — because most of what you see on it is diffuse pigment following
+       the cosine of the light. A black one is not: it is two specular streaks
+       over a dark trough with both walls near the median, because a black gel
+       returns almost nothing diffusely. Ours is an arch, symmetric, flat in
+       the middle: right for the black, too tidy for the pale.
+
+       Rebuilding it as a ramp scaled by the paint's lightness was tried in
+       full. It does move the across-profile the right way — the lit wall goes
+       0.85 to 0.92 and the swing 1.42 to 1.58 — and it costs more than that
+       everywhere else: dead-flat area 7.4% to 10.9% on the nude, body
+       saturation 0.85 to 0.83, |grad| 0.024 to 0.021 on the red, and the black
+       plate to 2.06 of its own swatch with its |grad| down from 0.053 to 0.037.
+       One metric bought with four. Reverted, and left here so the next attempt
+       starts from the measurements rather than from the idea: what a ramp needs
+       is to REPLACE the arch's lit lobe, not to be added around it, and that
+       means the lengthwise form and the measured surface have to move with it. */
+    cs = [
+      [0.00, cEdge(n.color)],
+      [0.05, cWall(n.color)],
+      [f(Math.max(0.10, peak - 0.20)), n.color],
+      [f(peak), cLit(n.color)],
+      [f(Math.min(0.90, peak + 0.24)), n.color],
+      [0.95, cWall(n.color)],
+      [1.00, cEdge(n.color)]
+    ];
+    add(plate, E('path', { d: d, fill: hGrad(defs, cs) }));
 
     /* 2. lengthwise form. When the measured topcoat is coming (photoGloss,
        below) it already carries this — it was photographed off a nail that
@@ -3303,7 +3380,7 @@
        layer of colour under it. Before the contour, which is the wall itself
        and has to stay readable over it. */
     envRim(clipG, {
-      w: w, h: h, defs: defs, env: opts.env,
+      w: w, h: h, defs: defs, env: opts.env, L: L,
       k: kind === 'matte' ? 0.22 : (kind === 'velvet' ? 0.16 : (kind === 'chrome' ? 0.5 : 1))
     });
 
