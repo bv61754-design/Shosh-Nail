@@ -2888,13 +2888,24 @@
        their own small angle. So each nail gets its own seeded nudge: a little
        scale, a little offset, a degree or two of tilt. Seeded, so the same
        nail is the same nail on every repaint.
-       The map is laid down oversized (1.09) on purpose: after the nudge it
-       still covers the whole plate, and a multiply layer that stops short
-       leaves a seam exactly where the silhouette is. */
-    sc = 1.09 + r() * 0.07;
-    dx = (r() - 0.5) * x.w * 0.07;
-    dy = (r() - 0.5) * x.h * 0.05;
-    a  = (r() - 0.5) * 5;
+       The map is laid down oversized on purpose: after the nudge it still
+       covers the whole plate, and a multiply layer that stops short leaves a
+       seam exactly where the silhouette is. But the oversize used to be 1.09
+       to 1.16 with offsets of 7% and 5% and five degrees of tilt, and a map
+       that fills its own image can only pay for that out of the NAIL: the
+       plate was seeing the middle 72% of the measurement and none of its
+       edges, where a nail keeps most of its form. That cost the whole
+       transverse curve — the map's own columns run 0.53 at the shaded wall
+       to 0.95 across — and it read as the plate having no shape in it.
+       So tools/gloss-map.py now emits the nail at 90% of the image inside an
+       edge-replicated border, and the nudge is small enough to spend itself
+       on that border: at the worst combination of scale, offset and tilt the
+       plate still lands inside the padding, and the nail's own edges land on
+       the plate's edges instead of a hand's width outside them. */
+    sc = 1.05 + r() * 0.05;
+    dx = (r() - 0.5) * x.w * 0.036;
+    dy = (r() - 0.5) * x.h * 0.028;
+    a  = (r() - 0.5) * 3;
     /* The photograph was lit from the upper left. When the finger's own
        rotation puts this nail's light on the other side, the measurement has
        to turn round with it or half the hand is lit from the wrong way. */

@@ -207,6 +207,46 @@ def finish(M):
     return np.clip(M / 1.02, 0, 1)
 
 
+# How much of the emitted image the measured nail actually occupies. The rest
+# is edge-replicated padding, and the renderer spends its oversize on that
+# padding instead of on the nail.
+KEEP = 0.90
+
+
+def pad(M):
+    """Shrink the measured nail into the middle and replicate its edge outward.
+
+    SN.Nail lays this map down OVERSIZED - a per-nail seeded nudge of scale,
+    offset and a degree or two of tilt, so that a multiply layer never stops
+    short of the silhouette and leaves a bright seam exactly where the eye is
+    looking. Laid down that way over a map that fills its whole image, the
+    plate only ever sees the map's MIDDLE, and the nail's range is at its
+    EDGES: cropping this map to its central 72% takes its own d95/d5 from 1.85
+    down to 1.55, and 1.55 is precisely what the rendered plates measured.
+    Most of the transverse form was being thrown away before it was drawn -
+    the column profile runs 0.53 at the shaded wall to 0.95 across, which is
+    the curve of the nail under a directional light and is exactly the kind of
+    structured variation the render was missing.
+
+    So the nail goes in the middle at KEEP of the image and the border rows and
+    columns are extended outward. The oversize now spends itself on padding
+    that says nothing, the nail's own edges land on the plate's edges, and
+    there is still no seam because the padding is the edge."""
+    h, w = M.shape
+    ih, iw = int(round(h * KEEP)), int(round(w * KEEP))
+    inner = np.asarray(
+        Image.fromarray(np.round(np.clip(M, 0, 1) * 255).astype(np.uint8), 'L')
+             .resize((iw, ih), Image.LANCZOS)).astype(np.float64) / 255
+    y0, x0 = (h - ih) // 2, (w - iw) // 2
+    out = np.empty_like(M)
+    out[y0:y0 + ih, x0:x0 + iw] = inner
+    out[y0:y0 + ih, :x0] = inner[:, :1]
+    out[y0:y0 + ih, x0 + iw:] = inner[:, -1:]
+    out[:y0] = out[y0]
+    out[y0 + ih:] = out[y0 + ih - 1]
+    return out
+
+
 def uri(M):
     im = Image.fromarray(np.round(M * 255).astype(np.uint8), 'L') \
               .resize((OUT_W, OUT_H), Image.LANCZOS)
@@ -231,7 +271,7 @@ def main():
     M, S = to_uv(m, d, s, G)
     print('measured reflection: %.1f%% of the nail above 0.30, peak %.2f of pure white'
           % (100 * (S > 0.3).mean(), S.max()))
-    M = finish(M)
+    M = pad(finish(M))
     u = uri(M)
     print('map: %d x %d, %d bytes of data URI' % (OUT_W, OUT_H, len(u)))
 
@@ -245,11 +285,14 @@ def main():
 
     if args.write:
         src = TARGET.read_text(encoding='utf-8')
-        new = re.sub(r"shade: '[^']*'", "shade: '" + u + "'", src, count=1)
-        if new == src:
+        new, hits = re.subn(r"shade: '[^']*'", "shade: '" + u + "'", src, count=1)
+        if not hits:
             sys.exit('could not find the shade: field in ' + str(TARGET))
-        TARGET.write_text(new, encoding='utf-8')
-        print('wrote', TARGET)
+        if new == src:
+            print('unchanged -', str(TARGET), 'already carries this map')
+        else:
+            TARGET.write_text(new, encoding='utf-8')
+            print('wrote', TARGET)
     else:
         print('(dry run - pass --write to patch assets/js/nail-gloss.js)')
 

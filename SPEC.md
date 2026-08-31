@@ -290,6 +290,10 @@ Requirements:
   the shop, separated from its own colour so `out = colour x shade` works for every colour. It is laid
   over the plate as ONE `<image>` per `<svg>` root, referenced by a `<use>` per nail with
   `mix-blend-mode:multiply`, seeded-nudged per nail so ten fingers are not ten identical surfaces.
+  The map is emitted with the nail at 90% of the image inside an edge-replicated border (`KEEP` in
+  `tools/gloss-map.py`) and the nudge is sized to spend itself on that border. Do not widen the
+  nudge without widening the border: a map that has to pay for the nudge out of its own area shows
+  the plate only its middle, and a nail keeps most of its form at the edges.
   The clipped plate group carries `isolation:isolate` so the blend never reaches the finger under it.
 - The plate is `out = colour x SHADE + REFLECTION`, and the second term is why it does not read as
   paint. A multiply can only darken, so with SHADE alone nothing on the plate was ever white and its
