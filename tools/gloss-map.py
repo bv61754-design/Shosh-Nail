@@ -126,7 +126,7 @@ def to_uv(m, d, s, G):
         yy = np.full(UV_W, float(y0))
         oM[j] = nd.map_coordinates(M, [yy, xs], order=1, mode='nearest')
         oS[j] = nd.map_coordinates(S, [yy, xs], order=1, mode='nearest')
-    return nd.gaussian_filter(oM, 0.8), nd.gaussian_filter(oS, 0.8)
+    return nd.gaussian_filter(oM, 0.45), nd.gaussian_filter(oS, 0.45)
 
 
 def finish(M):
@@ -150,38 +150,43 @@ def finish(M):
     # a light pass first: at this resolution a pixel of noise is not detail
     M = nd.gaussian_filter(M, (UV_H * 0.006, UV_W * 0.005), mode='nearest')
 
-    # THE BAND THAT MATTERS. Split at 2% of the nail's width. Below that is
-    # grain: the lengthwise striations of the gel, its milky depth, the
-    # micro-texture of the topcoat. That band is the MATERIAL and it is the
-    # same in any room. Above it is form and reflection, which is the room.
-    # (A split at 7% was tried first and failed: the reflection in this
-    # photograph is a window with a hard edge down the middle of it, so its
-    # edges survive into the "material" band and reappear as a black wedge
-    # across every nail. 2% is small enough that nothing shaped like a window
-    # can hide in it.)
+    # THREE BANDS, NOT TWO.
+    #   fine   below 2% of the width — the grain of the topcoat
+    #   mid    2% to 12% — the mottling of the gel, small reflections, the
+    #          nail bed showing through. This is the band the eye reads as
+    #          "a surface" at the size a nail is actually looked at.
+    #   form   above 12% — the shape of the room, and the only band that is
+    #          specific to the pose this nail was photographed in.
+    # An earlier version split at 2% only and replaced EVERYTHING above it
+    # below the cut with a carried cross-section. That is smooth by
+    # construction, and it left 22% of a plate with no gradient at all at
+    # viewing size. (A single split at 7% was tried before that and failed
+    # differently: the reflection here is a window with a hard edge, and a
+    # hard edge has every frequency in it, so it survived into the material
+    # band and drew a black wedge across all ten nails.)
+    # So: only `form` is replaced. `mid` and `fine` are MIRRORED down from the
+    # clean half of the nail's own surface — real texture, and nothing shaped
+    # like a window can come with them, because the half they come from has
+    # no window in it.
     fine = M - nd.gaussian_filter(M, (UV_H * 0.020, UV_W * 0.020), mode='nearest')
-    form = M - fine
+    mid = (nd.gaussian_filter(M, (UV_H * 0.020, UV_W * 0.020), mode='nearest')
+           - nd.gaussian_filter(M, (UV_H * 0.120, UV_W * 0.120), mode='nearest'))
+    form = nd.gaussian_filter(M, (UV_H * 0.120, UV_W * 0.120), mode='nearest')
 
     # the nail was lying on cloth, which tips its cuticle end toward the
     # window and catches a bright wedge there with a dark one under it. Past
     # the middle, carry the cross-section from the last honest row down
-    # instead, shading gently into the cuticle the way a worn nail does — but
-    # the grain runs the whole length, because a plate with a flat patch in it
-    # is the loudest thing in this whole file that says "drawn".
+    # instead, shading gently into the cuticle the way a worn nail does.
     cut = int(UV_H * 0.54)
     ref = form[cut - int(UV_H * 0.08):cut].mean(0)
-    grain = fine.copy()
     for j in range(cut, UV_H):
         w = min(1.0, (j - cut) / (UV_H * 0.13))
         t = (j - cut) / float(UV_H - cut)
         form[j] = form[j] * (1 - w) + (ref * (1.0 - 0.085 * t)) * w
-        # and the grain is MIRRORED about the cut rather than filtered: the
-        # reflection down there is a window with a hard edge, and a hard edge
-        # has every frequency in it, so no filter removes it without removing
-        # the material too. Folding the clean half of the nail's own grain
-        # back down leaves real texture and no window.
-        grain[j] = fine[max(0, 2 * cut - j)]
-    M = form + grain
+        src = max(0, 2 * cut - j)
+        mid[j] = mid[src]
+        fine[j] = fine[src]
+    M = form + mid + fine
 
     # the free edge is drawn by SN.Nail as its own translucent layer
     tf = np.clip((0.035 - v) / 0.035, 0, 1)
