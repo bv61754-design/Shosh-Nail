@@ -1,0 +1,7 @@
+*.png
+*.jpg
+*.jpeg
+*.npy
+*.json
+refs/
+node_modules/
