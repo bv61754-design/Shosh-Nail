@@ -3081,6 +3081,25 @@
   /*  The tile is measured in the plate's own user units, and on the photo    */
   /*  hands a user unit IS a pixel of the photograph, so the grain lands at   */
   /*  the same scale as the grain it is matching.                             */
+  /*                                                                          */
+  /*  0.12 and 0.22, not 0.16 and 0.55, and both numbers moved for one reason: */
+  /*  the old pair was tuned on a plate 135 device px across and the studio    */
+  /*  draws one at 42-55. At the size the page actually renders, the old grain */
+  /*  measured 1.20 of the skin's own high-frequency sigma — the plate was the */
+  /*  noisiest thing in the frame rather than the best match to it — while     */
+  /*  three quarters of the amplitude at two fifths of the frequency measures  */
+  /*  1.15 and delivers MORE of the variation that survives a 1.2 px blur,     */
+  /*  which is the only variation a viewer at that size can see: dead-flat     */
+  /*  area 11.7% -> 11.0% against 9.7% on the reference. Less noise, more      */
+  /*  structure.                                                              */
+  /*                                                                          */
+  /*  What grain still cannot do, measured again at the right size and against */
+  /*  the right metric: the INTERIOR of the plate. Sweeping amplitude 0.12 to  */
+  /*  0.20 over frequencies 0.22 / 0.10 / 0.06 moves the interior median       */
+  /*  |grad| from 0.0076 only to 0.0084, and takes the noise ratio to 1.27 to  */
+  /*  do it, where five real press-ons measure 0.0085-0.0139. Whatever is      */
+  /*  missing inside a plate is structure, not noise — the conclusion an       */
+  /*  earlier cycle reached at the wrong size, now confirmed at the right one. */
   /* ====================================================================== */
 
   function grainPat(defs, amp, freq) {
@@ -3405,7 +3424,7 @@
     /* --- 5c. grain, over every layer of colour and light ------------------- */
     filmGrain(clipG, {
       w: w, h: h, defs: defs, on: gOn,
-      amp: num(opts.grain, 0.16), freq: num(opts.grainFreq, 0.55)
+      amp: num(opts.grain, 0.12), freq: num(opts.grainFreq, 0.22)
     });
 
     /* --- 6. the contour --------------------------------------------------- */
