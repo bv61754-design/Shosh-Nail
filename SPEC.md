@@ -299,11 +299,14 @@ Requirements:
   mirror, so its image is the light). Screened over the plate, one per nail, mirrored on the hand lit
   from the other side. A reflection is WHITE, so one sheet is correct for all 45 colours, 8 shapes,
   4 lengths, 6 finishes, 22 patterns and 43 charms — that is what makes it affordable.
-  Under the streaks sits a TINTED veil: the broad low reflection of the whole room, which is most of
-  why a real nail is brighter than the skin around it (measured on a real hand wearing pale press-ons,
-  nail/skin = 1.18). It is the nail's own colour lightened, scaled by that colour's lightness, because
-  a milky nude scatters light back out and an onyx absorbs it. A WHITE veil was tried and took a black
-  nail to 0.43 of the skin's luminance.
+  Under the streaks sits a TINTED veil: the broad low reflection of the whole room. It is the nail's
+  own colour lightened, scaled by that colour's lightness, because a milky nude scatters light back
+  out and an onyx absorbs it. A WHITE veil was tried and took a black nail to 0.43 of the skin's
+  luminance. It is deliberately WEAK (`VEIL_K` 0.30): a screen blend onto a base that is already
+  bright closes the gap between the channels, so a strong veil costs a pale nail its pigment. Measured
+  against the two plain press-ons we have photographs of, a real nail's body holds 0.90 of its paint's
+  own saturation and washes out only in the top luminance decile, where the lamp is; at full strength
+  this veil held 0.69 and washed out everywhere, which is why a nude read as grey stone.
 - Grain: the plate is composited onto a photograph, so it carries the photograph's noise — one
   feTurbulence baked into a shared `<pattern>`, tiled in OVERLAY so the perturbation scales with the
   level. Tuned so the plate's high-frequency sigma matches the skin beside it (ratio 1.02).

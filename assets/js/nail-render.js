@@ -2801,24 +2801,40 @@
     gloss: 1, jelly: 0.85, glitter: 0.5, chrome: 0.34, matte: 0, velvet: 0
   };
 
-  /* THE VEIL — tinted, not white, and it sits UNDER the measured surface.
-     A gloss topcoat returns a broad, low reflection of the whole room as well
-     as the shape of the lamp, and that is most of why a real nail is BRIGHTER
-     than the skin it sits on: measured on a real hand wearing pale press-ons,
-     nail median / skin median = 1.18, where this render was at 0.89 and read
-     grey against the finger however good the streaks were.
-     A WHITE veil was tried and took a black nail to 0.43 of the skin's
-     luminance — grey, not black. Tinted at full strength on every colour cost
-     the red set four tenths of its highlight area. So it is the nail's own
-     colour lightened, scaled by that colour's lightness, which is what
-     scattering actually is: a milky nude sends light back out of the pigment,
-     an onyx absorbs it. Nude gets 0.70 of it, red 0.06, onyx 0.003. */
+  /* THE VEIL — a broad, low return of the whole room, tinted with the nail's
+     own colour, sitting UNDER the measured surface. Scaled by that colour's
+     lightness, which is what scattering actually is: a milky nude sends light
+     back out of the pigment, an onyx absorbs it. A WHITE veil was tried and
+     took a black nail to 0.43 of the skin's luminance — grey, not black.
+
+     VEIL_K = 0.30, and the reason is the one thing a screen blend cannot help
+     doing. Screening ANY colour onto a base that is already bright pushes
+     every channel toward 1, and the brightest channel gets there first, so
+     the gap between the channels — the chroma — closes. Measured on ten
+     plates against the two real press-ons we have photographs of: a real
+     nail's body holds 0.90 of its paint's own saturation and washes out only
+     in the top luminance decile, where the lamp is. This render held 0.69 of
+     it and washed out EVERYWHERE, which is the whole reason a nude was
+     reading as grey stone against the finger. At 0.30 the body is back to
+     0.87 and the measured reflection underneath finally shows as a reflection
+     instead of a milky film over one.
+
+     Tested and rejected on the way: tinting the veil with the colour at full
+     chroma instead of lightened toward white (0.69 -> 0.71), and the veil in
+     the nail's own colour untouched (0.73). It is not the veil's colour that
+     desaturates, it is the blend, so the only real lever is how much of it
+     there is. The 1.18 nail/skin figure this layer used to be sized by was a
+     bad measurement — patch-sampled on the same photograph it is 1.07, and
+     even that is a fact about how light the reference's polish was next to
+     that model's skin, not something a finish can be asked to deliver. */
+  var VEIL_K = 0.30;
+
   function specVeil(host, x, kind) {
     var k = SPEC_MIX[kind], vk;
     if (typeof k !== 'number') k = SPEC_MIX.gloss;
     if (!x.on || k <= 0) return;
-    vk = k * Math.pow(clamp(lum(col(x.color, '#C98BA0')), 0, 1), 1.6);
-    if (vk <= 0.01) return;
+    vk = k * VEIL_K * Math.pow(clamp(lum(col(x.color, '#C98BA0')), 0, 1), 1.6);
+    if (vk <= 0.003) return;
     add(host, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: radGrad(x.defs, [
         [0, lighten(col(x.color, '#C98BA0'), 0.34), f(0.62 * vk)],
