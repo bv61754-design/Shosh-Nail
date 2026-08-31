@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>التصاميم الجاهزة — شوش نيل | Ready-Made Sets · Shosh Nail</title>
+<meta name="description" content="تصفّحي تصاميم شوش نيل الجاهزة: عروس، فرنش، كروم، أومبريه وغيرها — بحث وتصفية بالسعر والوسم، وتقدرين تطلبين الطقم زي ما هو أو تاخذينه أساس وتعدّلين عليه. Browse Shosh Nail ready-made press-on sets, filter by tag and price, order as-is or customise.">
+<meta name="theme-color" content="#C97B92">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M12%202.6c3.1%200%204.9%201.9%204.9%204.7%200%202.6-.6%204.9-1%207.1-.5%202.8-1%205.3-3.9%205.3s-3.4-2.5-3.9-5.3c-.4-2.2-1-4.5-1-7.1%200-2.8%201.8-4.7%204.9-4.7Z'%20fill='%23C97B92'/%3E%3Cpath%20d='M9.6%206.7c1.3-1.1%203.5-1.1%204.8%200'%20stroke='%23FCF7F5'%20stroke-width='1.2'%20stroke-linecap='round'%20fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Reem+Kufi:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+
+<style>
+/* ---------------------------------------------------------------------
+   Shop-only layout. Every selector is prefixed .shop-* (the two exceptions
+   are the shared [hidden] guard and #shop-* ids), and every value comes
+   from the tokens published in SPEC section 14 — so the page stays correct
+   in both themes without a single hard-coded colour.
+   Logical properties throughout: one rule serves RTL and LTR.
+   --------------------------------------------------------------------- */
+
+/* a class rule beats the UA sheet, so [hidden] needs saying out loud */
+[hidden]{ display:none !important; }
+
+/* base.css draws the section glow 130% wide so it bleeds past the heading.
+   On a 360px phone that bleed is wider than the viewport and pushes the
+   document scroll width out, so cap it to the column on this page. The glow
+   still reads — it is a soft radial that fades long before its own edge. */
+.shop-sec .sec-head::before{ inline-size:min(620px,100%); }
+
+/* ── hero ───────────────────────────────────────────────────────────── */
+.shop-hero{
+  padding-block:clamp(26px,4.5vw,54px) clamp(20px,3vw,34px);
+  /* .glow::before is 116% wide on purpose — keep its bleed off the page */
+  overflow:hidden;
+}
+.shop-hero .sec-head{ margin-block-end:0; }
+.shop-hero .h1{ max-inline-size:16ch; }
+.shop-hero .lead{ max-inline-size:56ch; }
+.shop-hero-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-block-start:18px;
+}
+
+/* ── the "most ordered" rail ─────────────────────────────────────────
+   Mobile: a snap carousel that peeks the next card so it reads as
+   scrollable. Desktop: a plain grid — no horizontal scrolling with a
+   mouse. `.scroll-x` (base.css) already hides the scrollbar chrome. */
+.shop-rail{
+  display:flex;
+  gap:14px;
+  scroll-snap-type:x mandatory;
+  scroll-padding-inline:2px;
+  padding-block-end:4px;
+  /* the cards lift on hover; without the gutter the shadow gets clipped */
+  padding-inline:2px;
+  margin-inline:-2px;
+}
+.shop-rail > *{
+  flex:0 0 min(74%,260px);
+  scroll-snap-align:center;
+}
+@media (min-width:700px){
+  .shop-rail{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:clamp(14px,2vw,20px);
+    overflow:visible;
+  }
+  .shop-rail > *{ flex:none; }
+}
+@media (min-width:1080px){
+  .shop-rail{ grid-template-columns:repeat(6,minmax(0,1fr)); }
+}
+
+/* the compact rail card: the whole tile is one link to the quick view */
+.shop-rail-card{ isolation:isolate; }
+.shop-rail-link{
+  display:flex;
+  flex-direction:column;
+  block-size:100%;
+  color:inherit;
+  text-decoration:none;
+}
+/* .card clips its overflow, so pull the ring inside the rounded corner */
+.shop-rail-link:focus-visible{ outline-offset:-3px; border-radius:var(--r); }
+/* a squarer tile: six of these sit side by side on a wide screen */
+.shop-rail-card .card-media{ aspect-ratio:1/1; }
+.shop-rail-b{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  flex:1 1 auto;
+  padding:12px 12px 14px;
+  min-inline-size:0;
+}
+.shop-rail-t{
+  font-size:.92rem;
+  font-weight:700;
+  line-height:1.45;
+  color:var(--ink);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.shop-rail-f{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-block-start:auto;
+}
+.shop-rail-price{ font-size:.95rem; font-weight:800; color:var(--rose-3); }
+.shop-rail-orders{ font-size:.74rem; font-weight:700; color:var(--ink-3); }
+
+/* rank chip: 1-3 wear the gold, the rest stay quiet */
+.shop-rank{
+  position:absolute;
+  inset-block-start:9px;
+  inset-inline-start:9px;
+  z-index:2;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-inline-size:30px;
+  block-size:26px;
+  padding-inline:8px;
+  border-radius:var(--r-full);
+  background:var(--bg-2);
+  border:1px solid var(--line-2);
+  color:var(--ink-2);
+  font-size:.76rem;
+  font-weight:800;
+  letter-spacing:.02em;
+  box-shadow:var(--sh-1);
+}
+.shop-rank.is-top{
+  background-image:linear-gradient(135deg,var(--gold),var(--rose-2));
+  border-color:transparent;
+  color:#FFF9F0;
+  box-shadow:0 3px 12px rgba(194,160,94,.34);
+}
+
+/* ── the sticky toolbar ─────────────────────────────────────────────── */
+.shop-bar{
+  position:sticky;
+  inset-block-start:calc(var(--hdr) + 8px);
+  z-index:40;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:12px;
+  margin-block-end:clamp(20px,3vw,30px);
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--sh-1);
+  transition:box-shadow var(--dur) var(--ease);
+}
+.shop-bar.is-stuck{ box-shadow:var(--sh-2); }
+@media (max-width:560px){
+  .shop-bar{ padding:10px; gap:10px; inset-block-start:calc(var(--hdr) + 4px); }
+}
+
+.shop-bar-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+}
+.shop-search{ flex:1 1 240px; min-inline-size:0; }
+/* the clear-search button sits inside the field, opposite the icon */
+.shop-search .shop-q-x{
+  position:absolute;
+  inset-inline-end:6px;
+  inline-size:30px;
+  block-size:30px;
+}
+.shop-search > .input{ padding-inline-end:42px; }
+.shop-sort{ flex:0 1 190px; min-inline-size:150px; }
+.shop-sort > .select{ inline-size:100%; }
+.shop-price-t{ flex:0 0 auto; }
+/* on a phone the sort box shrinks so it can share its row with the price
+   button instead of claiming a line of its own */
+@media (max-width:560px){
+  .shop-sort{ flex:1 1 120px; min-inline-size:104px; }
+}
+.shop-price-t .ico{ margin-inline-end:2px; }
+
+/* price range: two plain sliders beat a fiddly dual-thumb widget on a
+   phone, and every browser gives them real keyboard support for free */
+.shop-price{
+  display:grid;
+  gap:12px;
+  padding:12px;
+  border:1px dashed var(--line-2);
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+}
+@media (min-width:640px){
+  .shop-price{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 20px; }
+}
+.shop-price-f{ display:flex; flex-direction:column; gap:6px; min-inline-size:0; }
+.shop-price-lbl{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:10px;
+  font-size:.82rem;
+  font-weight:700;
+  color:var(--ink-2);
+}
+.shop-price-v{ color:var(--rose-3); font-weight:800; }
+.shop-price-note{ grid-column:1/-1; margin:0; }
+
+.shop-chips{ gap:8px; }
+.shop-chip-n{
+  font-size:.72rem;
+  font-weight:800;
+  opacity:.72;
+}
+/* twenty wrapped chips would swallow a phone screen — and the bar is sticky,
+   so that screen stays swallowed. One scrollable line instead, exactly the
+   way base.css treats .tabs. */
+@media (max-width:700px){
+  .shop-chips{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    scroll-padding-inline:2px;
+    padding-inline:2px;
+    padding-block-end:2px;
+    margin-inline:-2px;
+  }
+  .shop-chips::-webkit-scrollbar{ display:none; }
+  .shop-chips > .chip{ flex:0 0 auto; }
+}
+
+.shop-bar-foot{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-block-size:30px;
+}
+.shop-result{ margin:0; }
+.shop-result b{ color:var(--ink); font-weight:800; }
+
+/* ── catalogue cards ────────────────────────────────────────────────── */
+.shop-grid{ align-items:stretch; }
+
+/* the media is a real link (shareable, right-clickable) that also opens
+   the quick view — the button reset keeps it looking like a tile */
+.shop-media{
+  display:grid;
+  place-items:center;
+  cursor:zoom-in;
+  color:inherit;
+  text-decoration:none;
+}
+.shop-media > .shop-media-ph{
+  /* placeholder while the SVG has not been rendered yet */
+  inline-size:100%;
+  block-size:100%;
+  background:
+    radial-gradient(closest-side,var(--glow),transparent 70%) center/70% 70% no-repeat;
+}
+.shop-fav{
+  position:absolute;
+  inset-block-start:9px;
+  inset-inline-end:9px;
+  z-index:3;
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  box-shadow:var(--sh-1);
+  color:var(--ink-3);
+}
+.shop-fav:hover{ color:var(--rose-2); background:var(--bg-2); border-color:var(--rose); }
+.shop-fav[aria-pressed="true"]{
+  color:var(--rose-2);
+  border-color:var(--rose);
+  background:var(--rose-soft);
+}
+.shop-fav[aria-pressed="true"] .ico{ fill:currentColor; }
+.shop-tags{ display:flex; flex-wrap:wrap; gap:6px; }
+.shop-card-btns{ margin-block-start:4px; }
+.shop-card-btns > *{ flex:1 1 auto; justify-content:center; }
+
+/* ── quick view ─────────────────────────────────────────────────────── */
+.shop-qv{ display:grid; gap:clamp(16px,3vw,26px); }
+@media (min-width:860px){
+  .shop-qv{ grid-template-columns:minmax(0,1.06fr) minmax(0,1fr); align-items:start; }
+}
+.shop-qv-art{
+  position:relative;
+  display:grid;
+  place-items:center;
+  padding:clamp(10px,2vw,18px);
+  border-radius:var(--r);
+  background:linear-gradient(160deg,var(--bg-4),var(--bg-3));
+  border:1px solid var(--line);
+  min-inline-size:0;
+}
+.shop-qv-art > svg{ inline-size:100%; block-size:auto; }
+.shop-qv-art > img{
+  inline-size:100%;
+  block-size:auto;
+  border-radius:var(--r-sm);
+  display:block;
+}
+.shop-qv-info{ display:flex; flex-direction:column; gap:14px; min-inline-size:0; }
+.shop-qv-head{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.shop-qv-price{ font-size:1.5rem; font-weight:800; color:var(--rose-3); line-height:1.2; }
+.shop-qv-desc{ color:var(--ink-2); line-height:1.85; margin:0; }
+.shop-qv-opts{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:14px;
+  border-radius:var(--r-sm);
+  border:1px solid var(--line);
+  background:var(--bg-4);
+}
+.shop-qv-row{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+/* the switch label stacks its name over its note, so the two never run
+   together the way two inline spans would */
+.shop-qv-opts .switch{ align-items:flex-start; }
+.shop-qv-opts .switch > input + span{ margin-block-start:2px; }
+.shop-qv-opts .switch-lbl{ display:flex; flex-direction:column; gap:1px; }
+
+.shop-qv-sum{
+  margin-block-start:4px;
+  padding-block-start:12px;
+  border-block-start:1px solid var(--line-2);
+}
+.shop-qv-total{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  margin-block-start:8px;
+  padding-block-start:9px;
+  border-block-start:1px solid var(--line-2);
+  font-weight:800;
+}
+.shop-qv-total b{ font-size:1.2rem; color:var(--rose-3); }
+.shop-qv-lines{ display:flex; flex-direction:column; gap:6px; margin:0; }
+.shop-qv-line{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:12px;
+  font-size:.84rem;
+  color:var(--ink-2);
+}
+.shop-qv-actions > *{ flex:1 1 180px; justify-content:center; }
+
+/* quantity stepper */
+.shop-qty{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:3px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-full);
+  background:var(--bg-2);
+}
+.shop-qty > .input{
+  inline-size:52px;
+  min-block-size:34px;
+  padding:2px;
+  text-align:center;
+  border:0;
+  background:transparent;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  -moz-appearance:textfield;
+}
+.shop-qty > .input:focus,
+.shop-qty > .input:focus-visible{ box-shadow:none; outline:none; }
+.shop-qty > .input::-webkit-outer-spin-button,
+.shop-qty > .input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+
+/* ── motion ─────────────────────────────────────────────────────────── */
+.shop-in{
+  opacity:0;
+  transform:translateY(12px);
+  transition:opacity .22s var(--ease), transform .22s var(--ease);
+}
+.shop-in.is-in{ opacity:1; transform:none; }
+@media (prefers-reduced-motion:reduce){
+  .shop-in,.shop-in.is-in{ opacity:1 !important; transform:none !important; }
+  .shop-rail{ scroll-snap-type:none; }
+}
+</style>
+
+<script defer src="assets/js/data.js"></script>
+<script defer src="assets/js/store.js"></script>
+<script defer src="assets/js/i18n.js"></script>
+<script defer src="assets/js/nail-art.js"></script>
+<script defer src="assets/js/nail-gloss.js"></script>
+<script defer src="assets/js/nail-render.js"></script>
+<script defer src="assets/js/ui.js"></script>
+<script defer src="assets/js/checkout.js"></script>
+<script defer src="assets/js/shop.js"></script>
+</head>
+<body data-page="shop">
+<a class="skip-link" href="#main" data-i18n="a11y.skip"></a>
+<div id="sn-announce"></div>
+<header id="sn-header"></header>
+
+<main id="main">
+
+  <!-- ── hero ─────────────────────────────────────────────────────── -->
+  <section class="sec sec-sm shop-sec shop-hero glow">
+    <div class="wrap">
+      <div class="sec-head sec-head-start">
+        <p class="eyebrow" data-i18n="shop.eyebrow"></p>
+        <h1 class="h1 display" data-i18n="shop.title"></h1>
+        <p class="lead" data-i18n="shop.lead"></p>
+        <p class="shop-hero-meta" id="shop-hero-meta"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── most ordered rail ────────────────────────────────────────── -->
+  <section class="sec sec-sm sec-alt sec-line shop-sec" id="shop-top-sec" hidden>
+    <div class="wrap">
+      <div class="sec-head sec-head-start">
+        <p class="eyebrow" data-i18n="shop.topEyebrow"></p>
+        <h2 class="h2 display" data-i18n="shop.topTitle"></h2>
+        <p class="lead" data-i18n="shop.topSub"></p>
+      </div>
+      <div class="shop-rail scroll-x" id="shop-rail"></div>
+    </div>
+  </section>
+
+  <!-- ── catalogue ────────────────────────────────────────────────── -->
+  <section class="sec shop-sec" id="catalogue">
+    <div class="wrap">
+      <div class="sec-head sec-head-start">
+        <h2 class="h2 display" data-i18n="shop.allTitle"></h2>
+        <p class="lead" data-i18n="shop.allSub"></p>
+      </div>
+
+      <div class="shop-bar" id="shop-bar">
+        <div class="shop-bar-row">
+          <div class="search shop-search">
+            <span class="search-ico" id="shop-search-ico" aria-hidden="true"></span>
+            <label class="sr-only" for="shop-q" data-i18n="shop.searchLabel"></label>
+            <input class="input" id="shop-q" type="search" autocomplete="off"
+                   spellcheck="false" data-i18n-ph="shop.searchPh">
+            <button class="icon-btn icon-btn-sm shop-q-x" id="shop-q-clear" type="button"
+                    hidden data-i18n-aria="shop.clearSearch"></button>
+          </div>
+
+          <div class="field shop-sort">
+            <label class="sr-only" for="shop-sort" data-i18n="shop.sortLabel"></label>
+            <select class="select" id="shop-sort">
+              <option value="orders" data-i18n="shop.sort.orders"></option>
+              <option value="new" data-i18n="shop.sort.new"></option>
+              <option value="priceUp" data-i18n="shop.sort.priceUp"></option>
+              <option value="priceDown" data-i18n="shop.sort.priceDown"></option>
+            </select>
+          </div>
+
+          <button class="btn btn-line btn-sm shop-price-t" id="shop-price-t" type="button"
+                  aria-expanded="false" aria-controls="shop-price"></button>
+        </div>
+
+        <div class="shop-price" id="shop-price" hidden>
+          <div class="shop-price-f">
+            <label class="shop-price-lbl" for="shop-min">
+              <span data-i18n="shop.priceFrom"></span>
+              <span class="shop-price-v" id="shop-min-v"></span>
+            </label>
+            <input class="range" id="shop-min" type="range" step="5">
+          </div>
+          <div class="shop-price-f">
+            <label class="shop-price-lbl" for="shop-max">
+              <span data-i18n="shop.priceTo"></span>
+              <span class="shop-price-v" id="shop-max-v"></span>
+            </label>
+            <input class="range" id="shop-max" type="range" step="5">
+          </div>
+          <p class="hint shop-price-note" data-i18n="shop.priceNote"></p>
+        </div>
+
+        <div class="chips shop-chips" id="shop-chips" role="group"
+             data-i18n-aria="shop.tagsLabel"></div>
+
+        <div class="shop-bar-foot">
+          <p class="small muted shop-result" id="shop-result" aria-live="polite"></p>
+          <button class="btn btn-ghost btn-sm" id="shop-clear" type="button" hidden></button>
+        </div>
+      </div>
+
+      <div class="grid shop-grid" id="shop-grid"></div>
+      <div id="shop-empty" hidden></div>
+    </div>
+  </section>
+
+</main>
+
+<footer id="sn-footer"></footer>
+</body>
+</html>

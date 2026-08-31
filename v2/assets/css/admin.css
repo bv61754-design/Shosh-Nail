@@ -1,0 +1,1007 @@
+@charset "utf-8";
+/* =========================================================================
+   Shosh Nail — assets/css/admin.css
+   Owner: ADMIN.  Styles the owner control panel only.
+
+   Rules of the house
+   ------------------
+   * Every selector here starts with .adm- (SPEC section 13). Everything else
+     on the page reuses the shared components published by base.css.
+   * Only the tokens listed in SPEC section 14 are used, so light and dark are
+     both correct without a single hard-coded colour.
+   * Logical properties throughout (padding-inline, inset-inline-start …) so a
+     single rule is right in Arabic (RTL) and English (LTR). Physical values
+     appear only inside [dir="…"]-scoped rules, as the spec allows.
+   * Dense but calm: this is a dashboard the owner will use from her phone.
+
+   Contents
+   --------
+   01  shell & password gate
+   02  top bar + default-password warning
+   03  sidebar
+   04  main column, cards, section heads
+   05  the generic CRUD list
+   06  fields (pairs, colours, numbers, tags, step lists, images)
+   07  previews (swatch, glyph, mini nail, thumbnails)
+   08  tab-specific bits (brand preview, pricing sample, designs, orders)
+   09  backup tab
+   10  utilities + reduced motion
+   ========================================================================= */
+
+
+/* =========================================================================
+   01  SHELL & PASSWORD GATE
+   ========================================================================= */
+.adm-root{
+  --adm-side:250px;
+  --adm-gap:clamp(12px,2vw,20px);
+  padding-block-end:clamp(32px,6vw,64px);
+}
+
+.adm-hide{ display:none !important; }
+
+/* ---- gate ---- */
+.adm-gate{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding-block:clamp(32px,8vw,80px);
+  padding-inline:16px;
+  min-block-size:60vh;
+}
+.adm-gate-c{
+  inline-size:100%;
+  max-inline-size:420px;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  align-items:center;
+}
+.adm-gate-c > .h3{ margin:0; }
+.adm-gate-c > .muted{ margin:0; font-size:.94rem; line-height:1.7; }
+.adm-gate-c > .hint{ margin:0; }
+
+.adm-gate-ico{
+  display:grid;
+  place-items:center;
+  inline-size:56px;
+  block-size:56px;
+  border-radius:var(--r-full);
+  background:var(--rose-soft);
+  color:var(--rose-3);
+}
+.adm-gate-f{
+  inline-size:100%;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  text-align:start;
+  margin-block-start:4px;
+}
+.adm-gate-back{ font-size:.86rem; }
+
+.adm-gate-c.is-shake{ animation:adm-shake .5s var(--ease); }
+@keyframes adm-shake{
+  0%,100%{ transform:translateX(0); }
+  15%{ transform:translateX(-9px); }
+  30%{ transform:translateX(8px); }
+  45%{ transform:translateX(-6px); }
+  60%{ transform:translateX(5px); }
+  80%{ transform:translateX(-2px); }
+}
+
+
+/* =========================================================================
+   02  TOP BAR + WARNING
+   ========================================================================= */
+.adm-top{
+  position:sticky;
+  inset-block-start:var(--hdr);
+  z-index:30;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding-block:10px;
+  padding-inline:var(--adm-gap);
+  background:var(--bg-2);
+  border-block-end:1px solid var(--line);
+  box-shadow:var(--sh-1);
+}
+.adm-title{
+  margin:0;
+  min-inline-size:0;
+  font-size:clamp(1rem,2.6vw,1.16rem);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.adm-top-a{
+  margin-inline-start:auto;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+
+.adm-warn{
+  margin-block:12px 0;
+  margin-inline:var(--adm-gap);
+  align-items:center;
+}
+.adm-warn-cta{ margin-inline-start:auto; flex:0 0 auto; }
+@media (max-width:600px){
+  .adm-warn{ align-items:flex-start; flex-wrap:wrap; }
+  .adm-warn-cta{ margin-inline-start:0; }
+}
+
+
+/* =========================================================================
+   03  SIDEBAR
+   ========================================================================= */
+.adm-shell{
+  display:grid;
+  grid-template-columns:var(--adm-side) minmax(0,1fr);
+  gap:var(--adm-gap);
+  align-items:start;
+  padding-inline:var(--adm-gap);
+  padding-block-start:var(--adm-gap);
+  max-inline-size:1500px;
+  margin-inline:auto;
+}
+
+.adm-side{
+  position:sticky;
+  inset-block-start:calc(var(--hdr) + 62px);
+  max-block-size:calc(100vh - var(--hdr) - 76px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--sh-1);
+  padding:8px;
+}
+.adm-side-h{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-inline:8px;
+  padding-block:6px 10px;
+}
+.adm-side-t{
+  font-size:.74rem;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--ink-3);
+}
+.adm-side-h .icon-btn{ margin-inline-start:auto; }
+
+.adm-nav{ display:flex; flex-direction:column; gap:2px; }
+.adm-navb{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  inline-size:100%;
+  min-block-size:42px;
+  padding-block:8px;
+  padding-inline:10px;
+  border:0;
+  border-radius:var(--r-sm);
+  background:transparent;
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:.9rem;
+  font-weight:700;
+  line-height:1.4;
+  text-align:start;
+  cursor:pointer;
+  transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.adm-navb:hover{ background:var(--bg-3); color:var(--ink); }
+.adm-navb:focus-visible{ outline:2px solid var(--rose); outline-offset:-2px; }
+.adm-navb.is-on{
+  background:var(--rose-soft);
+  color:var(--rose-3);
+}
+.adm-navi{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  inline-size:26px;
+  block-size:26px;
+  border-radius:var(--r-xs);
+  color:var(--rose-2);
+}
+.adm-navb.is-on .adm-navi{ color:var(--rose-3); }
+.adm-navt{
+  min-inline-size:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.adm-navn{
+  margin-inline-start:auto;
+  flex:0 0 auto;
+  min-inline-size:22px;
+  padding-inline:6px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  color:var(--ink-3);
+  font-size:.72rem;
+  font-weight:800;
+  text-align:center;
+  line-height:19px;
+}
+.adm-navb.is-on .adm-navn{ background:var(--bg-2); color:var(--rose-3); }
+
+/* above #sn-header (z-index 100 in base.css) so the drawer's own close button
+   is not buried under the site header on a phone, and still below the modal
+   layer (200+) so a dialog always wins */
+.adm-scrim{
+  position:fixed;
+  inset:0;
+  z-index:119;
+  background:var(--scrim);
+  opacity:0;
+  visibility:hidden;
+  transition:opacity var(--dur) var(--ease), visibility var(--dur) var(--ease);
+}
+
+/* ---- drawer under 900px (matches base.css .only-mob / .only-desk) ---- */
+@media (max-width:900px){
+  .adm-shell{ grid-template-columns:minmax(0,1fr); }
+  .adm-side{
+    position:fixed;
+    z-index:120;
+    inset-block:0;
+    inset-inline-start:0;
+    inline-size:min(84vw,290px);
+    max-block-size:100vh;
+    border-radius:0;
+    border-block:0;
+    border-inline-start:0;
+    box-shadow:var(--sh-3);
+    padding:12px;
+    padding-block-start:max(12px,env(safe-area-inset-top));
+    transform:translateX(-110%);
+    transition:transform var(--dur) var(--ease);
+  }
+  [dir="rtl"] .adm-side{ transform:translateX(110%); }
+  .adm-root.is-nav .adm-side,
+  [dir="rtl"] .adm-root.is-nav .adm-side{ transform:translateX(0); }
+  .adm-root.is-nav .adm-scrim{ opacity:1; visibility:visible; }
+  .adm-navb{ min-block-size:46px; font-size:.95rem; }
+}
+
+
+/* =========================================================================
+   04  MAIN COLUMN / CARDS
+   ========================================================================= */
+.adm-main{ min-inline-size:0; }
+.adm-tabbody{ display:flex; flex-direction:column; gap:var(--adm-gap); }
+
+.adm-card{
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--sh-1);
+  padding:clamp(14px,2.2vw,22px);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  min-inline-size:0;
+}
+
+.adm-sechead{ display:flex; flex-direction:column; gap:4px; }
+.adm-sechead > .h4{ margin:0; }
+.adm-sechead > .hint{ margin:0; max-inline-size:78ch; }
+
+
+/* =========================================================================
+   05  THE GENERIC CRUD LIST
+   ========================================================================= */
+.adm-crud{ display:flex; flex-direction:column; gap:12px; min-inline-size:0; }
+
+.adm-crud-h{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.adm-crud-t{ display:flex; align-items:center; gap:8px; min-inline-size:0; }
+.adm-crud-t > .h4{ margin:0; }
+.adm-count{ background:var(--rose-soft); color:var(--rose-3); }
+.adm-crud-s{ flex:1 1 200px; max-inline-size:320px; }
+.adm-add{ margin-inline-start:auto; flex:0 0 auto; }
+.adm-crud-help{ margin:0; max-inline-size:80ch; }
+
+.adm-rows{ display:flex; flex-direction:column; gap:8px; min-inline-size:0; }
+
+.adm-row{
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  overflow:hidden;
+  transition:border-color var(--dur) var(--ease);
+}
+.adm-row:hover{ border-color:var(--line-2); }
+.adm-row:has(.adm-row-t[aria-expanded="true"]){ border-color:var(--rose); }
+
+.adm-row-h{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding-inline:10px;
+  padding-block:8px;
+  min-inline-size:0;
+}
+.adm-row-pv{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  inline-size:44px;
+  block-size:44px;
+}
+.adm-row-t{
+  flex:1 1 auto;
+  min-inline-size:0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding-block:6px;
+  padding-inline:2px;
+  border:0;
+  background:transparent;
+  color:inherit;
+  font-family:inherit;
+  font-size:.95rem;
+  text-align:start;
+  cursor:pointer;
+  border-radius:var(--r-xs);
+}
+.adm-row-t:focus-visible{ outline:2px solid var(--rose); outline-offset:2px; }
+.adm-row-name{
+  font-weight:700;
+  color:var(--ink);
+  min-inline-size:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.adm-row-sub{
+  font-size:.78rem;
+  color:var(--ink-3);
+  min-inline-size:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  margin-inline-start:auto;
+  padding-inline-start:8px;
+}
+.adm-row-chev{
+  flex:0 0 auto;
+  display:inline-grid;
+  place-items:center;
+  color:var(--ink-3);
+  transition:transform var(--dur) var(--ease);
+}
+[dir="rtl"] .adm-row-chev{ transform:scaleX(-1); }
+.adm-row-t[aria-expanded="true"] .adm-row-chev{ transform:rotate(90deg); }
+[dir="rtl"] .adm-row-t[aria-expanded="true"] .adm-row-chev{ transform:scaleX(-1) rotate(-90deg); }
+
+.adm-row-a{ flex:0 0 auto; display:flex; align-items:center; gap:2px; }
+.adm-row-a .icon-btn[disabled]{ opacity:.3; cursor:not-allowed; }
+.adm-danger{ color:var(--err); }
+.adm-danger:hover{ background:var(--err-soft); color:var(--err-ink); }
+.adm-danger-t{ color:var(--err); }
+
+.adm-row-b{
+  border-block-start:1px dashed var(--line-2);
+  padding-inline:12px;
+  padding-block:14px;
+  background:var(--bg-4);
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.adm-rowid{ margin:0; font-size:.72rem; opacity:.75; }
+
+@media (max-width:560px){
+  .adm-row-t{ flex-wrap:wrap; gap:2px; }
+  .adm-row-sub{ margin-inline-start:0; padding-inline-start:0; flex-basis:100%; }
+  .adm-row-chev{ margin-inline-start:auto; }
+  /* a name he can read beats a name that fits: five reorder/copy/delete
+     targets leave no room for an ellipsis as well */
+  .adm-row-name,
+  .adm-row-sub{
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+    flex-basis:100%;
+    line-height:1.35;
+  }
+}
+
+
+/* =========================================================================
+   06  FIELDS
+   ========================================================================= */
+.adm-fields{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:12px 14px;
+  align-items:start;
+  min-inline-size:0;
+}
+.adm-wide{ grid-column:1 / -1; }
+
+.adm-f{ min-inline-size:0; position:relative; }
+.adm-f .label{ display:flex; align-items:center; gap:6px; }
+.adm-f.is-saved > .label::after,
+.adm-f.is-saved > .switch::after{
+  content:"";
+  inline-size:7px;
+  block-size:7px;
+  border-radius:50%;
+  background:var(--ok);
+  animation:adm-pop .9s var(--ease);
+}
+.adm-f.is-saved > .switch{ position:relative; }
+.adm-f.is-saved > .switch::after{ margin-inline-start:6px; }
+@keyframes adm-pop{
+  0%{ transform:scale(.2); opacity:0; }
+  30%{ transform:scale(1); opacity:1; }
+  100%{ transform:scale(1); opacity:0; }
+}
+.adm-f-bool{ justify-content:center; padding-block-start:20px; }
+@media (max-width:560px){ .adm-f-bool{ padding-block-start:0; } }
+
+/* bilingual pair */
+.adm-pair{ display:grid; grid-template-columns:1fr; gap:8px; }
+@media (min-width:520px){ .adm-pair{ grid-template-columns:1fr 1fr; } }
+.adm-lang{ display:flex; flex-direction:column; gap:4px; min-inline-size:0; }
+.adm-tag{
+  align-self:flex-start;
+  font-size:.66rem;
+  font-weight:800;
+  letter-spacing:.06em;
+  color:var(--ink-3);
+  background:var(--bg-3);
+  border-radius:var(--r-xs);
+  padding-inline:6px;
+  padding-block:1px;
+}
+
+/* number */
+.adm-num{ max-inline-size:180px; }
+
+/* colour */
+.adm-colrow{ display:flex; align-items:center; gap:8px; }
+.adm-cin{ flex:0 0 auto; }
+.adm-hex{ flex:1 1 auto; min-inline-size:0; max-inline-size:150px; text-transform:uppercase; }
+
+/* tags */
+.adm-tags{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-block-size:34px; }
+.adm-chip{ padding-inline-end:6px; }
+.adm-chip-x{
+  display:inline-grid;
+  place-items:center;
+  inline-size:18px;
+  block-size:18px;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  color:var(--ink-3);
+  cursor:pointer;
+  padding:0;
+}
+.adm-chip-x:hover{ background:var(--err-soft); color:var(--err-ink); }
+.adm-tagadd{ display:flex; gap:8px; align-items:center; margin-block-start:8px; }
+.adm-taginput{ flex:1 1 auto; min-inline-size:0; max-inline-size:260px; }
+
+/* step list */
+.adm-tlist{ display:flex; flex-direction:column; gap:10px; }
+.adm-tlrow{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:8px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+}
+.adm-tlrow > .adm-pair{ flex:1 1 auto; min-inline-size:0; }
+.adm-tlno{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  inline-size:24px;
+  block-size:24px;
+  border-radius:50%;
+  background:var(--rose-soft);
+  color:var(--rose-3);
+  font-size:.76rem;
+  font-weight:800;
+  margin-block-start:2px;
+}
+.adm-tlact{ flex:0 0 auto; display:flex; flex-direction:column; gap:2px; }
+.adm-mini{ inline-size:30px; block-size:30px; }
+.adm-tladd{ align-self:flex-start; }
+.adm-bico{ display:inline-grid; place-items:center; }
+
+/* image */
+.adm-imgrow{ display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+.adm-imgpv{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  inline-size:96px;
+  block-size:96px;
+  border:1px dashed var(--line-2);
+  border-radius:var(--r-sm);
+  background:var(--bg-3);
+  overflow:hidden;
+}
+.adm-imgpv img{ inline-size:100%; block-size:100%; object-fit:cover; display:block; }
+.adm-imgno{ color:var(--ink-3); display:grid; place-items:center; }
+.adm-imgact{ display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
+
+
+/* =========================================================================
+   07  PREVIEWS
+   ========================================================================= */
+.adm-sw{
+  display:block;
+  inline-size:34px;
+  block-size:34px;
+  border-radius:50%;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.6),
+             inset 0 0 0 3px rgba(74,43,57,.10),
+             0 1px 3px rgba(74,43,57,.16);
+}
+.adm-sw-img{ overflow:hidden; display:grid; place-items:center; background:var(--bg-3); }
+.adm-sw-img img{ inline-size:100%; block-size:100%; object-fit:cover; }
+
+.adm-glyph{ font-size:1.5rem; line-height:1; }
+
+.adm-ico-pv{
+  display:grid;
+  place-items:center;
+  inline-size:34px;
+  block-size:34px;
+  border-radius:var(--r-xs);
+  background:var(--bg-3);
+  color:var(--rose-2);
+}
+.adm-num-pv{
+  display:grid;
+  place-items:center;
+  min-inline-size:34px;
+  block-size:34px;
+  padding-inline:6px;
+  border-radius:var(--r-xs);
+  background:var(--gold-soft);
+  color:var(--warn-ink);
+  font-size:.8rem;
+  font-weight:800;
+}
+.adm-nailpv{ display:grid; place-items:center; }
+.adm-nailpv svg{ display:block; max-block-size:44px; inline-size:auto; }
+
+.adm-dthumb{
+  display:grid;
+  place-items:center;
+  inline-size:56px;
+  block-size:56px;
+  border-radius:var(--r-xs);
+  background:var(--bg-3);
+  overflow:hidden;
+}
+.adm-dthumb img{ inline-size:100%; block-size:100%; object-fit:cover; }
+/* the rendered fan is taller than it is wide — contain it instead of
+   cropping the tips off */
+.adm-dthumb svg{
+  inline-size:auto;
+  block-size:auto;
+  max-inline-size:100%;
+  max-block-size:100%;
+  display:block;
+}
+.adm-row-pv:has(.adm-dthumb){ inline-size:56px; block-size:56px; }
+
+
+/* =========================================================================
+   08  TAB-SPECIFIC
+   ========================================================================= */
+/* ---- general: live brand preview ---- */
+.adm-brandpv{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:linear-gradient(135deg,var(--rose-soft),var(--gold-soft));
+}
+.adm-brandpv > .hint{ margin:0; }
+.adm-brandpv-in{ display:flex; align-items:center; gap:10px; }
+.adm-brandpv-m{ color:var(--rose-3); display:grid; place-items:center; }
+.adm-brandpv-n{ display:block; font-size:1.16rem; font-weight:800; color:var(--plum); }
+.adm-brandpv-t{ display:block; font-size:.82rem; color:var(--rose-3); }
+
+/* ---- pricing sample ---- */
+.adm-sample{ min-inline-size:0; }
+.adm-sample .table-wrap{ margin:0; }
+
+/* ---- every item price, grouped and collapsed ---- */
+.adm-pgroup{
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  overflow:hidden;
+}
+.adm-pgroup + .adm-pgroup{ margin-block-start:8px; }
+.adm-pghead{
+  inline-size:100%;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-block-size:52px;
+  padding-inline:14px;
+  padding-block:10px;
+  border:0;
+  background:transparent;
+  color:inherit;
+  font-family:inherit;
+  font-size:.96rem;
+  font-weight:700;
+  text-align:start;
+  cursor:pointer;
+}
+.adm-pghead:hover{ background:var(--bg-4); }
+.adm-pghead:focus-visible{ outline:2px solid var(--rose); outline-offset:-2px; }
+.adm-pgt{ flex:1 1 auto; min-inline-size:0; }
+.adm-pghead[aria-expanded="true"]{ background:var(--bg-4); color:var(--rose-3); }
+.adm-pghead[aria-expanded="true"] .adm-row-chev{ transform:rotate(90deg); }
+.adm-pgbody{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:0;
+  padding:6px 14px 12px;
+  border-block-start:1px solid var(--line);
+  background:var(--bg-4);
+}
+/* one line per item: the name reads, the number sits at the end, and a list
+   of fifty charms stays a list instead of becoming a page */
+.adm-pgbody .adm-f{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:10px;
+  padding-block:8px;
+  border-block-end:1px dashed var(--line);
+}
+.adm-pgbody .adm-f:last-child{ border-block-end:0; }
+.adm-pgbody .adm-f .label{
+  flex:1 1 auto;
+  min-inline-size:0;
+  margin:0;
+  font-size:.88rem;
+  font-weight:600;
+  overflow-wrap:anywhere;
+}
+.adm-pgbody .adm-num{ flex:0 0 104px; inline-size:104px; max-inline-size:104px; }
+
+/* ---- designs ---- */
+.adm-dact{ display:flex; flex-wrap:wrap; gap:8px; }
+
+/* ---- orders ---- */
+.adm-otools{ margin-block-end:0; }
+.adm-osearch{ flex:1 1 220px; max-inline-size:380px; }
+.adm-ochips{ margin-block-end:4px; }
+
+.adm-orows{ display:flex; flex-direction:column; gap:8px; }
+.adm-orow{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  padding-inline:8px;
+  padding-block:6px;
+  min-inline-size:0;
+  border-inline-start:3px solid var(--line-2);
+}
+.adm-orow[data-status="new"]{ border-inline-start-color:var(--rose); }
+.adm-orow[data-status="confirmed"]{ border-inline-start-color:var(--gold); }
+.adm-orow[data-status="shipped"]{ border-inline-start-color:var(--ok); }
+.adm-orow[data-status="done"]{ border-inline-start-color:var(--ink-3); }
+.adm-orow[data-status="cancelled"]{ border-inline-start-color:var(--err); }
+
+.adm-orow-t{
+  flex:1 1 auto;
+  min-inline-size:0;
+  display:grid;
+  grid-template-columns:auto minmax(0,1.4fr) minmax(0,1fr) auto auto auto;
+  align-items:center;
+  gap:10px;
+  padding-block:8px;
+  padding-inline:4px;
+  border:0;
+  background:transparent;
+  color:inherit;
+  font-family:inherit;
+  font-size:.9rem;
+  text-align:start;
+  cursor:pointer;
+  border-radius:var(--r-xs);
+}
+.adm-orow-t:focus-visible{ outline:2px solid var(--rose); outline-offset:2px; }
+.adm-ono{ font-weight:800; color:var(--rose-3); white-space:nowrap; }
+.adm-oname{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.adm-ometa2{ color:var(--ink-3); font-size:.82rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.adm-odate{ color:var(--ink-3); font-size:.78rem; white-space:nowrap; }
+.adm-ototal{ font-weight:800; white-space:nowrap; }
+.adm-ost-new{ background:var(--rose-soft); color:var(--rose-3); }
+.adm-ost-confirmed{ background:var(--gold-soft); color:var(--warn-ink); }
+.adm-ost-shipped{ background:var(--ok-soft); color:var(--ok-ink); }
+.adm-ost-done{ background:var(--bg-3); color:var(--ink-2); }
+.adm-ost-cancelled{ background:var(--err-soft); color:var(--err-ink); }
+.adm-orow-a{ flex:0 0 auto; display:flex; gap:2px; }
+
+@media (max-width:820px){
+  .adm-orow-t{
+    grid-template-columns:auto minmax(0,1fr) auto;
+    row-gap:2px;
+  }
+  .adm-odate{ grid-column:2 / -1; }
+  .adm-ometa2{ grid-column:2 / -1; }
+}
+
+/* ---- order detail modal ---- */
+.adm-omodal{ display:flex; flex-direction:column; gap:14px; }
+.adm-opv{ display:grid; place-items:center; }
+.adm-opv:empty{ display:none; }
+.adm-opv svg,.adm-opv img{ max-inline-size:100%; block-size:auto; display:block; }
+.adm-opv img{ max-block-size:220px; border-radius:var(--r-sm); }
+/* on a phone the design must not push the editable half off the first screen */
+@media (max-width:560px){
+  .adm-opv svg{ max-block-size:170px; inline-size:auto; }
+}
+
+/* ---- the editable half of an order ---- */
+.adm-oedit{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+}
+.adm-oedit .adm-fields{ gap:10px 14px; }
+.adm-obulk{ min-block-size:40px; }
+
+.adm-ometa{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:4px 12px;
+  margin:0;
+  font-size:.9rem;
+}
+.adm-ometa dt{ color:var(--ink-3); font-weight:700; }
+.adm-ometa dd{ margin:0; color:var(--ink); min-inline-size:0; overflow-wrap:anywhere; }
+
+.adm-osum{ display:flex; flex-direction:column; gap:6px; }
+.adm-pre{
+  margin:0;
+  max-block-size:300px;
+  overflow:auto;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:.84rem;
+  line-height:1.8;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.adm-obtns{ display:flex; flex-wrap:wrap; gap:8px; }
+
+
+/* =========================================================================
+   08b  REAL PHOTOGRAPHS + THE DRAWN DECORATION LIBRARY
+   -------------------------------------------------------------------------
+   The owner's promise to his customer is «you receive what you see», so the
+   panel has to make a photograph feel like a first-class field, not an
+   afterthought: a real thumbnail, its weight in KB, and one obvious way back
+   to the drawn default.
+   ========================================================================= */
+
+/* ---- the image control ---- */
+.adm-imgpv.is-on{ border-style:solid; border-color:var(--line-2); background:var(--bg-2); }
+.adm-imgact{ flex:1 1 220px; min-inline-size:0; }
+.adm-imgmeta{
+  margin:0;
+  font-variant-numeric:tabular-nums;
+  color:var(--ink-3);
+}
+.adm-imgmeta.is-on{ color:var(--rose-3); font-weight:700; }
+.adm-imgurl{ margin-block-start:8px; font-size:.82rem; }
+.adm-imgshrink{ margin:0; margin-block-start:6px; }
+.adm-imgup{ min-block-size:40px; }
+.adm-imgact .btn{ min-block-size:40px; }
+
+/* ---- storage meter ---- */
+.adm-meter{
+  inline-size:100%;
+  block-size:10px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  overflow:hidden;
+  border:1px solid var(--line);
+}
+.adm-meter-i{
+  display:block;
+  block-size:100%;
+  inline-size:0;
+  border-radius:var(--r-full);
+  background:linear-gradient(90deg,var(--ok),var(--gold));
+  transition:inline-size var(--dur,200ms) var(--ease);
+}
+.adm-meter-i.is-warn{ background:linear-gradient(90deg,var(--gold),var(--warn)); }
+.adm-meter-i.is-full{ background:linear-gradient(90deg,var(--warn),var(--err)); }
+.adm-storefigs{ display:flex; flex-direction:column; gap:6px; }
+.adm-storefigs > p{ margin:0; }
+
+/* ---- the shared SN.Art gradient block: present, never seen ---- */
+.adm-artdefs{
+  position:absolute;
+  inline-size:0;
+  block-size:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+
+/* ---- the art field inside a decoration row ---- */
+.adm-artf{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+}
+.adm-artpv{
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  inline-size:52px;
+  block-size:52px;
+  border-radius:var(--r-xs);
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  color:var(--ink-3);
+}
+.adm-artpv svg{ display:block; }
+.adm-artinfo{ flex:1 1 200px; min-inline-size:0; display:flex; flex-direction:column; gap:8px; }
+.adm-artname{ font-weight:700; font-size:.92rem; color:var(--ink); overflow-wrap:anywhere; }
+.adm-artinfo .btn{ min-block-size:40px; }
+
+/* ---- the picker ---- */
+.adm-artpick{ display:flex; flex-direction:column; gap:12px; }
+.adm-artchips{ gap:6px; }
+.adm-artletter{ max-inline-size:240px; }
+.adm-artchar{ text-align:center; font-size:1.1rem; }
+.adm-artgrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(88px,1fr));
+  gap:8px;
+}
+.adm-arttile{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  padding:10px 6px;
+  min-block-size:92px;
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  color:var(--ink-2);
+  font-family:inherit;
+  cursor:pointer;
+  transition:border-color var(--dur,200ms) var(--ease),
+             background-color var(--dur,200ms) var(--ease);
+}
+.adm-arttile:hover{ border-color:var(--rose); background:var(--bg-4); }
+.adm-arttile:focus-visible{ outline:2px solid var(--rose); outline-offset:2px; }
+.adm-arttile.is-on{ border-color:var(--rose); background:var(--rose-soft); }
+.adm-arttile svg{ display:block; }
+.adm-arttl{
+  font-size:.72rem;
+  line-height:1.3;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+
+/* ---- a drawn charm as a row preview ---- */
+.adm-sw-art{ background:var(--bg-2); overflow:hidden; }
+.adm-sw-art svg{ display:block; }
+
+/* ---- the «new decoration» form ---- */
+.adm-ndform{ display:flex; flex-direction:column; gap:12px; }
+.adm-ndErr:empty{ display:none; }
+
+/* =========================================================================
+   09  BACKUP TAB
+   ========================================================================= */
+.adm-btnrow{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.adm-steps{
+  margin:0;
+  padding-inline-start:1.2em;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  font-size:.9rem;
+  line-height:1.8;
+  color:var(--ink-2);
+  max-inline-size:80ch;
+  overflow-wrap:anywhere;
+}
+.adm-steps li::marker{ color:var(--rose-2); font-weight:800; }
+.adm-passform{ display:flex; flex-direction:column; gap:12px; align-items:flex-start; }
+.adm-passform .adm-fields{ inline-size:100%; }
+.adm-testout{ margin:0; }
+
+
+/* =========================================================================
+   10  UTILITIES + REDUCED MOTION
+   ========================================================================= */
+.adm-root .empty{ margin-block:8px; }
+
+/* ---- phone ergonomics -------------------------------------------------
+   He administers this from a phone with one thumb. Anything he taps has to
+   be a real target, not a 32px icon meant for a mouse. ------------------- */
+@media (max-width:640px){
+  .adm-row-a .icon-btn,
+  .adm-orow-a .icon-btn,
+  .adm-tlact .icon-btn{ inline-size:40px; block-size:40px; }
+  .adm-row-a{ gap:0; }
+  /* «إضافة جديد» stays in reach even 50 rows down the list */
+  .adm-crud-h{
+    position:sticky;
+    inset-block-start:0;
+    z-index:2;
+    padding-block:8px;
+    background:var(--bg-2);
+    box-shadow:0 6px 10px -8px rgba(74,43,57,.28);
+  }
+  .adm-add{ min-block-size:44px; }
+  .adm-artgrid{ grid-template-columns:repeat(auto-fill,minmax(78px,1fr)); }
+  .adm-arttile{ min-block-size:86px; }
+  .adm-obtns .btn{ flex:1 1 44%; justify-content:center; min-block-size:44px; }
+  .adm-imgrow{ gap:10px; }
+  .adm-imgpv{ inline-size:64px; block-size:64px; }
+}
+
+@media print{
+  .adm-side,.adm-top,.adm-scrim,.adm-row-a,.adm-add{ display:none !important; }
+  .adm-shell{ grid-template-columns:minmax(0,1fr); }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .adm-gate-c.is-shake{ animation:none; }
+  .adm-f.is-saved > .label::after,
+  .adm-f.is-saved > .switch::after{ animation:none; opacity:1; }
+  .adm-side,.adm-scrim,.adm-row-chev,.adm-navb{ transition:none; }
+}

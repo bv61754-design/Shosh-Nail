@@ -1,0 +1,2697 @@
+@charset "utf-8";
+/* =========================================================================
+   Shosh Nail — assets/css/base.css
+   Owner: CSS.  Design tokens + reset + shell (header/announce/footer)
+   + the whole shared component library.  SPEC.md section 14 is the contract:
+   every other page styles itself with ONLY the classes and tokens below.
+
+   Conventions used everywhere in this file
+   ----------------------------------------
+   * Logical properties only (padding-inline, inset-block-start, text-align:start…)
+     so a single rule is correct in both RTL (Arabic, default) and LTR (English).
+     Physical left/right appears only inside [dir="…"]-scoped rules, as allowed.
+   * State hooks are duplicated defensively: a component reacts to its spec class
+     (.tab-on), to .is-on, and to the matching ARIA attribute, so page agents can
+     use whichever they wired up.
+   * Motion: transitions are <= --dur-2 (220ms); the longer --dur-3 is for
+     one-shot animations only. Section 20 is the whole motion system and the
+     only place timings are defined; section 22 removes every last one of them
+     under prefers-reduced-motion.
+
+   Table of contents
+   -----------------
+   00  Tokens
+   01  Reset & document base
+   02  Typography
+   03  Layout: wrap / sec / sec-head / grid / flow / divider / toolbar
+   04  Announce bar
+   05  Header & navigation
+   06  Buttons
+   07  Forms
+   08  Swatch / chip / tag / pill / badge / stars
+   09  Cards
+   10  Tabs
+   11  Accordion
+   12  Tables
+   13  Empty state / spinner / progress
+   14  Toasts
+   15  Modal / sheet
+   16  Footer
+   17  Nail SVG hooks
+   18  Utilities
+   19  Scrollbars & selection
+   20  Motion system  (tokens · press · the pick · entrances · payoff · skeletons)
+   21  Print
+   22  Reduced motion
+   ========================================================================= */
+
+
+/* =========================================================================
+   00  TOKENS  — the block below is copied verbatim from SPEC.md section 14
+   ========================================================================= */
+:root{
+  --bg:#FCF7F5; --bg-2:#FFFFFF; --bg-3:#F6EAE9; --bg-4:#FDF2F0;
+  --ink:#2E1B24; --ink-2:#6B5560; --ink-3:#9C8791;
+  --line:#EEDFE1; --line-2:#E2CDD1;
+  --rose:#C97B92; --rose-2:#A85A73; --rose-3:#8C4459; --rose-soft:#F8E6EB;
+  --gold:#C2A05E; --gold-soft:#F6EEDC; --plum:#4A2B39;
+  --ok:#3E9A73; --ok-soft:#E4F3EC; --warn:#B8842A; --warn-soft:#FBF0DA;
+  --err:#C0544F; --err-soft:#FAE7E5;
+  --r-xs:8px; --r-sm:12px; --r:18px; --r-lg:26px; --r-xl:34px; --r-full:999px;
+  --sh-1:0 1px 2px rgba(74,43,57,.06),0 4px 14px rgba(74,43,57,.06);
+  --sh-2:0 10px 34px rgba(74,43,57,.13);
+  --sh-3:0 20px 60px rgba(74,43,57,.18);
+  --font:'Tajawal',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-ar:'Reem Kufi','Tajawal',sans-serif;
+  --font-en:'Cormorant Garamond',Georgia,serif;
+  --wrap:1180px; --hdr:66px; --ease:cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"]{ --bg:#171014; --bg-2:#20161C; --bg-3:#2A1E25; --bg-4:#241A20;
+  --ink:#F6EDF0; --ink-2:#C4AEB7; --ink-3:#947D88; --line:#33242C; --line-2:#432F39;
+  --rose:#E29BB0; --rose-2:#D4879F; --rose-3:#F0B9C9; --rose-soft:#33222A;
+  --gold:#D9BC7E; --gold-soft:#312717; --plum:#F0DDE4;
+  --ok-soft:#16302A; --warn-soft:#31280F; --err-soft:#331D1C; }
+
+/* ---- derived tokens (CSS owner only; pages should stick to the list above)
+   They exist so the same rule stays readable and >=4.5:1 in both themes.     */
+:root{
+  --on-rose:#FFFFFF;                    /* text drawn on the rose gradient   */
+  --hdr-bg:rgba(252,247,245,.82);       /* translucent sticky header         */
+  --scrim:rgba(74,43,57,.44);           /* modal backdrop                    */
+  --glow:rgba(201,123,146,.26);         /* soft rose radial behind headings  */
+  --glow-2:rgba(194,160,94,.16);        /* gold companion glow               */
+  --thumb:#FFFFFF;                      /* switch / range knob               */
+  --focus:var(--rose);
+
+  /* ---- motion tokens — the whole site's timing lives here (see section 20)
+     Three durations, three easings, one stagger step. Nothing anywhere else
+     may invent its own number; if a moment needs different timing it picks a
+     different token. --dur stays as the historical alias of --dur-2 so every
+     rule written before the motion system keeps working unchanged.          */
+  --dur-1:.12s;      /* press / release — has to read as instant             */
+  --dur-2:.22s;      /* the default: hover, colour, border, open/close       */
+  --dur-3:.42s;      /* one-shot animations only: entrances, the pick        */
+  --dur:var(--dur-2);
+  /* --ease (standard) is declared in the spec block above                   */
+  --ease-out:cubic-bezier(.16,.86,.42,1);   /* decelerate — things arriving  */
+  --ease-pop:cubic-bezier(.34,1.42,.5,1);   /* gentle overshoot — selections */
+  --stagger:44ms;                            /* one step of a staggered list */
+  --halo:rgba(201,123,146,.30);              /* rose bloom behind a choice   */
+  --halo-2:rgba(194,160,94,.34);             /* gold companion, celebrations */
+  --sheen:rgba(255,255,255,.66);             /* skeleton shimmer highlight   */
+  --shine:rgba(194,160,94,.26);              /* the one luxury sweep of light*/
+  /* readable text colours for the soft status grounds (>=4.5:1 both themes) */
+  --ok-ink:#2A6F52; --warn-ink:#7A5410; --err-ink:#9B3A36;
+}
+[data-theme="dark"]{
+  --on-rose:#26121A;
+  --hdr-bg:rgba(23,16,20,.82);
+  --scrim:rgba(6,3,5,.62);
+  --glow:rgba(226,155,176,.16);
+  --glow-2:rgba(217,188,126,.10);
+  --thumb:#F6EDF0;
+  --ok-ink:#7FD3AE; --warn-ink:#E7BE72; --err-ink:#F0938D;
+  --halo:rgba(226,155,176,.26);
+  --halo-2:rgba(217,188,126,.28);
+  --sheen:rgba(255,255,255,.10);
+  --shine:rgba(255,255,255,.11);
+  /* the spec shadows are tuned for the light ground; deepen them on dark     */
+  --sh-1:0 1px 2px rgba(0,0,0,.34),0 4px 14px rgba(0,0,0,.28);
+  --sh-2:0 10px 34px rgba(0,0,0,.46);
+  --sh-3:0 20px 60px rgba(0,0,0,.58);
+}
+
+
+/* =========================================================================
+   01  RESET & DOCUMENT BASE
+   ========================================================================= */
+*,*::before,*::after{ box-sizing:border-box; }
+
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  color-scheme:light;
+}
+[data-theme="dark"]{ color-scheme:dark; }
+
+@media (prefers-reduced-motion:no-preference){
+  html{ scroll-behavior:smooth; }
+}
+
+body{
+  margin:0;
+  min-block-size:100%;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font);
+  font-size:16px;
+  line-height:1.7;                 /* generous leading: Arabic needs the room */
+  font-weight:400;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  overflow-wrap:break-word;
+  transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+/* Belt and braces: stray-wide content must never scroll the page sideways.
+   `clip` is used instead of `hidden` on purpose: `hidden` would turn the
+   element into a scroll container and break `position:sticky` (header,
+   studio preview). `clip` clips without scrolling, so sticky still works.
+   The root needs it too — an absolutely positioned decoration that escapes
+   <body> is otherwise still counted in documentElement.scrollWidth.
+   This is the safety net only; every real overflow is fixed at its source. */
+@supports (overflow:clip){
+  html,body{ overflow-x:clip; }
+}
+
+h1,h2,h3,h4,h5,h6,p,figure,blockquote,dl,dd{ margin:0; }
+ul,ol{ margin:0; padding:0; }
+ul[class],ol[class]{ list-style:none; }
+img,picture,video,canvas,svg{ display:block; max-inline-size:100%; }
+img,video{ block-size:auto; }
+/* Inline SVG stays inside its own box: `max-inline-size` above keeps it from
+   stretching the layout, and this keeps it from painting past its viewBox.
+   The nail/hand art is exempt on purpose — it deliberately lets fingertips
+   and wrists spill out of the viewBox, and clipping it visibly chops the
+   wrists off. Measured: that spill is paint overflow only, it adds nothing to
+   documentElement.scrollWidth, so it is not what makes a page scroll
+   sideways (that was the ::before glows — see .sec-head/.glow below). */
+svg:not([class*="sn-"]){ overflow:hidden; }
+/* SN.UI.icon() output — safe both as a flex item and inside a text run */
+.ico{ display:inline-block; vertical-align:middle; flex:0 0 auto; }
+button,input,select,textarea{ font:inherit; color:inherit; margin:0; }
+button{ background:none; border:0; padding:0; }
+button,[role="button"],label,summary{ cursor:pointer; }
+a{ color:var(--rose-2); text-decoration-thickness:1px; text-underline-offset:3px; }
+a:hover{ color:var(--rose-3); }
+hr{ border:0; border-block-start:1px solid var(--line); margin:0; }
+table{ border-collapse:collapse; border-spacing:0; }
+fieldset{ border:0; margin:0; padding:0; min-inline-size:0; }
+legend{ padding:0; }
+summary{ list-style:none; }
+summary::-webkit-details-marker{ display:none; }
+code,kbd,samp,pre{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.92em; }
+:where(p,li,h1,h2,h3,h4,dd){ overflow-wrap:break-word; }
+[hidden]{ display:none !important; }
+[dir="ltr"]:not(html),bdi{ unicode-bidi:isolate; }
+
+/* anchors must clear the sticky header */
+[id]{ scroll-margin-block-start:calc(var(--hdr) + 18px); }
+
+/* One focus ring, everywhere. `:focus:not(:focus-visible)` is deliberately a
+   standalone rule: engines without :focus-visible drop it and simply keep
+   their native ring, so a keyboard user is never left with no indicator.   */
+:focus:not(:focus-visible){ outline:none; }
+:focus-visible,
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,
+textarea:focus-visible,summary:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--focus);
+  outline-offset:2px;
+}
+/* keyboard users on dark cards still see the ring */
+[data-theme="dark"] :focus-visible{ outline-color:var(--rose-3); }
+
+
+/* =========================================================================
+   02  TYPOGRAPHY
+   ========================================================================= */
+.display{ font-family:var(--font); }
+html[lang="ar"] .display{ font-family:var(--font-ar); }
+html[lang="en"] .display{ font-family:var(--font-en); letter-spacing:.01em; }
+
+h1,.h1,h2,.h2,h3,.h3,h4,.h4{
+  line-height:1.25;
+  font-weight:800;
+  color:var(--ink);
+  text-wrap:balance;
+}
+html[lang="ar"] h1,html[lang="ar"] .h1,
+html[lang="ar"] h2,html[lang="ar"] .h2,
+html[lang="ar"] h3,html[lang="ar"] .h3{ line-height:1.45; }
+
+.h1,h1{ font-size:clamp(2rem,5vw,3.4rem); }
+.h2,h2{ font-size:clamp(1.5rem,3.4vw,2.35rem); }
+/* tighten tracking for Latin only — negative tracking crowds Arabic joins */
+html[lang="en"] .h1,html[lang="en"] h1{ letter-spacing:-.015em; }
+html[lang="en"] .h2,html[lang="en"] h2{ letter-spacing:-.008em; }
+.h3,h3{ font-size:clamp(1.15rem,2.2vw,1.5rem); }
+.h4,h4{ font-size:clamp(1rem,1.7vw,1.15rem); font-weight:700; }
+
+.lead{
+  font-size:clamp(1rem,1.5vw,1.125rem);
+  line-height:1.85;
+  color:var(--ink-2);
+  text-wrap:pretty;
+}
+.muted{ color:var(--ink-2); }
+.dim{ color:var(--ink-3); }
+.center{ text-align:center; }
+.start{ text-align:start; }
+.end{ text-align:end; }
+.strong{ font-weight:700; }
+.small{ font-size:.86rem; }
+.tiny{ font-size:.76rem; }
+.num,.price{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+.up{ text-transform:none; }
+html[lang="en"] .up{ text-transform:uppercase; letter-spacing:.08em; }
+
+/* eyebrow: small rose label with a thin gold hairline underneath          */
+.eyebrow{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  gap:7px;
+  margin-block-end:12px;
+  color:var(--rose-2);
+  font-size:.8rem;
+  font-weight:700;
+  line-height:1.6;
+}
+.eyebrow::after{
+  content:"";
+  inline-size:38px;
+  block-size:2px;
+  border-radius:var(--r-full);
+  background:linear-gradient(90deg,transparent,var(--gold) 35%,var(--gold) 65%,transparent);
+}
+html[lang="en"] .eyebrow{ text-transform:uppercase; letter-spacing:.16em; }
+
+.link{
+  color:var(--rose-2);
+  font-weight:700;
+  text-decoration:none;
+  border-block-end:1px solid transparent;
+  transition:border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.link:hover{ color:var(--rose-3); border-block-end-color:currentColor; }
+
+
+/* =========================================================================
+   03  LAYOUT
+   ========================================================================= */
+.wrap{
+  inline-size:100%;
+  max-inline-size:var(--wrap);
+  margin-inline:auto;
+  padding-inline:clamp(16px,4vw,28px);
+}
+.wrap-narrow{ max-inline-size:820px; }
+.wrap-wide{ max-inline-size:1420px; }
+
+.sec{ position:relative; padding-block:clamp(48px,7vw,96px); }
+.sec-sm{ padding-block:clamp(30px,4.5vw,58px); }
+.sec-alt{ background:var(--bg-4); }
+.sec-line{ border-block-start:1px solid var(--line); }
+
+/* centred section intro + the soft rose glow that gives the site identity */
+.sec-head{
+  position:relative;
+  z-index:0;
+  max-inline-size:680px;
+  margin-inline:auto;
+  margin-block-end:clamp(24px,4vw,46px);
+  text-align:center;
+}
+.sec-head > *{ position:relative; z-index:1; }
+.sec-head::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset-inline:0;
+  inset-block-start:-46%;
+  margin-inline:auto;
+  /* never wider than the head itself: a decoration that overhangs its
+     containing block is real scrollable overflow, and on a phone it dragged
+     the whole document ~91px sideways. The gradient fades out well before
+     its own edge, so capping at 100% is invisible. */
+  inline-size:min(620px,100%);
+  block-size:260px;
+  border-radius:50%;
+  background:radial-gradient(closest-side,var(--glow),transparent 72%);
+  pointer-events:none;
+}
+.sec-head .lead{ margin-block-start:10px; }
+.sec-head-start{ text-align:start; margin-inline:0; }
+
+/* reusable glow for heroes / feature panels */
+.glow{ position:relative; z-index:0; }
+.glow > *{ position:relative; z-index:1; }
+.glow::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset-inline:0;
+  inset-block-start:-8%;
+  margin-inline:auto;
+  /* same rule as .sec-head::before — the glow may not overhang its box */
+  inline-size:min(780px,100%);
+  block-size:min(560px,96%);
+  border-radius:50%;
+  background:
+    radial-gradient(closest-side,var(--glow),transparent 70%),
+    radial-gradient(closest-side,var(--glow-2),transparent 78%);
+  pointer-events:none;
+}
+
+/* grids — every one is usable on its own, no need to combine with .grid */
+.grid,.grid-2,.grid-3,.grid-4{
+  display:grid;
+  gap:clamp(14px,2.2vw,24px);
+  align-items:stretch;
+}
+.grid{ grid-template-columns:repeat(auto-fit,minmax(min(100%,244px),1fr)); }
+.grid-2,.grid-3,.grid-4{ grid-template-columns:1fr; }
+@media (min-width:560px){ .grid-4{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (min-width:640px){ .grid-3{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (min-width:760px){ .grid-2{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (min-width:1000px){
+  .grid-3{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .grid-4{ grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+.grid > *,.grid-2 > *,.grid-3 > *,.grid-4 > *{ min-inline-size:0; }
+.span-2{ grid-column:span 2; }
+@media (max-width:559px){ .span-2{ grid-column:auto; } }
+
+/* vertical rhythm helper */
+.flow > * + *{ margin-block-start:var(--flow,16px); }
+.flow-sm{ --flow:9px; }
+.flow-lg{ --flow:26px; }
+
+.stack{ display:flex; flex-direction:column; gap:12px; }
+.row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.row-end{ margin-inline-start:auto; }
+
+.divider{
+  block-size:1px;
+  border:0;
+  background:linear-gradient(90deg,transparent,var(--line-2),transparent);
+  margin-block:clamp(18px,3vw,30px);
+}
+.divider-v{
+  inline-size:1px;
+  block-size:auto;
+  align-self:stretch;
+  background:var(--line);
+  margin-block:0;
+  margin-inline:4px;
+}
+
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+  margin-block-end:16px;
+}
+.toolbar-end{ margin-inline-start:auto; }
+@media (max-width:520px){
+  .toolbar{ gap:8px; }
+  .toolbar-end{ margin-inline-start:0; }
+}
+
+.panel{
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--sh-1);
+  padding:clamp(16px,2.6vw,24px);
+}
+.panel-soft{ background:var(--bg-4); box-shadow:none; }
+
+
+/* =========================================================================
+   04  ANNOUNCE BAR   (markup from SN.UI.mountAnnounce)
+   ========================================================================= */
+#sn-announce:empty{ display:none; }
+
+.announce{
+  background:linear-gradient(90deg,var(--rose-soft),var(--gold-soft),var(--rose-soft));
+  color:var(--rose-3);
+  border-block-end:1px solid var(--line);
+  font-size:.88rem;
+  font-weight:700;
+}
+.announce-in{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-block-size:40px;
+  padding-block:7px;
+}
+.announce-ico{ display:inline-flex; color:var(--gold); flex:0 0 auto; }
+.announce-txt{ flex:1 1 auto; line-height:1.5; }
+/* two class levels so it beats the later .icon-btn sizing */
+.announce .announce-x{
+  flex:0 0 auto;
+  inline-size:30px;
+  block-size:30px;
+  color:inherit;
+}
+.announce .announce-x:hover{ background:rgba(255,255,255,.45); color:inherit; }
+[data-theme="dark"] .announce .announce-x:hover{ background:rgba(255,255,255,.09); }
+
+
+/* =========================================================================
+   05  HEADER & NAVIGATION   (markup from SN.UI.mountHeader)
+   ========================================================================= */
+#sn-header{
+  position:sticky;
+  inset-block-start:0;
+  z-index:100;
+  background:var(--hdr-bg);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  backdrop-filter:saturate(180%) blur(14px);
+  border-block-end:1px solid var(--line);
+  transition:box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+/* ui.js may add .is-stuck once the page is scrolled — style it defensively  */
+#sn-header.is-stuck,
+body.is-scrolled #sn-header{ box-shadow:var(--sh-1); }
+
+/* browsers without backdrop-filter get a solid bar instead of a washed one */
+@supports not ((backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px))){
+  #sn-header{ background:var(--bg-2); }
+}
+
+.hdr-inner{
+  display:flex;
+  align-items:center;
+  gap:clamp(8px,1.6vw,18px);
+  min-block-size:var(--hdr);
+}
+
+.brand{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  color:var(--ink);
+  text-decoration:none;
+  flex:0 0 auto;
+  border-radius:var(--r-sm);
+  transition:opacity var(--dur) var(--ease);
+}
+.brand:hover{ color:var(--ink); opacity:.85; }
+.brand-mark{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  inline-size:38px;
+  block-size:38px;
+  border-radius:var(--r-sm);
+  color:var(--rose-2);
+  background:linear-gradient(140deg,var(--rose-soft),var(--gold-soft));
+  border:1px solid var(--line);
+  flex:0 0 auto;
+}
+.brand-name{
+  font-size:clamp(1.05rem,2.2vw,1.3rem);
+  font-weight:700;
+  line-height:1.2;
+  white-space:nowrap;
+}
+
+.nav{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  margin-inline-start:auto;
+}
+.nav-a{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  padding-block:9px;
+  padding-inline:13px;
+  border-radius:var(--r-full);
+  color:var(--ink-2);
+  font-size:.95rem;
+  font-weight:700;
+  text-decoration:none;
+  white-space:nowrap;
+  transition:color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.nav-a:hover{ color:var(--ink); background:var(--bg-3); }
+.nav-a.is-active{ color:var(--rose-2); }
+.nav-a.is-active::after{
+  content:"";
+  position:absolute;
+  inset-inline:13px;
+  inset-block-end:3px;
+  block-size:2px;
+  border-radius:var(--r-full);
+  background:linear-gradient(90deg,var(--rose),var(--gold));
+}
+
+.hdr-actions{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-inline-start:auto;
+  flex:0 0 auto;
+}
+.nav ~ .hdr-actions{ margin-inline-start:clamp(6px,1.4vw,14px); }
+.hdr-cta{ white-space:nowrap; }
+.lang-txt{ font-size:.8rem; font-weight:800; letter-spacing:.02em; }
+
+/* ---- mobile: the nav becomes a slide-down panel under the header -------- */
+@media (max-width:900px){
+  .nav{
+    position:absolute;
+    inset-inline:0;
+    inset-block-start:100%;
+    z-index:-1;
+    flex-direction:column;
+    align-items:stretch;
+    gap:2px;
+    margin-inline-start:0;
+    padding-inline:clamp(16px,4vw,28px);
+    padding-block:0;
+    background:var(--bg-2);
+    border-block-end:1px solid var(--line);
+    box-shadow:var(--sh-2);
+    max-block-size:0;
+    opacity:0;
+    overflow:hidden;
+    visibility:hidden;
+    transition:max-block-size var(--dur-2) var(--ease-out),
+               opacity var(--dur-2) var(--ease),
+               padding-block var(--dur-2) var(--ease-out),
+               visibility 0s linear var(--dur-2);
+  }
+  #sn-header.nav-open .nav{
+    max-block-size:min(70vh,460px);
+    opacity:1;
+    visibility:visible;
+    overflow-y:auto;
+    padding-block:10px 14px;
+    transition:max-block-size var(--dur-2) var(--ease-out),
+               opacity var(--dur-2) var(--ease),
+               padding-block var(--dur-2) var(--ease-out),
+               visibility 0s linear 0s;
+  }
+  .nav-a{
+    padding-block:13px;
+    padding-inline:14px;
+    border-radius:var(--r-sm);
+    font-size:1rem;
+  }
+  .nav-a.is-active{ background:var(--rose-soft); }
+  .nav-a.is-active::after{ inset-inline:auto; inset-inline-start:14px; inline-size:16px; inset-block-end:9px; }
+  .nav ~ .hdr-actions{ margin-inline-start:auto; }
+}
+@media (max-width:430px){
+  /* the descendant selector is required: plain `.hdr-cta` ties with `.btn`
+     on specificity and `.btn{display:inline-flex}` is declared later, so the
+     CTA used to stay on screen and push the header row past the viewport */
+  .hdr-actions .hdr-cta{ display:none; }
+  .brand-mark{ inline-size:34px; block-size:34px; }
+  .hdr-actions{ gap:2px; }
+}
+@media (max-width:360px){
+  .brand-name{ font-size:1rem; }
+}
+
+
+/* =========================================================================
+   06  BUTTONS
+   ========================================================================= */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-block-size:44px;                       /* comfortable touch target */
+  padding-block:11px;
+  padding-inline:20px;
+  border:1px solid transparent;
+  border-radius:var(--r-full);
+  background:transparent;
+  color:var(--ink);
+  font-family:inherit;
+  font-size:.95rem;
+  font-weight:700;
+  line-height:1.2;
+  text-align:center;
+  text-decoration:none;
+  white-space:nowrap;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+  transition:background-color var(--dur) var(--ease),
+             border-color var(--dur) var(--ease),
+             color var(--dur) var(--ease),
+             box-shadow var(--dur) var(--ease),
+             transform var(--dur) var(--ease),
+             opacity var(--dur) var(--ease);
+}
+.btn:hover{ color:var(--ink); }
+.btn:active{ transform:translateY(1px); }
+.btn .ico,.btn-ico{ flex:0 0 auto; }
+
+/* primary — the rose gradient */
+.btn-pri{
+  /* both stops stay on the deep roses so white text keeps >=4.5:1 in light
+     and the flipped --on-rose ink keeps it in dark */
+  background-image:linear-gradient(135deg,var(--rose-2) 0%,var(--rose-3) 55%,var(--rose-2) 100%);
+  background-size:150% 150%;
+  background-position:0% 50%;
+  color:var(--on-rose);
+  border-color:transparent;
+  box-shadow:0 6px 18px rgba(168,90,115,.28);
+  transition:background-position calc(var(--dur-2) * 1.4) var(--ease),
+             box-shadow var(--dur) var(--ease),
+             transform var(--dur) var(--ease),
+             opacity var(--dur) var(--ease);
+}
+.btn-pri:hover{
+  color:var(--on-rose);
+  background-position:100% 50%;
+  box-shadow:0 10px 26px rgba(168,90,115,.34);
+  transform:translateY(-1px);
+}
+.btn-pri:active{ transform:translateY(1px); box-shadow:0 4px 12px rgba(168,90,115,.28); }
+[data-theme="dark"] .btn-pri{ box-shadow:0 6px 20px rgba(0,0,0,.45); }
+[data-theme="dark"] .btn-pri:hover{ box-shadow:0 10px 28px rgba(0,0,0,.55); }
+
+/* ghost — no chrome until hovered */
+.btn-ghost{ background:transparent; color:var(--ink); }
+.btn-ghost:hover{ background:var(--bg-3); }
+
+/* line — hairline outline */
+.btn-line{
+  background:var(--bg-2);
+  border-color:var(--line-2);
+  color:var(--ink);
+}
+.btn-line:hover{
+  border-color:var(--rose);
+  color:var(--rose-3);
+  background:var(--rose-soft);
+}
+
+/* soft — filled with the rose tint (handy for secondary CTAs) */
+.btn-soft{ background:var(--rose-soft); color:var(--rose-3); }
+.btn-soft:hover{ background:var(--rose-soft); color:var(--rose-3); filter:brightness(.97); box-shadow:var(--sh-1); }
+
+/* danger */
+.btn-danger{
+  background:var(--err);
+  color:#FFFFFF;
+  border-color:transparent;
+  box-shadow:0 5px 16px rgba(192,84,79,.26);
+}
+.btn-danger:hover{ color:#FFFFFF; filter:brightness(1.06); transform:translateY(-1px); }
+.btn-danger:active{ transform:translateY(1px); }
+.btn-danger-line{ background:transparent; border-color:var(--err); color:var(--err); }
+.btn-danger-line:hover{ background:var(--err-soft); color:var(--err); }
+
+/* sizes & shapes */
+.btn-sm{ min-block-size:36px; padding-block:7px; padding-inline:14px; font-size:.86rem; gap:6px; }
+.btn-lg{ min-block-size:54px; padding-block:15px; padding-inline:30px; font-size:1.05rem; gap:10px; }
+.btn-block{ display:flex; inline-size:100%; }
+
+/* icon-only square button */
+.icon-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  inline-size:40px;
+  block-size:40px;
+  padding:0;
+  border:1px solid transparent;
+  border-radius:var(--r-full);
+  background:transparent;
+  color:var(--ink-2);
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+  transition:background-color var(--dur) var(--ease),
+             color var(--dur) var(--ease),
+             border-color var(--dur) var(--ease),
+             transform var(--dur) var(--ease);
+}
+.icon-btn:hover{ background:var(--bg-3); color:var(--ink); }
+.icon-btn:active{ transform:translateY(1px); }
+.icon-btn-line{ border-color:var(--line-2); background:var(--bg-2); }
+.icon-btn-sm{ inline-size:32px; block-size:32px; }
+.icon-btn-lg{ inline-size:48px; block-size:48px; }
+
+/* disabled / busy — one rule for every button flavour */
+.btn[disabled],.btn:disabled,.btn.is-disabled,
+.icon-btn[disabled],.icon-btn:disabled,.icon-btn.is-disabled,
+.btn[aria-disabled="true"],.icon-btn[aria-disabled="true"]{
+  opacity:.5;
+  cursor:not-allowed;
+  box-shadow:none;
+  transform:none;
+  filter:none;
+  pointer-events:none;
+}
+.btn.is-busy{ pointer-events:none; opacity:.75; }
+
+/* a group of buttons that should wrap nicely */
+.btns{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.btns-end{ justify-content:flex-end; }
+@media (max-width:420px){
+  .btns-stack{ flex-direction:column; align-items:stretch; }
+  .btns-stack > .btn{ inline-size:100%; }
+}
+
+/* arrows follow the writing direction; the back-to-top arrow always points up.
+   undo/redo mirror too: "back" is the start side of the line, whichever side that is.
+   Exception — studio.css opts the charm rotate buttons (.studio-crow-acts) back out,
+   because a rotation direction is absolute and must read the same in both scripts. */
+[dir="rtl"] .ico-arrow,[dir="rtl"] .ico-chevron,
+[dir="rtl"] .ico-undo,[dir="rtl"] .ico-redo{ transform:scaleX(-1); }
+.ft-top .ico-arrow,[dir="rtl"] .ft-top .ico-arrow{ transform:rotate(-90deg); }
+
+
+/* =========================================================================
+   07  FORMS
+   Markup contracts
+   ----------------
+   field   : <div class="field"><label class="label" for="x">…</label>
+             <input id="x" class="input"><p class="field-err">…</p></div>
+   switch  : <label class="switch"><input type="checkbox">
+             <span class="switch-ui"></span><span class="switch-lbl">…</span></label>
+             (the FIRST span after the input is always painted as the track)
+   ========================================================================= */
+.field{ display:flex; flex-direction:column; gap:6px; min-inline-size:0; }
+.label{
+  font-size:.86rem;
+  font-weight:700;
+  color:var(--ink-2);
+  line-height:1.5;
+}
+.label .req{ color:var(--err); margin-inline-start:3px; }
+.hint{ font-size:.79rem; color:var(--ink-3); line-height:1.55; }
+
+.input,.select,.textarea{
+  inline-size:100%;
+  min-inline-size:0;
+  min-block-size:44px;
+  padding-block:10px;
+  padding-inline:14px;
+  background:var(--bg-2);
+  color:var(--ink);
+  border:1px solid var(--line-2);
+  border-radius:var(--r-sm);
+  font-family:inherit;
+  font-size:1rem;
+  line-height:1.5;
+  -webkit-appearance:none;
+  appearance:none;
+  transition:border-color var(--dur) var(--ease),
+             box-shadow var(--dur) var(--ease),
+             background-color var(--dur) var(--ease);
+}
+.textarea{ min-block-size:104px; resize:vertical; line-height:1.7; }
+.input::placeholder,.textarea::placeholder{ color:var(--ink-3); opacity:1; }
+.input:hover,.select:hover,.textarea:hover{ border-color:var(--rose); }
+.input:focus,.select:focus,.textarea:focus,
+.input:focus-visible,.select:focus-visible,.textarea:focus-visible{
+  outline:none;
+  border-color:var(--rose);
+  box-shadow:0 0 0 3px var(--rose-soft);
+}
+.input:disabled,.select:disabled,.textarea:disabled,
+.input[readonly],.textarea[readonly]{
+  background:var(--bg-3);
+  color:var(--ink-2);
+  cursor:not-allowed;
+  opacity:.85;
+}
+.input[type="search"]::-webkit-search-decoration,
+.input[type="search"]::-webkit-search-cancel-button{ -webkit-appearance:none; }
+
+/* invalid */
+.input[aria-invalid="true"],.select[aria-invalid="true"],.textarea[aria-invalid="true"],
+.input.is-err,.select.is-err,.textarea.is-err{
+  border-color:var(--err);
+  background:var(--err-soft);
+}
+.input[aria-invalid="true"]:focus,.select[aria-invalid="true"]:focus,
+.textarea[aria-invalid="true"]:focus,
+.input.is-err:focus,.select.is-err:focus,.textarea.is-err:focus{
+  box-shadow:0 0 0 3px rgba(192,84,79,.22);
+  border-color:var(--err);
+}
+.field-err{
+  display:block;
+  font-size:.79rem;
+  font-weight:700;
+  color:var(--err);
+  line-height:1.5;
+  min-block-size:0;
+}
+.field-err:empty{ display:none; }
+.field-ok{ font-size:.79rem; font-weight:700; color:var(--ok); }
+
+/* native select arrow (physical positioning is direction-scoped on purpose) */
+.select{
+  padding-inline-end:38px;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239C8791' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9l7 7 7-7'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-size:14px 14px;
+  background-position:right 14px center;
+  cursor:pointer;
+}
+[dir="rtl"] .select{ background-position:left 14px center; }
+.select::-ms-expand{ display:none; }
+
+/* rows of fields, side by side, wrapping on small screens */
+.field-row{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
+.field-row > *{ flex:1 1 200px; min-inline-size:0; }
+.field-row > .field-fixed{ flex:0 0 auto; }
+
+/* colour input */
+.input[type="color"],input[type="color"].input,.input-color{
+  padding:4px;
+  inline-size:56px;
+  min-inline-size:56px;
+  block-size:44px;
+  cursor:pointer;
+  border-radius:var(--r-sm);
+}
+.input[type="color"]::-webkit-color-swatch-wrapper{ padding:0; }
+.input[type="color"]::-webkit-color-swatch{ border:0; border-radius:8px; }
+.input[type="color"]::-moz-color-swatch{ border:0; border-radius:8px; }
+
+/* checkbox / radio */
+input[type="checkbox"],input[type="radio"]{
+  accent-color:var(--rose-2);
+  inline-size:18px;
+  block-size:18px;
+  flex:0 0 auto;
+  cursor:pointer;
+}
+.check{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  cursor:pointer;
+  line-height:1.6;
+  font-size:.94rem;
+}
+.check > input{ margin-block-start:3px; }
+.check-card{
+  padding-block:12px;
+  padding-inline:14px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-sm);
+  background:var(--bg-2);
+  transition:border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.check-card:hover{ border-color:var(--rose); }
+.check-card:has(> input:checked){ border-color:var(--rose); background:var(--rose-soft); }
+
+/* switch — checkbox + span */
+.switch{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  line-height:1.5;
+  font-size:.94rem;
+  -webkit-tap-highlight-color:transparent;
+}
+.switch > input{
+  position:absolute;
+  inline-size:1px;
+  block-size:1px;
+  opacity:0;
+  margin:0;
+  pointer-events:none;
+}
+.switch > input + span,.switch-ui{
+  position:relative;
+  flex:0 0 auto;
+  inline-size:46px;
+  block-size:26px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  border:1px solid var(--line-2);
+  transition:background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.switch > input + span::after,.switch-ui::after{
+  content:"";
+  position:absolute;
+  inset-block-start:2px;
+  inset-inline-start:2px;
+  inline-size:20px;
+  block-size:20px;
+  border-radius:50%;
+  background:var(--thumb);
+  box-shadow:0 1px 3px rgba(74,43,57,.28);
+  transition:inset-inline-start var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.switch > input:checked + span,.switch.is-on .switch-ui{
+  background-image:linear-gradient(135deg,var(--rose-2),var(--rose-3));
+  background-color:var(--rose-2);
+  border-color:transparent;
+}
+.switch > input:checked + span::after,.switch.is-on .switch-ui::after{
+  inset-inline-start:22px;
+}
+.switch > input:focus-visible + span{ outline:2px solid var(--focus); outline-offset:2px; }
+.switch > input:disabled + span{ opacity:.5; }
+.switch > input:disabled ~ *{ opacity:.6; }
+.switch-lbl{ min-inline-size:0; }
+
+/* range slider */
+.range{
+  inline-size:100%;
+  block-size:26px;
+  background:transparent;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+}
+.range:focus:not(:focus-visible){ outline:none; }
+.range:focus-visible{ outline:2px solid var(--focus); outline-offset:4px; border-radius:var(--r-full); }
+.range::-webkit-slider-runnable-track{
+  height:6px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  border:1px solid var(--line);
+}
+.range::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:20px;
+  height:20px;
+  margin-top:-8px;                 /* webkit pseudo: physical is the safe bet */
+  margin-block-start:-8px;
+  border-radius:50%;
+  background:var(--rose-2);
+  border:2px solid var(--bg-2);
+  box-shadow:var(--sh-1);
+  transition:transform var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.range:hover::-webkit-slider-thumb{ transform:scale(1.08); }
+.range::-moz-range-track{
+  height:6px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  border:1px solid var(--line);
+}
+.range::-moz-range-thumb{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:var(--rose-2);
+  border:2px solid var(--bg-2);
+  box-shadow:var(--sh-1);
+}
+.range:disabled{ opacity:.5; cursor:not-allowed; }
+
+/* a search input with a leading icon */
+.search{ position:relative; display:flex; align-items:center; inline-size:100%; }
+.search > .ico,.search .search-ico{
+  position:absolute;
+  inset-inline-start:13px;
+  color:var(--ink-3);
+  pointer-events:none;
+}
+.search > .input{ padding-inline-start:42px; }
+
+
+/* =========================================================================
+   08  SWATCH / CHIP / TAG / PILL / BADGE / STARS
+   .swatch expects its colour inline: <button class="swatch" style="background:#F3D9DE">
+   ========================================================================= */
+.swatch{
+  position:relative;
+  display:inline-block;
+  flex:0 0 auto;
+  inline-size:38px;
+  block-size:38px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background-color:var(--bg-3);
+  background-clip:padding-box;
+  cursor:pointer;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.6),
+             inset 0 0 0 3px rgba(74,43,57,.10),
+             0 1px 3px rgba(74,43,57,.14);
+  transition:transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.swatch:hover{ transform:scale(1.07); }
+.swatch-sm{ inline-size:28px; block-size:28px; }
+.swatch-lg{ inline-size:52px; block-size:52px; }
+
+.swatch-on,.swatch.is-on,.swatch[aria-pressed="true"],.swatch[aria-checked="true"]{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.75),
+             0 0 0 2px var(--bg-2),
+             0 0 0 4px var(--rose);
+}
+.swatch-on::after,.swatch.is-on::after,
+.swatch[aria-pressed="true"]::after,.swatch[aria-checked="true"]::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  margin:auto;
+  inline-size:15px;
+  block-size:15px;
+  background:#FFFFFF;
+  -webkit-mask-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.6 12.6l4.8 4.8L19.4 7'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.6 12.6l4.8 4.8L19.4 7'/%3E%3C/svg%3E");
+  -webkit-mask-size:contain;
+  mask-size:contain;
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.55));
+  pointer-events:none;
+}
+.swatch[disabled]{ opacity:.45; cursor:not-allowed; }
+
+/* a labelled swatch column, used by the colour pickers */
+.swatch-cell{
+  display:inline-flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  inline-size:min-content;
+  text-align:center;
+}
+.swatch-cell .swatch-name{ font-size:.7rem; color:var(--ink-2); line-height:1.35; max-inline-size:64px; }
+.swatches{ display:flex; flex-wrap:wrap; gap:10px; }
+
+/* chips = pill filters */
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  max-inline-size:100%;            /* a long label may never widen its row */
+  min-block-size:36px;
+  padding-block:7px;
+  padding-inline:14px;
+  border:1px solid var(--line-2);
+  border-radius:var(--r-full);
+  background:var(--bg-2);
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:.86rem;
+  font-weight:700;
+  line-height:1.3;
+  white-space:nowrap;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+  transition:background-color var(--dur) var(--ease),
+             color var(--dur) var(--ease),
+             border-color var(--dur) var(--ease),
+             transform var(--dur) var(--ease);
+}
+.chip:hover{ border-color:var(--rose); color:var(--ink); }
+.chip:active{ transform:translateY(1px); }
+.chip-on,.chip.is-on,.chip[aria-pressed="true"],.chip[aria-selected="true"]{
+  background:var(--rose-soft);
+  border-color:var(--rose);
+  color:var(--rose-3);
+}
+.chip[disabled]{ opacity:.5; cursor:not-allowed; }
+.chips{ display:flex; flex-wrap:wrap; gap:8px; }
+
+/* static labels */
+.tag{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding-block:3px;
+  padding-inline:9px;
+  border-radius:var(--r-xs);
+  background:var(--bg-3);
+  color:var(--ink-2);
+  font-size:.74rem;
+  font-weight:700;
+  line-height:1.6;
+  white-space:nowrap;
+}
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding-block:5px;
+  padding-inline:12px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  color:var(--ink-2);
+  font-size:.8rem;
+  font-weight:700;
+  line-height:1.6;
+  white-space:nowrap;
+}
+.pill-rose{ background:var(--rose-soft); color:var(--rose-3); }
+.pill-gold{ background:var(--gold-soft); color:var(--plum); }
+.pill-line{ background:transparent; border:1px solid var(--line-2); }
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding-block:4px;
+  padding-inline:10px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  color:var(--ink-2);
+  font-size:.73rem;
+  font-weight:800;
+  line-height:1.5;
+  white-space:nowrap;
+}
+.badge-hot{
+  background-image:linear-gradient(120deg,var(--gold-soft),var(--rose-soft));
+  border:1px solid var(--gold);
+  color:var(--rose-3);
+  box-shadow:0 2px 10px rgba(194,160,94,.22);
+}
+.badge-ok{ background:var(--ok-soft); color:var(--ok-ink); }
+.badge-warn{ background:var(--warn-soft); color:var(--warn-ink); }
+.badge-err{ background:var(--err-soft); color:var(--err-ink); }
+.badge-new{ background:var(--rose-soft); color:var(--rose-3); }
+
+/* a badge floating over a card image */
+.badge-float{
+  position:absolute;
+  inset-block-start:10px;
+  inset-inline-start:10px;
+  z-index:2;
+}
+
+/* rating stars: <span class="stars" aria-label="…">★★★★★</span> */
+.stars{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  color:var(--gold);
+  font-size:.95rem;
+  line-height:1;
+  letter-spacing:.06em;
+  white-space:nowrap;
+}
+.stars .ico{ inline-size:1em; block-size:1em; }
+.stars-off{ color:var(--line-2); }
+
+
+/* =========================================================================
+   09  CARDS
+   ========================================================================= */
+.card{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  min-inline-size:0;
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--sh-1);
+  overflow:hidden;
+  transition:box-shadow var(--dur) var(--ease),
+             transform var(--dur) var(--ease),
+             border-color var(--dur) var(--ease);
+}
+.card:hover{
+  box-shadow:var(--sh-2);
+  border-color:var(--line-2);
+  transform:translateY(-3px);
+}
+a.card,.card a.card-link{ text-decoration:none; color:inherit; }
+.card:focus-within{ border-color:var(--rose); }
+
+.card-media{
+  position:relative;
+  aspect-ratio:4/5;
+  background:var(--bg-4);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+}
+.card-media > img{ inline-size:100%; block-size:100%; object-fit:cover; }
+.card-media > svg{ inline-size:100%; block-size:100%; }
+.card-media-wide{ aspect-ratio:4/3; }
+.card-media-sq{ aspect-ratio:1/1; }
+/* soft rose wash so a rendered nail never floats on flat white */
+.card-media::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(120% 90% at 50% 12%,var(--glow),transparent 68%);
+  pointer-events:none;
+}
+.card-media > *{ position:relative; z-index:1; }
+
+.card-b{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  flex:1 1 auto;
+  padding:clamp(14px,2vw,18px);
+  min-inline-size:0;
+}
+.card-t{ font-size:1.02rem; font-weight:700; line-height:1.45; color:var(--ink); }
+.card-x{ font-size:.88rem; color:var(--ink-2); line-height:1.7; }
+.card-f{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-block-start:auto;
+  padding-block-start:4px;
+}
+.card-price{ font-size:1.05rem; font-weight:800; color:var(--rose-3); }
+.card-flat{ box-shadow:none; }
+.card-flat:hover{ transform:none; box-shadow:var(--sh-1); }
+.card-pad{ padding:clamp(16px,2.6vw,24px); }
+
+/* clamp long copy to keep card heights even */
+.clamp-2,.clamp-3{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.clamp-2{ -webkit-line-clamp:2; }
+.clamp-3{ -webkit-line-clamp:3; }
+
+
+/* =========================================================================
+   10  TABS
+   ========================================================================= */
+/* The strip is a horizontal scroller in its own right: however many tabs it
+   holds, it scrolls inside its own box and never widens the page. That needs
+   three things together — `min-inline-size:0` so it may shrink below its
+   max-content size inside a flex/grid parent, `max-inline-size:100%` so it
+   may not outgrow the parent, and `flex-wrap:nowrap` so the buttons queue up
+   instead of stacking. The tabs themselves stay unshrinkable (.tab below). */
+.tabs{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:8px;
+  min-inline-size:0;
+  max-inline-size:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  -webkit-overflow-scrolling:touch;
+  scroll-snap-type:inline proximity;
+  padding-block:6px;               /* room for the focus ring, not clipped */
+  padding-inline:4px;              /* same on the inline axis for the first/last tab */
+  margin-inline:-4px;              /* …pulled back out, so nothing moves */
+  margin-block-end:18px;
+  scroll-padding-inline:16px;
+}
+.tabs::-webkit-scrollbar{ display:none; }
+.tabs-center{ justify-content:flex-start; }
+@media (min-width:760px){ .tabs-center{ justify-content:center; } }
+
+.tab{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex:0 0 auto;                   /* never squeezed — the strip scrolls instead */
+  scroll-snap-align:start;
+  min-block-size:40px;
+  padding-block:9px;
+  padding-inline:16px;
+  border:1px solid var(--line);
+  border-radius:var(--r-full);
+  background:var(--bg-2);
+  color:var(--ink-2);
+  font-family:inherit;
+  font-size:.9rem;
+  font-weight:700;
+  line-height:1.3;
+  white-space:nowrap;
+  cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+  transition:background-color var(--dur) var(--ease),
+             color var(--dur) var(--ease),
+             border-color var(--dur) var(--ease);
+}
+.tab:hover{ color:var(--ink); border-color:var(--rose); }
+.tab-on,.tab.is-on,.tab[aria-selected="true"],.tab[aria-current="true"]{
+  background:var(--rose-soft);
+  border-color:var(--rose);
+  color:var(--rose-3);
+}
+.tab[disabled]{ opacity:.5; cursor:not-allowed; }
+.tab .tab-n{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-inline-size:20px;
+  block-size:20px;
+  padding-inline:5px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  font-size:.7rem;
+}
+.tab-on .tab-n,.tab.is-on .tab-n,.tab[aria-selected="true"] .tab-n{ background:var(--bg-2); }
+
+/* underline variant: <div class="tabs tabs-line"> */
+.tabs-line{ gap:2px; border-block-end:1px solid var(--line); padding-block:0; }
+.tabs-line .tab{
+  border:0;
+  border-radius:0;
+  background:transparent;
+  padding-inline:14px;
+  min-block-size:44px;
+  position:relative;
+}
+.tabs-line .tab::after{
+  content:"";
+  position:absolute;
+  inset-inline:8px;
+  inset-block-end:-1px;
+  block-size:2px;
+  border-radius:var(--r-full);
+  background:transparent;
+  transition:background-color var(--dur) var(--ease);
+}
+.tabs-line .tab-on,.tabs-line .tab.is-on,.tabs-line .tab[aria-selected="true"]{
+  background:transparent;
+  color:var(--rose-3);
+}
+.tabs-line .tab-on::after,
+.tabs-line .tab.is-on::after,
+.tabs-line .tab[aria-selected="true"]::after{
+  background:linear-gradient(90deg,var(--rose),var(--gold));
+}
+
+.tab-panel[hidden]{ display:none; }
+
+
+/* =========================================================================
+   11  ACCORDION
+   Open state may be set on the item (.acc-item.is-open), on the body
+   (.acc-body.is-open) or via the head's aria-expanded — all three work.
+   ========================================================================= */
+.accordion{ display:flex; flex-direction:column; gap:10px; }
+
+.acc-item{
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  overflow:hidden;
+  transition:border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.acc-item:hover{ border-color:var(--line-2); }
+.acc-item.is-open{ border-color:var(--rose); box-shadow:var(--sh-1); }
+.acc-item:target{ border-color:var(--rose); }
+
+.acc-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  inline-size:100%;
+  padding-block:15px;
+  padding-inline:clamp(14px,2.2vw,20px);
+  background:transparent;
+  border:0;
+  color:var(--ink);
+  font-family:inherit;
+  font-size:1rem;
+  font-weight:700;
+  line-height:1.6;
+  text-align:start;
+  cursor:pointer;
+  transition:background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.acc-head:hover{ background:var(--bg-4); }
+/* the head fills .acc-item edge to edge and the item clips (overflow:hidden for
+   its rounded corners), so an outside ring is swallowed — draw this one inside. */
+.acc-head:focus-visible{ outline-offset:-2px; }
+.acc-head > span:first-child{ flex:1 1 auto; min-inline-size:0; }
+.acc-head .ico{
+  flex:0 0 auto;
+  color:var(--rose-2);
+  transition:transform var(--dur) var(--ease);
+}
+.acc-item.is-open > .acc-head .ico,
+.acc-head[aria-expanded="true"] .ico{ transform:rotate(90deg); }
+[dir="rtl"] .acc-item.is-open > .acc-head .ico-chevron,
+[dir="rtl"] .acc-head[aria-expanded="true"] .ico-chevron{ transform:scaleX(-1) rotate(90deg); }
+
+.acc-body{
+  display:grid;
+  grid-template-rows:0fr;
+  overflow:hidden;                 /* also clips bare text with no .acc-in wrapper */
+  transition:grid-template-rows var(--dur) var(--ease);
+}
+.acc-body > *{ overflow:hidden; min-block-size:0; }
+.acc-item.is-open > .acc-body,
+.acc-body.is-open,
+.acc-head[aria-expanded="true"] + .acc-body{ grid-template-rows:1fr; }
+.acc-in{
+  padding-block:0 18px;
+  padding-inline:clamp(14px,2.2vw,20px);
+  color:var(--ink-2);
+  line-height:1.85;
+}
+
+
+/* =========================================================================
+   12  TABLES
+   ========================================================================= */
+.table-wrap{
+  inline-size:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  box-shadow:var(--sh-1);
+}
+.table-wrap.is-tall{ max-block-size:70vh; overflow-y:auto; }
+
+.table{
+  inline-size:100%;
+  min-inline-size:480px;
+  border-collapse:collapse;
+  font-size:.92rem;
+  font-variant-numeric:tabular-nums;
+}
+.table th,.table td{
+  padding-block:11px;
+  padding-inline:14px;
+  text-align:start;
+  vertical-align:middle;
+  border-block-end:1px solid var(--line);
+  line-height:1.6;
+}
+.table thead th{
+  position:sticky;
+  inset-block-start:0;
+  z-index:1;
+  background:var(--bg-3);
+  color:var(--ink-2);
+  font-size:.8rem;
+  font-weight:800;
+  white-space:nowrap;
+  border-block-end:1px solid var(--line-2);
+}
+.table tbody tr{ transition:background-color var(--dur) var(--ease); }
+.table tbody tr:nth-child(even){ background:var(--bg-4); }
+.table tbody tr:hover{ background:var(--rose-soft); }
+.table tbody tr:last-child td{ border-block-end:0; }
+.table td.num,.table th.num{ text-align:end; }
+.table .t-actions{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+.table caption{
+  caption-side:top;
+  padding-block:12px;
+  padding-inline:14px;
+  text-align:start;
+  font-weight:700;
+  color:var(--ink-2);
+}
+/* totals table (checkout / price breakdown) reads better without a min width */
+.table-sum{ min-inline-size:0; }
+.table-sum td:last-child,.table-sum th:last-child{ text-align:end; white-space:nowrap; }
+.table-sum .is-total td{
+  font-size:1.05rem;
+  font-weight:800;
+  color:var(--rose-3);
+  border-block-start:1px solid var(--line-2);
+}
+
+
+/* =========================================================================
+   13  EMPTY STATE / SPINNER / PROGRESS / NOTE
+   ========================================================================= */
+.empty{
+  display:grid;
+  place-items:center;
+  gap:10px;
+  padding-block:clamp(38px,7vw,64px);
+  padding-inline:20px;
+  color:var(--ink-3);
+  text-align:center;
+}
+.empty .ico,.empty-ico{
+  inline-size:40px;
+  block-size:40px;
+  color:var(--rose);
+  opacity:.55;
+}
+.empty-t{ font-size:1.05rem; font-weight:700; color:var(--ink-2); }
+.empty-x{ font-size:.9rem; max-inline-size:44ch; line-height:1.7; }
+
+.spinner{
+  display:inline-block;
+  inline-size:24px;
+  block-size:24px;
+  border:2px solid var(--line-2);
+  border-block-start-color:var(--rose-2);
+  border-radius:50%;
+  animation:sn-spin calc(var(--dur-3) * 1.7) linear infinite;
+  vertical-align:middle;
+}
+.spinner-lg{ inline-size:38px; block-size:38px; border-width:3px; }
+.spinner-c{ display:grid; place-items:center; gap:12px; padding-block:40px; color:var(--ink-3); }
+@keyframes sn-spin{ to{ transform:rotate(360deg); } }
+
+.progress{
+  inline-size:100%;
+  block-size:6px;
+  border-radius:var(--r-full);
+  background:var(--bg-3);
+  overflow:hidden;
+}
+.progress > span,.progress-bar{
+  display:block;
+  block-size:100%;
+  inline-size:0%;
+  border-radius:var(--r-full);
+  background:linear-gradient(90deg,var(--rose),var(--gold));
+  transition:inline-size var(--dur-3) var(--ease-out);
+}
+
+.note{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding-block:12px;
+  padding-inline:14px;
+  border-radius:var(--r-sm);
+  background:var(--bg-4);
+  border:1px solid var(--line);
+  color:var(--ink-2);
+  font-size:.9rem;
+  line-height:1.7;
+}
+.note .ico{ flex:0 0 auto; margin-block-start:2px; color:var(--rose-2); }
+.note-ok{ background:var(--ok-soft); border-color:transparent; color:var(--ok-ink); }
+.note-warn{ background:var(--warn-soft); border-color:transparent; color:var(--warn-ink); }
+.note-err{ background:var(--err-soft); border-color:transparent; color:var(--err-ink); }
+.note-ok .ico{ color:var(--ok-ink); }
+.note-warn .ico{ color:var(--warn-ink); }
+.note-err .ico{ color:var(--err-ink); }
+
+
+/* =========================================================================
+   14  TOASTS   (markup from SN.UI.toast — .toast-ok / .toast-err / .toast-info,
+                 plus .is-in / .is-out; .is-ok / .is-err / .is-info also work)
+   ========================================================================= */
+.toast-wrap{
+  position:fixed;
+  z-index:300;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  inset-inline:12px;
+  inset-block-end:calc(14px + env(safe-area-inset-bottom,0px));
+  pointer-events:none;
+}
+@media (min-width:721px){
+  .toast-wrap{
+    align-items:flex-start;
+    inset-inline-end:auto;
+    inset-inline-start:20px;
+    inset-block-end:calc(20px + env(safe-area-inset-bottom,0px));
+    max-inline-size:400px;
+  }
+}
+
+.toast{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  inline-size:100%;
+  max-inline-size:480px;
+  padding-block:11px;
+  padding-inline:14px;
+  background:var(--bg-2);
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:var(--r-sm);
+  box-shadow:var(--sh-2);
+  font-size:.92rem;
+  font-weight:700;
+  line-height:1.55;
+  pointer-events:auto;
+  animation:sn-toast-in var(--dur-3) var(--ease-out) both;
+}
+.toast-ico{ display:inline-flex; flex:0 0 auto; color:var(--rose-2); }
+.toast-txt{ flex:1 1 auto; min-inline-size:0; }
+.toast-x{
+  flex:0 0 auto;
+  inline-size:28px;
+  block-size:28px;
+  color:var(--ink-3);
+}
+.toast-ok,.toast.is-ok{ border-color:var(--ok); background:var(--ok-soft); color:var(--ok-ink); }
+.toast-err,.toast.is-err{ border-color:var(--err); background:var(--err-soft); color:var(--err-ink); }
+.toast-info,.toast.is-info{ border-color:var(--rose); background:var(--rose-soft); color:var(--rose-3); }
+.toast-ok .toast-ico,.toast.is-ok .toast-ico{ color:var(--ok-ink); }
+.toast-err .toast-ico,.toast.is-err .toast-ico{ color:var(--err-ink); }
+.toast-info .toast-ico,.toast.is-info .toast-ico{ color:var(--rose-3); }
+.toast-ok .toast-x,.toast-err .toast-x,.toast-info .toast-x{ color:inherit; opacity:.7; }
+.toast.is-out{ animation:sn-toast-out var(--dur-2) var(--ease) both; }
+
+@keyframes sn-toast-in{
+  from{ opacity:0; transform:translateY(16px) scale(.96); }
+  to{ opacity:1; transform:none; }
+}
+@keyframes sn-toast-out{
+  from{ opacity:1; transform:none; }
+  to{ opacity:0; transform:translateY(8px) scale(.98); }
+}
+
+
+/* =========================================================================
+   15  MODAL / SHEET   (markup from SN.UI.modal / SN.UI.sheet / SN.UI.confirm)
+   sizes: .modal-sm|.modal-md|.modal-lg  (aliases .is-sm|.is-md|.is-lg)
+   ========================================================================= */
+.modal-back{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  display:grid;
+  place-items:center;
+  padding:clamp(12px,3vw,28px);
+  padding-block-end:calc(clamp(12px,3vw,28px) + env(safe-area-inset-bottom,0px));
+  background:var(--scrim);
+  -webkit-backdrop-filter:blur(6px);
+  backdrop-filter:blur(6px);
+  overflow:auto;
+  animation:sn-fade var(--dur-2) var(--ease-out) both;
+}
+.modal{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  inline-size:100%;
+  max-inline-size:620px;
+  max-block-size:88vh;
+  background:var(--bg-2);
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  box-shadow:var(--sh-3);
+  overflow:hidden;
+  animation:sn-pop var(--dur-2) var(--ease-out) both;
+}
+@supports (max-block-size:88dvh){ .modal{ max-block-size:88dvh; } }
+.modal:focus{ outline:none; }
+.modal-sm,.modal.is-sm{ max-inline-size:440px; }
+.modal-md,.modal.is-md{ max-inline-size:620px; }
+.modal-lg,.modal.is-lg{ max-inline-size:940px; }
+
+.modal-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex:0 0 auto;
+  padding-block:14px;
+  padding-inline:clamp(16px,3vw,24px);
+  border-block-end:1px solid var(--line);
+  background:var(--bg-2);
+}
+.modal-title{
+  flex:1 1 auto;
+  min-inline-size:0;
+  margin:0;
+  font-size:clamp(1.05rem,2vw,1.3rem);
+  font-weight:700;
+  line-height:1.45;
+}
+.modal-x{ flex:0 0 auto; margin-inline-start:auto; }
+
+.modal-body{
+  flex:1 1 auto;
+  min-block-size:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:clamp(16px,3vw,24px);
+  overscroll-behavior:contain;
+}
+.modal-text{ margin:0; }
+
+.modal-foot{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex:0 0 auto;
+  flex-wrap:wrap;
+  padding-block:14px;
+  padding-inline:clamp(16px,3vw,24px);
+  border-block-start:1px solid var(--line);
+  background:var(--bg-2);
+}
+.modal-foot > .btn{ min-inline-size:110px; }
+@media (max-width:460px){
+  .modal-foot{ flex-direction:column-reverse; align-items:stretch; }
+  .modal-foot > .btn{ inline-size:100%; }
+}
+.modal-confirm .modal-body{ padding-block-end:6px; }
+
+/* ---- bottom sheet ------------------------------------------------------ */
+@media (max-width:720px){
+  .modal-back.is-sheet{
+    align-items:end;
+    padding:0;
+    padding-block-start:56px;
+  }
+  .modal-back.is-sheet .modal,
+  .modal.sheet{
+    inline-size:100%;
+    max-inline-size:none;
+    max-block-size:92vh;
+    border-start-start-radius:var(--r-lg);
+    border-start-end-radius:var(--r-lg);
+    border-end-start-radius:0;
+    border-end-end-radius:0;
+    border-block-end:0;
+    padding-block-start:10px;
+    animation:sn-sheet-up var(--dur-3) var(--ease-out) both;
+  }
+  @supports (max-block-size:92dvh){
+    .modal-back.is-sheet .modal,.modal.sheet{ max-block-size:92dvh; }
+  }
+  /* the drag handle */
+  .modal-back.is-sheet .modal::before,
+  .modal.sheet::before{
+    content:"";
+    display:block;
+    inline-size:44px;
+    block-size:4px;
+    margin-inline:auto;
+    margin-block-end:6px;
+    border-radius:var(--r-full);
+    background:var(--line-2);
+    flex:0 0 auto;
+  }
+  .modal-back.is-sheet .modal-foot,
+  .modal.sheet .modal-foot{
+    padding-block-end:calc(14px + env(safe-area-inset-bottom,0px));
+  }
+}
+
+@keyframes sn-fade{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes sn-pop{
+  from{ opacity:0; transform:translateY(12px) scale(.97); }
+  to{ opacity:1; transform:none; }
+}
+/* a bottom sheet comes up from off the bottom of the phone, the way every
+   native one does — anything less reads as a box that blinked into place */
+@keyframes sn-sheet-up{
+  from{ opacity:.5; transform:translateY(100%); }
+  to{ opacity:1; transform:none; }
+}
+
+
+/* =========================================================================
+   16  FOOTER   (markup from SN.UI.mountFooter)
+   ========================================================================= */
+#sn-footer{
+  margin-block-start:clamp(40px,6vw,80px);
+  background:var(--bg-4);
+  border-block-start:1px solid var(--line);
+  color:var(--ink-2);
+}
+#sn-footer:empty{ display:none; margin:0; }
+
+.ft-inner{ padding-block:clamp(34px,5vw,58px) 0; }
+
+.ft-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:clamp(24px,3.4vw,38px);
+}
+@media (min-width:620px){ .ft-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (min-width:980px){ .ft-grid{ grid-template-columns:1.5fr 1fr 1.1fr 1.1fr; } }
+
+.ft-col{ min-inline-size:0; display:flex; flex-direction:column; gap:10px; }
+.ft-brandcol .brand{ margin-block-end:2px; }
+.ft-brandcol .brand-name{ font-size:1.2rem; }
+.ft-tag{ font-size:.92rem; font-weight:700; color:var(--rose-2); }
+.ft-about{ font-size:.9rem; line-height:1.85; max-inline-size:44ch; }
+
+.ft-head{
+  font-size:.86rem;
+  font-weight:800;
+  color:var(--ink);
+  letter-spacing:.01em;
+  margin-block-end:2px;
+}
+.ft-head-2{ margin-block-start:14px; }
+
+.ft-list{ display:flex; flex-direction:column; gap:6px; list-style:none; }
+.ft-a{
+  display:inline-block;
+  padding-block:3px;
+  color:var(--ink-2);
+  font-size:.92rem;
+  text-decoration:none;
+  border-radius:var(--r-xs);
+  transition:color var(--dur) var(--ease), padding-inline-start var(--dur) var(--ease);
+}
+.ft-a:hover{ color:var(--rose-2); padding-inline-start:4px; }
+
+.ft-rows{ display:flex; flex-direction:column; gap:8px; }
+.ft-row{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:var(--ink-2);
+  font-size:.9rem;
+  text-decoration:none;
+  line-height:1.6;
+  transition:color var(--dur) var(--ease);
+}
+a.ft-row:hover{ color:var(--rose-2); }
+.ft-ico{ display:inline-flex; flex:0 0 auto; color:var(--rose); }
+.ft-val{ min-inline-size:0; overflow-wrap:anywhere; text-align:start; }
+
+.ft-social{ display:flex; flex-wrap:wrap; gap:8px; margin-block-start:6px; }
+.ft-soc{
+  inline-size:38px;
+  block-size:38px;
+  border:1px solid var(--line-2);
+  background:var(--bg-2);
+  color:var(--ink-2);
+}
+.ft-soc:hover{ color:var(--rose-2); border-color:var(--rose); background:var(--rose-soft); }
+.ft-soc-wa:hover{ color:#25A366; border-color:#25A366; }
+
+.ft-bot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-block-start:clamp(26px,4vw,40px);
+  padding-block:16px calc(16px + env(safe-area-inset-bottom,0px));
+  border-block-start:1px solid var(--line);
+}
+.ft-copy{ font-size:.82rem; color:var(--ink-3); }
+.ft-bot-actions{ display:flex; align-items:center; gap:8px; margin-inline-start:auto; }
+.ft-admin{
+  font-size:.8rem;
+  color:var(--ink-3);
+  text-decoration:none;
+  padding-block:6px;
+  padding-inline:10px;
+  border-radius:var(--r-full);
+  transition:color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.ft-admin:hover{ color:var(--ink-2); background:var(--bg-3); }
+.ft-top{ border:1px solid var(--line-2); background:var(--bg-2); }
+@media (max-width:520px){
+  .ft-bot{ justify-content:center; text-align:center; }
+  .ft-bot-actions{ margin-inline-start:0; }
+}
+
+
+/* =========================================================================
+   17  NAIL SVG HOOKS  (SN.Nail draws its own selection stroke; CSS only adds
+       the pointer + focus affordances so PNG export stays identical)
+   ========================================================================= */
+.nail{ transition:opacity var(--dur) var(--ease); }
+.nail[role="button"],.nail[tabindex]{ cursor:pointer; }
+.nail[role="button"]:hover{ opacity:.88; }
+.nail:focus:not(:focus-visible){ outline:none; }
+/* SN.Nail ships every nail <g> with an inline style="cursor:pointer;outline:none"
+   so the exported SVG carries no ring. An inline declaration outranks any rule
+   here, which left the ten nail buttons with no keyboard indicator at all — the
+   one place !important is the correct tool. The export is untouched: this rule
+   lives in the stylesheet, never in the serialised markup. */
+.nail:focus-visible{ outline:2px solid var(--focus) !important; outline-offset:2px; }
+.hand-svg,.nail-svg{ inline-size:100%; block-size:auto; overflow:visible; }
+.nail-charm{ pointer-events:none; }
+
+
+/* =========================================================================
+   18  UTILITIES
+   ========================================================================= */
+.sr-only{
+  position:absolute !important;
+  inline-size:1px;
+  block-size:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  clip-path:inset(50%);
+  white-space:nowrap;
+  border:0;
+}
+
+.skip-link{
+  position:fixed;
+  z-index:400;
+  inset-block-start:-120px;
+  inset-inline-start:12px;
+  padding-block:11px;
+  padding-inline:18px;
+  background:var(--bg-2);
+  color:var(--ink);
+  border:1px solid var(--rose);
+  border-radius:var(--r-sm);
+  box-shadow:var(--sh-2);
+  font-weight:700;
+  text-decoration:none;
+  transition:inset-block-start var(--dur) var(--ease);
+}
+.skip-link:focus,.skip-link:focus-visible{ inset-block-start:12px; }
+
+@media (min-width:901px){ .only-mob{ display:none !important; } }
+@media (max-width:900px){ .only-desk{ display:none !important; } }
+
+.hide{ display:none !important; }
+.block{ display:block; }
+.inline-flex{ display:inline-flex; align-items:center; gap:6px; }
+.full{ inline-size:100%; }
+.nowrap{ white-space:nowrap; }
+.rel{ position:relative; }
+.mt-0{ margin-block-start:0; }
+.mt-1{ margin-block-start:8px; }
+.mt-2{ margin-block-start:16px; }
+.mt-3{ margin-block-start:26px; }
+.mb-1{ margin-block-end:8px; }
+.mb-2{ margin-block-end:16px; }
+.mb-3{ margin-block-end:26px; }
+.gap-1{ gap:8px; }
+.gap-2{ gap:16px; }
+.ltr{ direction:ltr; text-align:start; unicode-bidi:isolate; }
+.scroll-x{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.scroll-x::-webkit-scrollbar{ display:none; }
+
+/* a soft rose ground for teaser strips */
+.tint{ background:linear-gradient(180deg,var(--bg-4),var(--bg)); }
+.tint-rose{ background:var(--rose-soft); }
+.hairline{ border-block-end:1px solid var(--line); }
+
+
+/* =========================================================================
+   19  SCROLLBARS & SELECTION
+   ========================================================================= */
+::selection{ background:var(--rose-soft); color:var(--rose-3); }
+*{ scrollbar-color:var(--line-2) transparent; scrollbar-width:thin; }
+::-webkit-scrollbar{ inline-size:10px; block-size:10px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{
+  background:var(--line-2);
+  border-radius:var(--r-full);
+  border:2px solid transparent;
+  background-clip:content-box;
+}
+::-webkit-scrollbar-thumb:hover{ background:var(--ink-3); background-clip:content-box; }
+
+
+/* =========================================================================
+   20  MOTION SYSTEM
+   -------------------------------------------------------------------------
+   Choosing a colour, a shape, a charm is the core verb of this site, so a tap
+   has to feel like picking something up — not like ticking a box. Everything
+   below is built out of the six motion tokens declared in section 00 and
+   nothing else.
+
+     --dur-1 .12s   press / release. Instant, or it feels laggy.
+     --dur-2 .22s   the default state change (this is the old --dur).
+     --dur-3 .42s   ONE-SHOT animations only — entrances and the pick
+                    flourish. Transitions stay <= --dur-2 per SPEC §14.
+     --ease         standard, for anything reversible (hover, open/close)
+     --ease-out     decelerate, for anything arriving on screen
+     --ease-pop     one gentle overshoot, reserved for "I chose this"
+     --stagger 44ms one step of a staggered reveal
+
+   Public classes other files may use
+   ---------------------------------
+     .sn-pickable          any custom option element (a card picker, a tile).
+                           Gets press feedback, a phone-sized tap target and
+                           the pick flourish when it also carries .is-on /
+                           aria-pressed / aria-selected / aria-checked / .sn-picked.
+                           Tune the ring's corner with --sn-ring-r, and how
+                           far it springs with --sn-from / --sn-over.
+     .sn-pick-keep         variant: the drawn ring stays after the flourish
+                           (that is what .swatch does — a colour circle needs a
+                           permanent ring). Default is a ring that draws, blooms
+                           and clears, leaving the component's own selected
+                           styling to hold the state.
+     .sn-stagger           put on a CONTAINER: its direct children rise into
+                           place one after another. Tune with --stagger and
+                           --sn-rise on the container.
+     .sn-in / .sn-in-pop   one-shot entrance for a single element that was just
+                           inserted (rise / scale-pop).
+     .sn-reveal + .is-in   scroll reveal. Ships hidden; JS adds .is-in when the
+                           element enters the viewport, and may set
+                           style.transitionDelay for its own stagger.
+     .sn-pulse             the small win: a charm placed, a design saved.
+     .sn-glow              soft rose bloom for a number that just changed.
+     .sn-burst             THE payoff — a gold + rose sparkle burst, 1s, self
+                           clearing. Markup:
+                             <div class="sn-burst" aria-hidden="true">
+                               <i></i> x12
+                             </div>
+                           inside a position:relative host. Origin can be moved
+                           with --sn-burst-x / --sn-burst-y (default 50%/50%).
+     .sn-shine             one slow luxury sweep across a panel (adds
+                           overflow:hidden to its host).
+     .sk .sk-line .sk-title .sk-text .sk-media .sk-card .sk-swatch .sk-chip
+                           loading skeletons, so nothing ever pops in blank.
+
+   Performance rules kept here: animate transform and opacity; the only
+   exceptions are the pick ring (clip-path + box-shadow on one small
+   pseudo-element, once per tap) and the skeleton sheen (a translated
+   gradient). Nothing loops except a skeleton, which is removed with its
+   content. Every animation below is switched off in section 22.
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   20.1  KEYFRAMES
+   ------------------------------------------------------------------------- */
+
+/* the picked element itself: pressed down, then springs back PAST its size
+   and settles. The overshoot is an explicit keyframe rather than a spring
+   easing, because a spring's overshoot is a fraction of the distance
+   travelled — over the few percent a picker moves it would be invisible. */
+@keyframes sn-settle{
+  0%{ transform:scale(var(--sn-from,.86)); }
+  52%{ transform:scale(var(--sn-over,1.07)); }
+  100%{ transform:scale(1); }
+}
+/* the ring: wipes into being from the top, then blooms a halo and clears.
+   Negative clip insets keep the halo outside the clip while the ring draws. */
+@keyframes sn-ring{
+  0%{   clip-path:inset(-22px -22px calc(100% + 22px) -22px);
+        box-shadow:0 0 0 0 var(--halo); border-color:var(--rose); }
+  55%{  clip-path:inset(-22px);
+        box-shadow:0 0 0 0 var(--halo); border-color:var(--rose); }
+  100%{ clip-path:inset(-22px);
+        box-shadow:0 0 13px 7px transparent; border-color:transparent; }
+}
+/* same, for a ring that has to stay (colour swatches) */
+@keyframes sn-ring-keep{
+  0%{   clip-path:inset(-22px -22px calc(100% + 22px) -22px);
+        box-shadow:0 0 0 0 var(--halo); }
+  55%{  clip-path:inset(-22px);
+        box-shadow:0 0 0 0 var(--halo); }
+  100%{ clip-path:inset(-22px);
+        box-shadow:0 0 13px 7px transparent; }
+}
+/* the tick stamping itself into a chosen swatch */
+@keyframes sn-tick{
+  from{ opacity:0; transform:scale(.3); }
+  to{ opacity:1; transform:scale(1); }
+}
+/* entrances */
+@keyframes sn-rise{
+  from{ opacity:0; transform:translateY(var(--sn-rise,14px)); }
+  to{ opacity:1; transform:none; }
+}
+@keyframes sn-pop-in{
+  from{ opacity:0; transform:scale(.9); }
+  to{ opacity:1; transform:none; }
+}
+@keyframes sn-underline{
+  from{ transform:scaleX(0); }
+  to{ transform:scaleX(1); }
+}
+/* small wins */
+@keyframes sn-pulse{
+  0%{ transform:scale(1); }
+  34%{ transform:scale(1.08); }
+  100%{ transform:scale(1); }
+}
+@keyframes sn-glow{
+  0%{ box-shadow:0 0 0 0 var(--halo); }
+  100%{ box-shadow:0 0 0 14px transparent; }
+}
+/* the payoff */
+@keyframes sn-burst-life{
+  0%,99%{ visibility:visible; }
+  100%{ visibility:hidden; }
+}
+@keyframes sn-burst-bloom{
+  0%{ opacity:0; transform:scale(.25); }
+  22%{ opacity:.72; }
+  100%{ opacity:0; transform:scale(2.4); }
+}
+@keyframes sn-burst-ring{
+  0%{ opacity:0; transform:scale(.2); }
+  18%{ opacity:.8; }
+  100%{ opacity:0; transform:scale(1.9); }
+}
+@keyframes sn-spark{
+  0%{   opacity:0; transform:rotate(var(--a,0deg)) translateY(0) scale(.15); }
+  16%{  opacity:1; }
+  36%{  opacity:1; transform:rotate(var(--a,0deg)) translateY(calc(var(--d,60px) * -.46)) scale(1.12); }
+  72%{  opacity:.9; }
+  100%{ opacity:0; transform:rotate(var(--a,0deg)) translateY(calc(var(--d,60px) * -1)) scale(.4); }
+}
+@keyframes sn-shine{
+  from{ transform:translateX(-130%) skewX(-14deg); }
+  to{ transform:translateX(330%) skewX(-14deg); }
+}
+@keyframes sn-shine-rtl{
+  from{ transform:translateX(130%) skewX(14deg); }
+  to{ transform:translateX(-330%) skewX(14deg); }
+}
+/* skeleton sheen — transform only, so it costs a phone nothing */
+@keyframes sn-sheen{
+  from{ transform:translateX(-100%); }
+  to{ transform:translateX(220%); }
+}
+
+
+/* -------------------------------------------------------------------------
+   20.2  PRESS FEEDBACK + PHONE-SIZED TAP TARGETS
+   A press must answer with a transform, never colour alone, and it must
+   answer in --dur-1. The release is allowed to be slower — that is what
+   makes it feel like a physical button coming back up.
+
+   NOTE for the JS owners: iOS Safari only applies :active to elements once
+   the document has a touch listener. One line in ui.js buys every press
+   state on this site:  document.addEventListener('touchstart',function(){},
+   {passive:true});
+   ------------------------------------------------------------------------- */
+.btn:active,.btn-pri:active,.btn-soft:active,.btn-line:active,.btn-ghost:active,
+.btn-danger:active,.btn-danger-line:active{
+  transform:translateY(1px) scale(.982);
+}
+.btn-lg:active{ transform:translateY(1px) scale(.99); }
+.icon-btn:active{ transform:scale(.9); }
+.chip:active,.tab:active{ transform:scale(.94); }
+.swatch:active{ transform:scale(.9); }
+.card:active{ transform:translateY(-1px) scale(.995); }
+a.card:active,.card:has(> .card-link:active){ transform:translateY(-1px) scale(.995); }
+.nav-a:active,.ft-a:active,.acc-head:active,.link:active{ transform:scale(.98); }
+.brand:active{ transform:scale(.97); }
+.check-card:active,.sn-pickable:active{ transform:scale(.978); }
+.range:active::-webkit-slider-thumb{ transform:scale(1.22); }
+.toast:active{ transform:scale(.99); }
+.nail[role="button"]:active{ opacity:.7; }
+
+/* every one of those has to snap down and ease back up */
+.btn,.icon-btn,.chip,.tab,.swatch,.card,.nav-a,.brand,.acc-head,
+.check-card,.sn-pickable,.link,.toast{
+  transition-timing-function:var(--ease);
+}
+.btn:active,.icon-btn:active,.chip:active,.tab:active,.swatch:active,
+.card:active,.nav-a:active,.brand:active,.acc-head:active,
+.check-card:active,.sn-pickable:active,.link:active,.nail:active{
+  transition-duration:var(--dur-1);
+}
+.brand{ transition:opacity var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+.nav-a,.ft-a,.acc-head,.link,.check-card,.sn-pickable{
+  transition-property:background-color,color,border-color,box-shadow,transform,opacity;
+  transition-duration:var(--dur-2);
+}
+
+/* Tap targets. The ring pseudo doubles as the hit area: it is part of the
+   element for hit testing, so a 36px chip answers to a 46px thumb without a
+   single pixel of layout moving. */
+.swatch,.chip,.tab,.icon-btn,.btn-sm,.sn-pickable,.check-card{ position:relative; }
+.swatch::before,.chip::before,.tab::before,.check-card::before,
+.icon-btn::before,.btn-sm::before,.sn-pickable::before{
+  content:"";
+  position:absolute;
+  inset:-4px;
+  border:2px solid transparent;
+  border-radius:inherit;
+  pointer-events:auto;                 /* deliberate: this IS the tap target */
+}
+/* a rectangular picker needs its ring radius spelled out: `inherit` on a box
+   that is 4px bigger draws a corner slightly tighter than the card's own */
+.sn-pickable::before,.check-card::before{ border-radius:var(--sn-ring-r,var(--r)); }
+/* a .check-card wraps a real checkbox and is already thumb-sized: its pseudo
+   is a ring only, never a lid over the control */
+.check-card::before{ pointer-events:none; }
+/* plain buttons want the hit area, never a ring */
+.icon-btn::before,.btn-sm::before{ border-width:0; }
+/* 40px -> 44px, and the header's own 2px gap is exactly respected, so two
+   neighbouring icon buttons still can never steal each other's taps */
+.icon-btn::before{ inset:-2px; }
+.icon-btn-sm::before{ inset:-4px; }
+@media (pointer:coarse){
+  .swatch::before,.chip::before,.tab::before,
+  .check-card::before,.btn-sm::before,.sn-pickable::before{ inset:-5px; }
+  .toast-x::before,.announce-x::before{ inset:-6px; }
+}
+/* A picker is sometimes a container with its own control inside it — a tag
+   chip with a delete button, for one. The hit-area pseudo is positioned and
+   would otherwise paint over that control and swallow its taps, so anything
+   clickable inside is lifted back above it. */
+.chip button,.chip a,.chip input,.chip label,
+.tab button,.tab a,.tab input,
+.sn-pickable button,.sn-pickable a,.sn-pickable input,
+.check-card input,.check-card a{
+  position:relative;
+  z-index:1;
+}
+
+
+/* -------------------------------------------------------------------------
+   20.3  THE PICK  — the site's signature moment
+   Three things happen at once, all on one element and its one pseudo:
+   the thing you touched springs up to size, a hairline ring draws itself
+   around it from the top down, and a soft rose halo blooms out of the ring
+   and clears. Repeated taps never queue: each is a fresh one-shot animation.
+   ------------------------------------------------------------------------- */
+.swatch-on,.swatch.is-on,.swatch[aria-pressed="true"],.swatch[aria-checked="true"],
+.chip-on,.chip.is-on,.chip[aria-pressed="true"],.chip[aria-selected="true"],
+.tab-on,.tab.is-on,.tab[aria-selected="true"],.tab[aria-current="true"],
+.sn-pickable.is-on,.sn-pickable[aria-pressed="true"],
+.sn-pickable[aria-selected="true"],.sn-pickable[aria-checked="true"],
+.check-card:has(> input:checked),
+.sn-picked{
+  animation:sn-settle var(--dur-2) var(--ease-out);
+}
+.swatch-on::before,.swatch.is-on::before,
+.swatch[aria-pressed="true"]::before,.swatch[aria-checked="true"]::before,
+.chip-on::before,.chip.is-on::before,
+.chip[aria-pressed="true"]::before,.chip[aria-selected="true"]::before,
+.tab-on::before,.tab.is-on::before,
+.tab[aria-selected="true"]::before,.tab[aria-current="true"]::before,
+.sn-pickable.is-on::before,.sn-pickable[aria-pressed="true"]::before,
+.sn-pickable[aria-selected="true"]::before,.sn-pickable[aria-checked="true"]::before,
+.sn-picked::before{
+  animation:sn-ring var(--dur-3) var(--ease-out) backwards;
+}
+
+/* cards are big: they settle from much closer to their own size, or the
+   whole grid appears to lurch */
+.sn-pickable,.check-card{ --sn-from:.972; --sn-over:1.014; }
+.check-card:has(> input:checked)::before{
+  animation:sn-ring var(--dur-3) var(--ease-out) backwards;
+}
+.chip,.tab{ --sn-from:.9; --sn-over:1.045; }
+
+/* a colour circle keeps its ring — it is the only thing saying "this one" */
+.swatch-on::before,.swatch.is-on::before,
+.swatch[aria-pressed="true"]::before,.swatch[aria-checked="true"]::before,
+.sn-pick-keep.is-on::before,.sn-pick-keep[aria-pressed="true"]::before,
+.sn-pick-keep[aria-selected="true"]::before,.sn-pick-keep.sn-picked::before{
+  border-color:var(--rose);
+  animation-name:sn-ring-keep;
+}
+/* …so the ring can come off the box-shadow, which now only draws the inner
+   white hairline and the gap that separates it from the ring */
+.swatch-on,.swatch.is-on,.swatch[aria-pressed="true"],.swatch[aria-checked="true"]{
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.75),
+             0 0 0 2px var(--bg-2);
+}
+/* the tick stamps itself in after the ring has drawn */
+.swatch-on::after,.swatch.is-on::after,
+.swatch[aria-pressed="true"]::after,.swatch[aria-checked="true"]::after{
+  animation:sn-tick var(--dur-2) var(--ease-pop) calc(var(--dur-3) * .3) backwards;
+}
+
+/* the underline of a line-tab draws instead of fading in */
+.tabs-line .tab::after{
+  transform:scaleX(0);
+  transform-origin:center;
+  transition:transform var(--dur-2) var(--ease-pop),
+             background-color var(--dur-2) var(--ease);
+}
+.tabs-line .tab-on::after,
+.tabs-line .tab.is-on::after,
+.tabs-line .tab[aria-selected="true"]::after{ transform:scaleX(1); }
+/* the line variant owns ::after, so it must not also grow a ring */
+.tabs-line .tab::before{ border-width:0; }
+.tabs-line .tab-on::before,.tabs-line .tab.is-on::before,
+.tabs-line .tab[aria-selected="true"]::before{ animation:none; }
+
+/* the active nav link draws its own gradient rule */
+.nav-a.is-active::after{
+  transform-origin:center;
+  animation:sn-underline var(--dur-3) var(--ease-out) backwards;
+}
+
+
+/* -------------------------------------------------------------------------
+   20.4  ENTRANCES
+   ------------------------------------------------------------------------- */
+.sn-in{ animation:sn-rise var(--dur-3) var(--ease-out) both; }
+.sn-in-pop{ animation:sn-pop-in var(--dur-2) var(--ease-pop) both; }
+
+/* one class on a container, and its children arrive in reading order */
+.sn-stagger > *{ animation:sn-rise var(--dur-3) var(--ease-out) both; }
+.sn-stagger > *:nth-child(1){ animation-delay:0ms; }
+.sn-stagger > *:nth-child(2){ animation-delay:calc(var(--stagger) * 1); }
+.sn-stagger > *:nth-child(3){ animation-delay:calc(var(--stagger) * 2); }
+.sn-stagger > *:nth-child(4){ animation-delay:calc(var(--stagger) * 3); }
+.sn-stagger > *:nth-child(5){ animation-delay:calc(var(--stagger) * 4); }
+.sn-stagger > *:nth-child(6){ animation-delay:calc(var(--stagger) * 5); }
+.sn-stagger > *:nth-child(7){ animation-delay:calc(var(--stagger) * 6); }
+.sn-stagger > *:nth-child(8){ animation-delay:calc(var(--stagger) * 7); }
+.sn-stagger > *:nth-child(9){ animation-delay:calc(var(--stagger) * 8); }
+.sn-stagger > *:nth-child(10){ animation-delay:calc(var(--stagger) * 9); }
+.sn-stagger > *:nth-child(11){ animation-delay:calc(var(--stagger) * 10); }
+/* a long shop grid must not make its last card wait a second and a half:
+   past the first screenful everything shares one delay */
+.sn-stagger > *:nth-child(n+12){ animation-delay:calc(var(--stagger) * 11); }
+.sn-stagger-sm{ --stagger:30ms; --sn-rise:9px; }
+.sn-stagger-lg{ --stagger:60ms; --sn-rise:20px; }
+
+/* scroll reveal: ships hidden, JS adds .is-in (and may set transitionDelay) */
+.sn-reveal{
+  opacity:0;
+  transform:translateY(var(--sn-rise,18px));
+  transition:opacity var(--dur-3) var(--ease-out),
+             transform var(--dur-3) var(--ease-out);
+}
+.sn-reveal.is-in{ opacity:1; transform:none; }
+
+
+/* -------------------------------------------------------------------------
+   20.5  THE PAYOFF
+   One celebration, once, when an order is confirmed. Gold and rose, under a
+   second, and it takes itself off the screen afterwards. Everything smaller
+   — a charm placed, a design saved — gets .sn-pulse instead.
+   ------------------------------------------------------------------------- */
+.sn-pulse{ animation:sn-pulse var(--dur-3) var(--ease-pop); }
+/* the bloom follows whatever radius the element already has */
+.sn-glow{ animation:sn-glow var(--dur-3) var(--ease-out); }
+
+.sn-burst{
+  position:absolute;
+  inset:0;
+  z-index:5;
+  overflow:visible;
+  pointer-events:none;
+  /* the whole celebration is one length, derived from the tokens like
+     everything else, and every part of it is a fraction of that length */
+  --cel:calc(var(--dur-3) * 2.4);        /* ~1s — the hard ceiling */
+  animation:sn-burst-life var(--cel) linear forwards;
+}
+/* the soft rose bloom under everything */
+.sn-burst::before,
+.sn-burst::after{
+  content:"";
+  position:absolute;
+  inset-block-start:var(--sn-burst-y,50%);
+  inset-inline-start:var(--sn-burst-x,50%);
+  inline-size:150px;
+  block-size:150px;
+  /* centred with logical margins, never translate(-50%): an absolutely
+     positioned box in RTL is placed by its inline-START (right) edge, and a
+     translate would push it off-centre on the Arabic side of the site */
+  margin-block-start:-75px;
+  margin-inline-start:-75px;
+  border-radius:50%;
+  pointer-events:none;
+}
+.sn-burst::before{
+  background:radial-gradient(closest-side,var(--halo),var(--halo-2) 55%,transparent 72%);
+  animation:sn-burst-bloom calc(var(--cel) * .62) var(--ease-out) both;
+}
+/* and one thin gold ring opening out of it */
+.sn-burst::after{
+  inline-size:96px;
+  block-size:96px;
+  margin-block-start:-48px;
+  margin-inline-start:-48px;
+  border:2px solid var(--gold);
+  background:none;
+  animation:sn-burst-ring calc(var(--cel) * .7) var(--ease-out) calc(var(--cel) * .04) both;
+}
+.sn-burst > i{
+  position:absolute;
+  inset-block-start:var(--sn-burst-y,50%);
+  inset-inline-start:var(--sn-burst-x,50%);
+  inline-size:var(--sz,13px);
+  block-size:var(--sz,13px);
+  margin-block-start:calc(var(--sz,13px) / -2);
+  margin-inline-start:calc(var(--sz,13px) / -2);
+  background:var(--gold);
+  /* a four-point sparkle, not a dot of confetti */
+  clip-path:polygon(50% 0%,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0% 50%,39% 39%);
+  animation:sn-spark calc(var(--cel) * .78) var(--ease-out) both;
+}
+.sn-burst > i:nth-child(1){ --a:6deg;   --d:104px; --sz:18px; animation-delay:calc(var(--cel) * .02); }
+.sn-burst > i:nth-child(2){ --a:38deg;  --d:72px;  --sz:13px; animation-delay:calc(var(--cel) * .10); background:var(--rose); }
+.sn-burst > i:nth-child(3){ --a:71deg;  --d:122px; --sz:16px; animation-delay:calc(var(--cel) * 0); }
+.sn-burst > i:nth-child(4){ --a:104deg; --d:84px;  --sz:12px; animation-delay:calc(var(--cel) * .13); background:var(--rose-2); }
+.sn-burst > i:nth-child(5){ --a:139deg; --d:112px; --sz:17px; animation-delay:calc(var(--cel) * .05); }
+.sn-burst > i:nth-child(6){ --a:168deg; --d:78px;  --sz:13px; animation-delay:calc(var(--cel) * .16); background:var(--rose); }
+.sn-burst > i:nth-child(7){ --a:196deg; --d:118px; --sz:16px; animation-delay:calc(var(--cel) * .01); }
+.sn-burst > i:nth-child(8){ --a:226deg; --d:80px;  --sz:12px; animation-delay:calc(var(--cel) * .12); background:var(--rose-2); }
+.sn-burst > i:nth-child(9){ --a:257deg; --d:110px; --sz:18px; animation-delay:calc(var(--cel) * .06); }
+.sn-burst > i:nth-child(10){ --a:288deg; --d:74px;  --sz:13px; animation-delay:calc(var(--cel) * .15); background:var(--rose); }
+.sn-burst > i:nth-child(11){ --a:318deg; --d:120px; --sz:16px; animation-delay:calc(var(--cel) * .03); }
+.sn-burst > i:nth-child(12){ --a:344deg; --d:86px;  --sz:12px; animation-delay:calc(var(--cel) * .11); background:var(--gold); }
+
+/* one slow sweep of light across a panel — the luxury note, used once */
+.sn-shine{ position:relative; overflow:hidden; }
+.sn-shine::after{
+  content:"";
+  position:absolute;
+  inset-block:-20%;
+  inset-inline-start:0;
+  inline-size:38%;
+  background:linear-gradient(90deg,transparent,var(--shine) 42%,var(--shine) 58%,transparent);
+  transform:translateX(-130%) skewX(-14deg);
+  pointer-events:none;
+  animation:sn-shine calc(var(--dur-3) * 2.2) var(--ease-out) calc(var(--dur-3) * .4) both;
+}
+[dir="rtl"] .sn-shine::after{ animation-name:sn-shine-rtl; transform:translateX(130%) skewX(14deg); }
+
+
+/* -------------------------------------------------------------------------
+   20.6  SKELETONS  — nothing on this site pops in as a blank rectangle
+   <div class="sk-card"><div class="sk sk-media"></div>
+        <div class="sk-text"><span class="sk sk-title"></span>
+        <span class="sk sk-line"></span><span class="sk sk-line"></span></div></div>
+   ------------------------------------------------------------------------- */
+.sk{
+  position:relative;
+  display:block;
+  overflow:hidden;
+  background:var(--bg-3);
+  border-radius:var(--r-xs);
+}
+.sk::after{
+  content:"";
+  position:absolute;
+  inset-block:0;
+  inset-inline-start:0;
+  inline-size:45%;
+  background:linear-gradient(90deg,transparent,var(--sheen),transparent);
+  transform:translateX(-100%);
+  animation:sn-sheen calc(var(--dur-3) * 3.2) linear infinite;
+}
+.sk-line{ block-size:12px; margin-block:7px; }
+.sk-line-sm{ block-size:9px; }
+.sk-title{ block-size:17px; inline-size:62%; margin-block:9px; border-radius:var(--r-xs); }
+.sk-text > .sk-line:last-child{ inline-size:72%; }
+.sk-btn{ block-size:44px; inline-size:132px; border-radius:var(--r-full); }
+.sk-chip{ block-size:36px; inline-size:88px; border-radius:var(--r-full); }
+.sk-swatch{ inline-size:38px; block-size:38px; border-radius:50%; }
+.sk-media{ aspect-ratio:4/5; inline-size:100%; border-radius:0; }
+.sk-media-sq{ aspect-ratio:1/1; }
+.sk-card{
+  display:flex;
+  flex-direction:column;
+  background:var(--bg-2);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  overflow:hidden;
+}
+.sk-card > .sk-text{ padding:clamp(14px,2vw,18px); }
+.sk-row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.sk-grid{
+  display:grid;
+  gap:clamp(14px,2.2vw,24px);
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,244px),1fr));
+}
+
+
+/* -------------------------------------------------------------------------
+   20.7  BRINGING THE OLD SHELL UP TO THE SAME STANDARD
+   Motion only — not one layout rule changes here.
+   ------------------------------------------------------------------------- */
+/* the switch knob slides on the compositor, and lands with the tiniest
+   overshoot. translateX is physical, so each direction gets its own rule. */
+.switch > input + span::after,.switch-ui::after{
+  transition:transform var(--dur-2) var(--ease-pop),
+             background-color var(--dur-2) var(--ease);
+}
+[dir="ltr"] .switch > input:checked + span::after,
+[dir="ltr"] .switch.is-on .switch-ui::after{ inset-inline-start:2px; transform:translateX(20px); }
+[dir="rtl"] .switch > input:checked + span::after,
+[dir="rtl"] .switch.is-on .switch-ui::after{ inset-inline-start:2px; transform:translateX(-20px); }
+.switch:active > input:not(:disabled) + span::after,
+.switch.is-on:active .switch-ui::after{ inline-size:24px; }
+
+/* accordion: the panel does not just get taller, its contents fade up too */
+.acc-body{ transition:grid-template-rows var(--dur-2) var(--ease-out); }
+.acc-in{
+  opacity:0;
+  transform:translateY(-4px);
+  transition:opacity var(--dur-2) var(--ease),
+             transform var(--dur-2) var(--ease-out);
+}
+.acc-item.is-open > .acc-body .acc-in,
+.acc-body.is-open .acc-in,
+.acc-head[aria-expanded="true"] + .acc-body .acc-in{
+  opacity:1;
+  transform:none;
+  transition-delay:60ms;
+}
+.acc-head .ico{ transition:transform var(--dur-2) var(--ease-pop); }
+
+/* footer links slide on transform instead of reflowing their padding, and
+   get a thumb-sized hit area without opening the column up */
+.ft-a{ position:relative; transition:color var(--dur-2) var(--ease), transform var(--dur-2) var(--ease); }
+.ft-a::before{ content:""; position:absolute; inset:-7px -6px; border-radius:var(--r-xs); }
+.ft-a:hover{ padding-inline-start:0; }
+[dir="ltr"] .ft-a:hover{ transform:translateX(4px); }
+[dir="rtl"] .ft-a:hover{ transform:translateX(-4px); }
+
+/* the mobile menu falls open, it does not merely un-hide */
+@media (max-width:900px){
+  #sn-header.nav-open .nav > .nav-a{ animation:sn-rise var(--dur-2) var(--ease-out) both; }
+  #sn-header.nav-open .nav > .nav-a:nth-child(1){ animation-delay:30ms; }
+  #sn-header.nav-open .nav > .nav-a:nth-child(2){ animation-delay:calc(30ms + var(--stagger)); }
+  #sn-header.nav-open .nav > .nav-a:nth-child(3){ animation-delay:calc(30ms + var(--stagger) * 2); }
+  #sn-header.nav-open .nav > .nav-a:nth-child(4){ animation-delay:calc(30ms + var(--stagger) * 3); }
+}
+
+/* the empty state and the spinner should arrive, not blink into place */
+.empty{ animation:sn-rise var(--dur-3) var(--ease-out) both; }
+.spinner-c{ animation:sn-pop-in var(--dur-2) var(--ease-out) both; }
+
+
+
+/* =========================================================================
+   21  PRINT  — the owner prints orders, so the shell and every control goes
+   away and an open dialog flows into the page instead of floating over it.
+   ========================================================================= */
+@media print{
+  :root{
+    --bg:#FFFFFF; --bg-2:#FFFFFF; --bg-3:#F4F4F4; --bg-4:#FFFFFF;
+    --ink:#000000; --ink-2:#333333; --ink-3:#555555;
+    --line:#CCCCCC; --line-2:#BBBBBB;
+    --sh-1:none; --sh-2:none; --sh-3:none;
+  }
+  html,body{ background:#FFFFFF !important; color:#000000 !important; }
+  #sn-header,#sn-footer,#sn-announce,.toast-wrap,.skip-link,
+  .btn,.icon-btn,.btns,.tabs,.toolbar,.chip,.modal-foot,.modal-x,
+  .no-print{ display:none !important; }
+  main{ padding:0 !important; }
+  .sec{ padding-block:10px !important; }
+  .wrap{ max-inline-size:none; padding-inline:0; }
+  .card,.panel,.table-wrap{
+    box-shadow:none !important;
+    border:1px solid #CCCCCC !important;
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+  .card:hover{ transform:none !important; }
+  .sec-head::before,.glow::before,.card-media::before{ display:none !important; }
+  .sn-burst,.sn-shine::after,.sk,.sk-card{ display:none !important; }
+  /* a dialog left open (an order detail) should print as the document */
+  .modal-back{
+    position:static !important;
+    display:block !important;
+    z-index:auto !important;
+    padding:0 !important;
+    background:none !important;
+    -webkit-backdrop-filter:none !important;
+    backdrop-filter:none !important;
+    animation:none !important;
+    overflow:visible !important;
+  }
+  .modal{
+    max-block-size:none !important;
+    max-inline-size:none !important;
+    border:0 !important;
+    box-shadow:none !important;
+    animation:none !important;
+    overflow:visible !important;
+  }
+  .modal-body{ overflow:visible !important; padding-inline:0 !important; }
+  .table thead th{ position:static !important; background:#F4F4F4 !important; }
+  a[href]{ color:#000000 !important; text-decoration:none; }
+  h1,h2,h3,.h1,.h2,.h3{ break-after:avoid; page-break-after:avoid; }
+}
+
+
+/* =========================================================================
+   22  REDUCED MOTION
+   Everything in section 20 is switched off here, and the site has to stay
+   completely usable: every state the motion communicated is also communicated by
+   colour, border or the drawn ring, all of which survive below.
+     * the pick   -> the ring and the tick are still there, they just appear
+     * entrances  -> `both` fill means the end state (visible) is what shows
+     * the payoff -> the burst is removed outright, the success panel stands
+                     on its own words
+     * skeletons  -> stay, minus the sheen
+   ========================================================================= */
+@media (prefers-reduced-motion:reduce){
+  html{ scroll-behavior:auto !important; }
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-delay:0ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    transition-delay:0ms !important;
+    scroll-behavior:auto !important;
+  }
+  /* nothing may move, hover or press */
+  .card:hover,.card:active,.btn:hover,.btn:active,.btn-pri:hover,.btn-pri:active,
+  .btn-lg:active,.btn-danger:hover,.btn-danger:active,.btn-soft:active,
+  .btn-line:active,.btn-ghost:active,.btn-danger-line:active,
+  .icon-btn:active,.chip:active,.tab:active,.swatch:hover,.swatch:active,
+  .nav-a:active,.ft-a:hover,.ft-a:active,.brand:active,.acc-head:active,
+  .link:active,.check-card:active,.sn-pickable:active,.toast:active,
+  a.card:active,.nail[role="button"]:hover{
+    transform:none !important;
+  }
+  .range:hover::-webkit-slider-thumb,
+  .range:active::-webkit-slider-thumb{ transform:none !important; }
+  .ft-a:hover{ padding-inline-start:0 !important; }
+  .switch:active > input + span::after,
+  .switch.is-on:active .switch-ui::after{ inline-size:20px !important; }
+
+  /* the reveal must resolve to visible even if .is-in never arrives */
+  .sn-reveal{ opacity:1 !important; transform:none !important; }
+  .acc-in{ opacity:1 !important; transform:none !important; }
+  .tabs-line .tab-on::after,.tabs-line .tab.is-on::after,
+  .tabs-line .tab[aria-selected="true"]::after{ transform:none !important; }
+  .tabs-line .tab::after{ transform:scaleX(1); }
+
+  /* the pick loses its flourish but keeps every pixel of its meaning */
+  .swatch-on::before,.swatch.is-on::before,
+  .swatch[aria-pressed="true"]::before,.swatch[aria-checked="true"]::before,
+  .sn-pick-keep.is-on::before,.sn-pick-keep[aria-pressed="true"]::before,
+  .sn-pick-keep[aria-selected="true"]::before,.sn-pick-keep.sn-picked::before{
+    clip-path:none !important;
+    box-shadow:none !important;
+    border-color:var(--rose) !important;
+  }
+
+  /* no celebration, no sweep — the words carry it */
+  .sn-burst{ display:none !important; }
+  .sn-shine::after{ display:none !important; }
+  .sn-pulse,.sn-glow{ animation:none !important; }
+
+  /* a loading indicator still has to indicate loading — just slow it right down */
+  .spinner{
+    animation-duration:1.6s !important;
+    animation-iteration-count:infinite !important;
+  }
+  .sk::after{ display:none !important; }
+}
