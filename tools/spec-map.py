@@ -122,7 +122,22 @@ def reflection(uv):
             if sz[q] >= 0.004 * UW * UH:
                 big |= lab == q + 1
         s = s * nd.binary_dilation(big, np.ones((5, 5)))
+    # The blur takes the sensor's own speckle off a reflection that is a smooth
+    # object, and the price of it is the top of the reflection: a gaussian is a
+    # mean, and the peak of a small bright thing is exactly what a mean removes.
+    # Measured against the four nails of the source photograph that a box fits
+    # cleanly inside, black-pointed by this same rule, the shipped tiles matched
+    # it above 0.60 (6.2-8.0% of the tile against 5.1-10.4%) and above 0.85
+    # (1.5-2.8% against 0.6-4.3%), and were three to four times short above 0.95
+    # (0.04-0.33% against 0.13-1.29%) — never reaching white at all, 0.965-0.973
+    # against 0.992-1.000. A reflected strip light IS white where it is
+    # brightest, and "nothing on it was white" is the exact complaint this whole
+    # sheet exists to answer. So the blur keeps its shape and gives the peak
+    # back.
+    hi = float(s.max())
     s = nd.gaussian_filter(s, 0.9)
+    if s.max() > 1e-6:
+        s = s * (hi / s.max())
     # A real reflection is not just its core. Measured out from the centre of
     # one, a real nail is still at 1.66x its own base three units away and
     # 1.38x at six; the drawn ellipse this replaces had fallen to nothing by
@@ -145,8 +160,9 @@ def main():
         sys.exit('found only %d nails — this wants a frame with several in it' % len(masks))
     tiles = [reflection(unwrap(lum, m)) for m in masks]
     for i, s in enumerate(tiles):
-        print('reflection %d: %.1f%% of the nail above 0.3, %.1f%% above 0.6'
-              % (i + 1, 100 * (s > 0.3).mean(), 100 * (s > 0.6).mean()))
+        print('reflection %d: %.1f%% above 0.3, %.1f%% above 0.6, %.2f%% above 0.95, peak %.3f'
+              % (i + 1, 100 * (s > 0.3).mean(), 100 * (s > 0.6).mean(),
+                 100 * (s > 0.95).mean(), s.max()))
 
     sheet = np.concatenate(tiles, axis=1)
     im = Image.fromarray(np.round(np.clip(sheet, 0, 1) * 255).astype(np.uint8), 'L')
