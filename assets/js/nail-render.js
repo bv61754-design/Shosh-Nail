@@ -2947,14 +2947,24 @@
     add(host, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: hGrad(x.defs, st), opacity: f(k)
     }));
-    /* along it: the free edge is over whatever is behind the hand, the
-       cuticle end is over the customer's own finger — so this one is much
-       gentler at the bottom, where the two surfaces nearly touch and there is
-       no grazing view of anything at all */
-    st = rimStops(col(e.t, '#2E3338'), false)
-      .concat(rimStops(col(e.b, '#8A6154'), true).map(function (p) {
-        return [p[0], p[1], f(num(p[2], 0) * 0.55)];
-      }));
+    /* Along it, and the two ends are not the same thing at all.
+       THE FREE EDGE IS NOT A GRAZING REFLECTION. At the sides the plate turns
+       away and you see the room; at the tip you are looking at the CUT END of
+       a millimetre of acrylic, which is thick, scattering and pale. Measured
+       along nine real press-ons on a real hand, cuticle to tip, luminance over
+       the nail's own median: 0.94 at the cuticle, flat near 1.00 through the
+       body, and 1.10 at the very tip. This render had 0.55 there — the free
+       edge was going DARK where a real one goes BRIGHT, because the rim was
+       mixing in the dark cloth beyond the fingertip at nearly full strength.
+       So the tip end of this gradient is nearly switched off and the free-edge
+       layer below carries it instead.
+       The cuticle end stays gentle for its own reason: the plate and the skin
+       nearly touch there, so there is no grazing view of anything. */
+    st = rimStops(col(e.t, '#2E3338'), false).map(function (p) {
+      return [p[0], p[1], f(num(p[2], 0) * 0.14)];
+    }).concat(rimStops(col(e.b, '#8A6154'), true).map(function (p) {
+      return [p[0], p[1], f(num(p[2], 0) * 0.55)];
+    }));
     add(host, rect(-1, -1, x.w + 2, x.h + 2, {
       fill: vGrad(x.defs, st), opacity: f(k * 0.85)
     }));
@@ -3125,7 +3135,7 @@
     gOn = (opts.gloss === undefined || opts.gloss === null ? q >= 0.62 : !!opts.gloss)
       && !!(SN.Gloss && typeof SN.Gloss.shade === 'string');
     gDamp = gOn ? glossMix(kind) : 0;
-    tipD = clamp(0.055 + 0.035 * (w * 1.55 / h), 0.04, 0.13);
+    tipD = clamp(0.075 + 0.045 * (w * 1.55 / h), 0.055, 0.17);
 
     /* One clip application for the whole plate. Clipping turned out to be the
        most expensive thing on the page at ten nails — far more than the
@@ -3182,7 +3192,13 @@
        Painted straight onto the plate path — a clipped overlay would cost
        another clip application, and clipping is the most expensive thing on
        the page once ten nails are on screen. */
-    glow = 0.42 + 0.58 * lum(n.color);
+    /* THE CUT END OF THE ACRYLIC. Measured along nine real press-ons on a real
+       hand, the tip is the brightest part of the whole nail — 1.10 of the
+       body, where this render had 0.70. A millimetre of acrylic seen end-on
+       scatters; it does not reflect the dark thing behind the hand. Even an
+       onyx press-on has a pale free edge, which is why the floor here is 0.62
+       and not 0.42: the wall is the same acrylic whatever is suspended in it. */
+    glow = 0.62 + 0.38 * lum(n.color);
     add(plate, E('path', {
       d: d,
       fill: vGrad(defs, [
@@ -3289,8 +3305,19 @@
     wallLit = cTip(n.color);
     wallDark = darken(n.color, 0.46 + lum(n.color) * 0.24);
     add(clipG, E('g', null, [
+      /* Absorption at a grazing angle, all round — EXCEPT at the free edge.
+         At the point of an almond the plate is only a few pixels wide and this
+         stroke covers the whole of it, which is why the last twenty-fourth of
+         the nail measured 0.64 of the body where nine real press-ons measure
+         1.10. The very tip is not polish seen edge-on, it is the cut end of
+         the acrylic, and it is the palest thing on the nail. */
       E('path', {
-        d: d, fill: 'none', stroke: cEdge(n.color),
+        d: d, fill: 'none',
+        stroke: vGrad(defs, [
+          [0, wallLit, 0.10],
+          [f(tipD * 0.9), cEdge(n.color), 1],
+          [1, cEdge(n.color), 1]
+        ]),
         'stroke-width': f(u * 3.4), opacity: jelly ? 0.3 : 0.5
       }),
       /* the free edge itself: the one part of a press-on thin enough to pass
@@ -5197,7 +5224,7 @@
     var frame = E('g', { 'class': 'sn-photo-frame' });
     var tiles = photos[plan.src].tiles ||
                 (photos[plan.src].tiles = photoTiles(def));
-    var i, an, nw, nh, key, el, wrap, t, lv;
+    var i, an, nw, nh, key, el, wrap, t, lv, fold;
 
     /* the photograph, plus itself mirrored about whichever of its own edges
        the window reaches past, so the crop never shows a hole */
@@ -5249,6 +5276,47 @@
         onPick: opts.onPick
       });
       add(wrap, el);
+
+      /* THE FOLD RIDES OVER THE PLATE.
+         The owner's report was that the base does not look glued down, and he
+         is right: the plate ended in a clean curve lying on top of the skin,
+         which is what "placed on" looks like. On a hand the eponychium sits
+         slightly OVER the shell's cuticle edge — you never see that edge as a
+         free curve — and there is a hairline of occlusion exactly at the join
+         rather than a soft shadow near it.
+         Nothing here is invented. The finger is already in the photograph, so
+         a narrow band of the photograph itself is masked back over the plate's
+         cuticle end, fading out within about a twelfth of the nail's length.
+         The skin that rides over the plate is that finger's own skin, in its
+         own light, at its own angle, different on all ten. */
+      fold = uid('fold');
+      add(defs, E('mask', {
+        id: fold, maskUnits: 'userSpaceOnUse',
+        x: f(an.x - nh * 1.6), y: f(an.y - nh * 1.6),
+        width: f(nh * 3.2), height: f(nh * 3.2)
+      }, [
+        E('g', { transform: wrap.getAttribute('transform') }, [
+          E('rect', {
+            x: f(-nw * 0.14), y: f(nh * 0.945), width: f(nw * 1.28), height: f(nh * 0.22),
+            fill: vGrad(defs, [
+              [0, '#000000', 0], [0.16, '#FFFFFF', 0.40],
+              [0.25, '#FFFFFF', 1], [1, '#FFFFFF', 1]
+            ])
+          })
+        ])
+      ]));
+      add(wrap.parentNode || g, E('g', {
+        mask: 'url(#' + fold + ')', 'class': 'sn-photo-fold', 'pointer-events': 'none'
+      }, [E('use', { href: '#' + id, 'xlink:href': '#' + id })]));
+
+      /* and the hairline where the two surfaces actually meet */
+      add(wrap, E('path', {
+        d: path(shape, nw, nh), fill: 'none',
+        stroke: vGrad(defs, [
+          [0, '#2A1A15', 0], [0.90, '#2A1A15', 0], [0.965, '#2A1A15', 0.40], [1, '#2A1A15', 0.5]
+        ]),
+        'stroke-width': f(Math.max(nw * 0.020, 0.5)), 'pointer-events': 'none'
+      }));
       add(g, wrap);
     }
     if (defs && !defs.firstChild && defs.parentNode) defs.parentNode.removeChild(defs);

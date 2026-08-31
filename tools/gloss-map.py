@@ -189,7 +189,10 @@ def finish(M):
     M = form + mid + fine
 
     # the free edge is drawn by SN.Nail as its own translucent layer
-    tf = np.clip((0.035 - v) / 0.035, 0, 1)
+    # 9%, not 3.5%. Measured along nine real press-ons the tip is the BRIGHTEST
+    # part of the nail (1.10 of the body); this map, taken off a nail lying on
+    # cloth, has a dark tip, and it was pulling the free edge down to 0.70.
+    tf = np.clip((0.090 - v) / 0.090, 0, 1)
     M = M * (1 - tf) + tf
     M = np.clip(M / float(np.percentile(M, 99.5)), 0, 1)
     M = M / M.mean() * 0.905          # hold the average where it was
