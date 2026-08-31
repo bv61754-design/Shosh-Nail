@@ -2992,7 +2992,7 @@
         'color-interpolation-filters': 'sRGB'
       }, [
         E('feTurbulence', {
-          type: 'fractalNoise', baseFrequency: f(bf), numOctaves: '2',
+          type: 'fractalNoise', baseFrequency: f(bf), numOctaves: '4',
           seed: '11', stitchTiles: 'stitch', result: 'n'
         }),
         E('feColorMatrix', {
@@ -3267,7 +3267,7 @@
     /* --- 5c. grain, over every layer of colour and light ------------------- */
     filmGrain(clipG, {
       w: w, h: h, defs: defs, on: gOn,
-      amp: num(opts.grain, 0.25), freq: num(opts.grainFreq, 2.2)
+      amp: num(opts.grain, 0.16), freq: num(opts.grainFreq, 0.55)
     });
 
     /* --- 6. the contour --------------------------------------------------- */
