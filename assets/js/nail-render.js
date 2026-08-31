@@ -5406,6 +5406,32 @@
               [0, '#000000', 0], [0.16, '#FFFFFF', 0.40],
               [0.25, '#FFFFFF', 1], [1, '#FFFFFF', 1]
             ])
+          }),
+          /* AND THE SAME THING DOWN THE SIDES. A nail plate does not lie on
+             the finger, it sits IN a groove: the lateral folds run up both of
+             its edges, deepest at the base where the groove is deepest and
+             thinning away toward the free edge, and they overlap the plate,
+             not merely meet it. Every reference photograph shows it — it is
+             what stops the sides reading as a curve drawn on a finger. One
+             diagonal gradient per side does it, opaque at the outer corner of
+             the base and gone both inward and upward, so the overlap is
+             widest exactly where the groove is and has faded out by halfway
+             along. Like the cuticle fold above, the skin that rides over the
+             plate is this finger's own skin out of the photograph, in its own
+             light — nothing is drawn. */
+          E('rect', {
+            x: f(-nw * 0.14), y: f(nh * 0.40), width: f(nw * 0.30), height: f(nh * 0.765),
+            fill: grad(defs, 'linearGradient', [
+              [0, '#FFFFFF', 1], [0.30, '#FFFFFF', 0.72],
+              [0.62, '#FFFFFF', 0.18], [1, '#FFFFFF', 0]
+            ], { x1: 0, y1: 1, x2: 0.92, y2: 0.18 })
+          }),
+          E('rect', {
+            x: f(nw * 0.84), y: f(nh * 0.40), width: f(nw * 0.30), height: f(nh * 0.765),
+            fill: grad(defs, 'linearGradient', [
+              [0, '#FFFFFF', 1], [0.30, '#FFFFFF', 0.72],
+              [0.62, '#FFFFFF', 0.18], [1, '#FFFFFF', 0]
+            ], { x1: 1, y1: 1, x2: 0.08, y2: 0.18 })
           })
         ])
       ]));
